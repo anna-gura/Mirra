@@ -1,0 +1,258 @@
+/* ============================================================
+   clients.css — the client list.
+
+   Names on hairlines, grouped by letter. The chevron on each row is
+   not decoration: for someone who does not use apps much, "this line
+   is a button" has to be visible, not inferred.
+   ============================================================ */
+
+.clients{
+  display:grid;
+  grid-template-rows:auto 1fr auto;
+  background:var(--bg);
+  color:var(--ink);
+  transition:background var(--t-theme) ease, color var(--t-theme) ease;
+}
+
+.cl-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:max(14px,env(safe-area-inset-top)) 18px 0;
+}
+
+/* The only scrolling surface in the app. Everything else is fixed. */
+.cl-body{
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+  padding:0 20px;
+  min-height:0;
+}
+
+.cl-inner{
+  max-width:520px;
+  margin:0 auto;
+  padding-bottom:28px;
+}
+
+.cl-title{
+  font-family:Marcellus,serif;
+  font-weight:400;
+  font-size:clamp(27px,7.2vw,38px);
+  line-height:1.12;
+  letter-spacing:.01em;
+  margin:6px 0 4px;
+  overflow-wrap:anywhere;
+}
+
+.cl-count{
+  font-family:Karla,sans-serif;
+  font-weight:300;
+  font-size:13.5px;
+  color:var(--soft);
+  margin:0;
+  min-height:20px;
+}
+
+/* ---------------- add ---------------- */
+.cl-add{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  min-height:48px;
+  padding:0 22px;
+  margin:22px 0 6px;
+  font-family:Karla,sans-serif;
+  font-weight:400;
+  font-size:15px;
+  color:var(--ink);
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:99px;
+  transition:border-color .2s;
+}
+.cl-add:hover{ border-color:var(--soft); }
+
+/* ---------------- alphabet ---------------- */
+.cl-letter{
+  position:sticky;
+  /* Below the tools, which are 68px tall — a letter sliding over the
+     search field would cover the thing being typed into. */
+  top:68px;
+  z-index:1;
+  background:var(--bg);
+  font-family:Karla,sans-serif;
+  font-weight:300;
+  font-size:11.5px;
+  letter-spacing:.2em;
+  color:var(--faint,var(--soft));
+  padding:18px 2px 7px;
+}
+
+/* ---------------- rows ---------------- */
+.cl-rows{
+  list-style:none;
+  margin:0;
+  padding:0;
+}
+.cl-rows li{ border-bottom:1px solid var(--line); }
+
+.cl-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  width:100%;
+  min-height:58px;
+  padding:16px 2px;
+  text-align:left;
+  font-family:Karla,sans-serif;
+  font-weight:400;
+  font-size:17px;
+  color:var(--ink);
+  background:none;
+  border:none;
+  cursor:pointer;
+  transition:color .16s;
+}
+.cl-row::after{
+  content:"";
+  width:7px;
+  height:7px;
+  flex:none;
+  border-right:1.4px solid var(--soft);
+  border-bottom:1.4px solid var(--soft);
+  transform:rotate(-45deg);
+  opacity:.55;
+  transition:transform .18s, opacity .18s;
+}
+.cl-row:hover::after,
+.cl-row:focus-visible::after{
+  transform:rotate(-45deg) translate(2px,-2px);
+  opacity:1;
+}
+
+.cl-empty{
+  font-family:Karla,sans-serif;
+  font-weight:300;
+  font-size:15px;
+  line-height:1.6;
+  color:var(--soft);
+  text-align:center;
+  margin:44px 0 0;
+}
+
+/* ---------------- bottom bar ---------------- */
+.cl-foot{
+  display:flex;
+  justify-content:center;
+  gap:8px;
+  padding:0 20px max(18px,env(safe-area-inset-bottom));
+}
+
+@media(max-width:400px){
+  .cl-row{ font-size:16px; min-height:54px; }
+}
+
+/* ---------------- tools row ---------------- */
+/* Pinned to the top of the scroll container.
+   The negative margin lets its background reach the padding edges, so
+   rows pass behind it rather than beside it. */
+.cl-tools{
+  position:sticky;
+  top:0;
+  z-index:2;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  margin:22px -20px 6px;
+  padding:10px 20px;
+  background:var(--bg);
+}
+
+/* Fades the rows out as they reach the search rather than letting them
+   stop dead against it. */
+.cl-tools::after{
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  top:100%;
+  height:14px;
+  pointer-events:none;
+  background:linear-gradient(to bottom,var(--bg),transparent);
+}
+
+.cl-search{
+  position:relative;
+  flex:1 1 auto;
+  min-width:0;
+  display:flex;
+  align-items:center;
+}
+
+.cl-search-icon{
+  position:absolute;
+  left:14px;
+  width:16px;
+  height:16px;
+  pointer-events:none;
+  fill:none;
+  stroke:var(--soft);
+  stroke-width:1.5;
+  stroke-linecap:round;
+  opacity:.75;
+}
+
+.cl-search-input{
+  width:100%;
+  min-height:48px;
+  padding:0 38px 0 38px;
+  font-family:Karla,sans-serif;
+  font-weight:400;
+  font-size:16px;          /* below 16px iOS zooms the page on focus */
+  color:var(--ink);
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:99px;
+  transition:border-color .2s;
+}
+.cl-search-input::placeholder{ color:var(--faint); }
+.cl-search-input:hover{ border-color:var(--soft); }
+.cl-search-input:focus{ outline:none; border-color:var(--ink); }
+
+/* The browser's own clear button sits in a different place on every
+   platform and cannot be styled, so it is hidden and replaced. */
+.cl-search-input::-webkit-search-cancel-button{ display:none; }
+
+.cl-search-clear{
+  position:absolute;
+  right:5px;
+  width:36px;
+  height:36px;
+  display:grid;
+  place-items:center;
+  font-size:20px;
+  line-height:1;
+  color:var(--faint);
+  background:none;
+  border:none;
+  border-radius:50%;
+  cursor:pointer;
+  transition:color .18s;
+}
+.cl-search-clear:hover{ color:var(--ink); }
+
+.cl-add{ flex:none; margin:0; }
+
+/* Stacked where a row would leave the search too narrow to read what
+   was typed into it. */
+@media(max-width:430px){
+  .cl-tools{ flex-direction:column; align-items:stretch; gap:8px; }
+  .cl-add{ width:100%; justify-content:center; }
+
+  /* Two rows now, so the letters clear a taller bar. */
+  .cl-letter{ top:124px; }
+}

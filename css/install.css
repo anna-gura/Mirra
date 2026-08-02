@@ -1,0 +1,205 @@
+/* ============================================================
+   install.css — the offer to add Mirra to a device.
+
+   Grey text and a small arrow. Somebody who opened Mirra to look up
+   a phone number should not have to get past an advertisement for
+   the app they are already using.
+   ============================================================ */
+
+.install-line{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  min-height:44px;
+  padding:12px 18px;
+  margin-top:22px;
+  font-family:Karla,sans-serif;
+  font-weight:300;
+  font-size:13px;
+  color:var(--soft);
+  background:none;
+  border:none;
+  border-radius:99px;
+  cursor:pointer;
+  transition:color .25s;
+}
+.install-line:hover,
+.install-line:focus-visible{ color:var(--ink); }
+
+.install-line svg{
+  width:14px;
+  height:14px;
+  flex:none;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.5;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
+/* On the hub it sits between the sections and the note, where the
+   spacing is tighter than on the cover. */
+.hub-inner .install-line{
+  display:flex;
+  width:100%;
+  margin-top:20px;
+}
+
+/* The label is longer than it was, so it is allowed to wrap rather
+   than push the button past the edge of a narrow screen. */
+.install-line{
+  max-width:100%;
+  white-space:normal;
+  text-align:center;
+  line-height:1.35;
+}
+
+/* ---------------- the sheet ---------------- */
+.install-sheet{
+  padding:0;
+  border:none;
+  background:none;
+  max-width:none;
+  max-height:none;
+  color:var(--ink);
+}
+
+.install-sheet[open]{
+  position:fixed;
+  inset:0;
+  display:grid;
+  place-items:center;
+  width:100%;
+  height:100%;
+  padding:24px;
+}
+
+.install-sheet::backdrop{
+  background:rgba(12,12,12,.42);
+  backdrop-filter:blur(3px);
+}
+[data-theme="dark"] .install-sheet::backdrop{ background:rgba(0,0,0,.62); }
+
+.install-panel{
+  width:100%;
+  max-width:360px;
+  padding:26px 24px 20px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:18px;
+  box-shadow:0 24px 60px -24px rgba(0,0,0,.55);
+  animation:install-in .22s cubic-bezier(.3,.8,.3,1);
+}
+@keyframes install-in{
+  from{ opacity:0; transform:translateY(8px) scale(.97); }
+}
+@media (prefers-reduced-motion:reduce){
+  .install-panel{ animation:none; }
+}
+
+.install-title{
+  font-family:Marcellus,serif;
+  font-weight:400;
+  font-size:21px;
+  letter-spacing:.01em;
+  margin:0 0 6px;
+}
+
+.install-lead{
+  font-family:Karla,sans-serif;
+  font-weight:300;
+  font-size:14px;
+  line-height:1.5;
+  color:var(--soft);
+  margin:0 0 20px;
+}
+
+/* ---------------- steps ---------------- */
+.install-step{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:12px 0;
+  border-top:1px solid var(--line);
+}
+.install-step:last-child{ border-bottom:1px solid var(--line); }
+
+.install-n{
+  flex:none;
+  width:22px;
+  height:22px;
+  display:grid;
+  place-items:center;
+  border:1px solid var(--line);
+  border-radius:50%;
+  font-family:Karla,sans-serif;
+  font-size:11.5px;
+  color:var(--soft);
+}
+
+.install-text{
+  font-family:Karla,sans-serif;
+  font-weight:300;
+  font-size:14px;
+  line-height:1.45;
+}
+.install-text b{ font-weight:500; }
+
+/* The glyph is the one the platform uses, so the instruction can be
+   matched to the screen without reading it twice. */
+.install-step svg{
+  width:17px;
+  height:17px;
+  flex:none;
+  margin-left:auto;
+  fill:none;
+  stroke:var(--soft);
+  stroke-width:1.5;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
+/* The steps arrive with the platform, so the panel can grow or shrink
+   between openings; a minimum keeps the sheet from jumping about. */
+[data-install-steps]{ min-height:1px; }
+
+/* ---------------- footer ---------------- */
+.install-actions{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  margin-top:18px;
+}
+
+.install-never,
+.install-close{
+  min-height:44px;
+  padding:0 14px;
+  font-family:Karla,sans-serif;
+  font-weight:300;
+  font-size:13px;
+  color:var(--soft);
+  background:none;
+  border:none;
+  border-radius:99px;
+  cursor:pointer;
+  transition:color .2s;
+}
+.install-never:hover,
+.install-close:hover{ color:var(--ink); }
+
+.install-close{
+  font-weight:400;
+  border:1px solid var(--line);
+  padding:0 20px;
+  color:var(--ink);
+}
+.install-close:hover{ border-color:var(--soft); }
+
+/* Nothing about installing belongs on screen once it is installed,
+   and display-mode is how that is known without asking. */
+@media all and (display-mode: standalone){
+  .install-line{ display:none !important; }
+}

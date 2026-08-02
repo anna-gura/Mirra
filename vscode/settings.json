@@ -1,0 +1,10 @@
+{
+  // Templates are .tpl so dev servers do not inject a live-reload
+  // script into them; this keeps HTML editing behaviour in the editor.
+  "files.associations": {
+    "*.tpl": "html"
+  },
+  "emmet.includeLanguages": {
+    "tpl": "html"
+  }
+}

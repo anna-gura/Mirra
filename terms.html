@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Умови використання — Mirra</title>
+  <link rel="icon" href="assets/logo-120.png">
+  <script>
+    /* Applied before first paint; otherwise the wrong theme shows for a frame. */
+    (function () {
+      try {
+        var t = localStorage.getItem("mirra:theme");
+        if (!t) t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        document.documentElement.dataset.theme = t;
+      } catch (e) {
+        document.documentElement.dataset.theme = "light";
+      }
+    })();
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Karla:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/page.css">
+</head>
+<body class="doc">
+<div class="wrap">
+
+  <header>
+    <a class="back" href="index.html">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5 8 12l6.5 7"/></svg>
+      Головна
+    </a>
+    <button class="theme" type="button" data-theme-toggle aria-label="Змінити тему">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path class="moon" d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/>
+        <g class="sun">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/>
+        </g>
+      </svg>
+    </button>
+  </header>
+
+  <div class="doc-title">
+    <h1>Умови використання</h1>
+    <p class="stamp">Чинні з 1 серпня 2026 року</p>
+  </div>
+
+  <p>Користуючись Mirra, ви погоджуєтесь із написаним нижче. Документ короткий, бо застосунок простий.</p>
+
+  <section>
+  <h2>Що це таке</h2>
+
+  <p>Mirra — безкоштовний вебзастосунок для ведення обліку в малому бізнесі. Він працює з файлами у вашому акаунті Google і є зручнішим способом дивитися й редагувати те, що вже вам належить.</p>
+
+  <p>З часом Mirra працюватиме й з іншими сервісами Google, але завжди лише з тими й у тому обсязі, які ви окремо дозволите.</p>
+
+  <div class="point">
+    <p><strong>Mirra не є продуктом Google.</strong> Застосунок використовує відкриті інтерфейси сервісів Google, але створений незалежно й не пов'язаний із Google жодним чином.</p>
+  </div>
+
+  </section>
+
+  <section>
+  <h2>Ваші дані — ваша відповідальність</h2>
+
+  <p>Таблиця належить вам і лежить у вашому акаунті. Ви відповідаєте за те, що в неї записуєте.</p>
+
+  <p>Якщо ви ведете записи про інших людей — клієнтів, наприклад — саме ви є розпорядником цих даних. Переконайтеся, що маєте право їх зберігати, і не вносьте того, що вам не потрібно.</p>
+
+  </section>
+
+  <section>
+  <h2>Застосунок надається як є</h2>
+
+  <p>Mirra працює безкоштовно й без жодних гарантій. Ми не обіцяємо, що вона буде доступна постійно, не міститиме помилок або підійде саме для вашого завдання.</p>
+
+  <p><strong>Mirra не зберігає ваших даних і не є проміжною ланкою між вами та Google.</strong> Сервер, з якого ви відкриваєте застосунок, віддає лише його код; усе інше відбувається у вашому браузері.</p>
+
+  <p>Через це набір можливостей і їхня стабільність залежать від інфраструктури Google: якщо Google змінить свої інтерфейси або обмежить доступ, частина функцій може перестати працювати, і ми на це не впливаємо.</p>
+
+  <p>Ми також не гарантуємо безперервної доступності самого сайту. Оскільки код відкритий, ви завжди можете запустити Mirra самостійно — інструкція <a href="https://github.com/Anna-Gura/Mirra#readme" target="_blank" rel="noopener">на GitHub</a>.</p>
+
+  <p>Плани розвитку, описані на <a href="roadmap.html">окремій сторінці</a>, є орієнтовними. Терміни можуть змінюватися, а окремі можливості — не з'явитися взагалі.</p>
+
+  </section>
+
+  <section>
+  <h2>Про втрату даних</h2>
+
+  <p>Ми не несемо відповідальності за втрату або пошкодження записів. Але варто знати головне: <strong>ваші дані живуть у Google Таблицях, а не в Mirra</strong>, і Google веде історію змін.</p>
+
+  <p>Якщо щось пішло не так, відкрийте файл у Google Таблицях → Файл → Історія версій. Там можна повернутися до будь-якого попереднього стану. Це надійніша страховка, ніж будь-яка обіцянка з нашого боку.</p>
+
+  </section>
+
+  <section>
+  <h2>Код Mirra</h2>
+
+  <p>Вихідний код Mirra відкритий. Ви можете його читати, змінювати й запускати в себе — зокрема для власного бізнесу.</p>
+
+  <p>Чого не можна: продавати Mirra або її код, брати гроші за доступ, вбудовувати в платний продукт, а також видавати змінену версію за оригінал. Похідні роботи мають лишатися відкритими на тих самих умовах і зазначати авторство.</p>
+
+  <p>Повні умови — у <a href="https://github.com/Anna-Gura/Mirra/blob/main/LICENSE" target="_blank" rel="noopener">файлі ліцензії</a>.</p>
+
+  <h2>Чого не варто робити</h2>
+
+  <ul>
+    <li>Використовувати Mirra для незаконних дій</li>
+    <li>Намагатися отримати доступ до чужих файлів через застосунок</li>
+    <li>Створювати автоматизоване навантаження, яке вичерпує обмеження Google</li>
+  </ul>
+
+  </section>
+
+  <section>
+  <h2>Припинення користування</h2>
+
+  <p>Ви можете припинити будь-коли — просто заберіть доступ у <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">налаштуваннях акаунта Google</a>. Ваші таблиці залишаться на місці, бо вони й не були в Mirra.</p>
+
+  </section>
+
+  <section>
+  <h2>Зміни умов</h2>
+
+  <p>Якщо ці умови зміняться, дата зверху зміниться разом із ними. Подальше користування застосунком означатиме згоду з новою версією.</p>
+
+  </section>
+
+  <section>
+  <h2>Контакт</h2>
+
+  <p>Питання щодо цих умов: <a href="mailto:paintedfox.studio@gmail.com">paintedfox.studio@gmail.com</a></p>
+
+  </section>
+
+  <footer>
+    Mirra · <a href="privacy.html">Політика конфіденційності</a> · <a href="roadmap.html">Плани розвитку</a> · <a href="about.html">Про Mirra</a>
+  </footer>
+
+</div>
+
+<script type="module" src="js/page.js"></script>
+</body>
+</html>

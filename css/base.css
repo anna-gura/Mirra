@@ -1,0 +1,40 @@
+/* ============================================================
+   base.css — reset and document-level behaviour.
+   ============================================================ */
+
+*{
+  box-sizing:border-box;
+  -webkit-tap-highlight-color:transparent;
+}
+
+html,body{
+  margin:0;
+  padding:0;
+  height:100%;
+  overflow:hidden;          /* no scrolling anywhere; transforms only */
+  overscroll-behavior:none;
+  background:var(--bg);
+}
+
+button{
+  font-family:inherit;
+  cursor:pointer;
+  border:none;
+  background:none;
+  color:inherit;
+}
+
+:focus-visible{
+  outline:2px solid var(--soft);
+  outline-offset:3px;
+}
+
+/* an inert subtree must not catch the pointer either */
+[inert]{ pointer-events:none; }
+
+[hidden]{ display:none !important; }
+
+@media (prefers-reduced-motion:reduce){
+  *{ animation:none !important; }
+  .rail{ transition-duration:.01ms !important; }
+}

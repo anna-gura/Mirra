@@ -1,0 +1,382 @@
+/* ============================================================
+   components.css — self-contained interface pieces.
+   ============================================================ */
+
+/* ---------------- wordmark and its reflection ---------------- */
+.name,
+.mirror{
+  font-family:Marcellus,serif;
+  font-weight:400;
+  font-size:clamp(54px,16.5vw,96px);
+  line-height:1;
+  letter-spacing:.01em;
+}
+.name{ margin:0; }
+.mirror{
+  transform:scaleY(-1);
+  opacity:.09;
+  margin-top:10px;
+  user-select:none;
+  -webkit-mask-image:linear-gradient(to top,transparent 7%,#000 90%);
+          mask-image:linear-gradient(to top,transparent 7%,#000 90%);
+}
+
+/* ---------------- theme toggle ---------------- */
+.theme{
+  width:44px; height:44px;
+  border-radius:99px;
+  display:grid;
+  place-items:center;
+  opacity:.4;
+  transition:opacity .25s;
+}
+.theme:hover,
+.theme:focus-visible{ opacity:1; }
+.theme svg{
+  width:18px; height:18px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.4;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+[data-theme="light"] .moon{ display:block; }
+[data-theme="light"] .sun { display:none;  }
+[data-theme="dark"]  .moon{ display:none;  }
+[data-theme="dark"]  .sun { display:block; }
+
+/* ---------------- sign-in button ---------------- */
+.g{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:11px;
+  min-height:52px;
+  padding:0 26px;
+  margin-top:56px;
+  font-family:Karla,sans-serif;
+  font-weight:400;
+  font-size:15px;
+  white-space:nowrap;
+  background:var(--btn);
+  border:1px solid var(--line);
+  border-radius:99px;
+  transition:.2s;
+}
+.g:hover{ border-color:var(--soft); }
+.g[disabled]{ cursor:default; opacity:.45; }
+.g-icon{ display:flex; }
+.g-icon svg{ width:18px; height:18px; }
+
+/* icon swaps for the spinner while a request is in flight */
+.spinner{ display:none; }
+.g[data-busy] .g-icon{ display:none; }
+.g[data-busy] .spinner{
+  display:block;
+  width:17px; height:17px;
+  border:1.5px solid var(--line);
+  border-top-color:var(--soft);
+  border-radius:50%;
+  animation:spin .7s linear infinite;
+}
+@keyframes spin{ to{ transform:rotate(360deg) } }
+
+/* ---------------- quiet bottom button ---------------- */
+.more{
+  font-family:Karla,sans-serif;
+  font-size:12.5px;
+  letter-spacing:.11em;
+  color:var(--ink);
+  opacity:.45;
+  padding:15px 22px;
+  min-height:46px;
+  transition:opacity .3s;
+}
+.more:hover,
+.more:focus-visible{ opacity:.85; }
+
+/* ============================================================
+   BOTTOM AURORA
+   Blurred ellipses rather than radial gradients: a gaussian
+   falloff is smoother than any number of colour stops and does
+   not band on dark backgrounds.
+   ============================================================ */
+.aurora{
+  position:absolute;
+  left:0; right:0; bottom:0;
+  height:var(--aurora-h);
+  pointer-events:none;
+  z-index:1;
+  transition:opacity .55s ease;
+}
+.stage.is-open .aurora{ opacity:0; }
+
+/* bottom shading; only the light theme needs it */
+.aurora .deep{
+  position:absolute;
+  inset:0;
+  opacity:var(--deep-a);
+  background:linear-gradient(to bottom, rgba(0,0,0,0) 0%, var(--bg-deep) 100%);
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0%,
+    rgba(0,0,0,.15) 26%,rgba(0,0,0,.42) 48%,rgba(0,0,0,.7) 68%,
+    rgba(0,0,0,.88) 84%,#000 100%);
+          mask-image:linear-gradient(to bottom,transparent 0%,
+    rgba(0,0,0,.15) 26%,rgba(0,0,0,.42) 48%,rgba(0,0,0,.7) 68%,
+    rgba(0,0,0,.88) 84%,#000 100%);
+}
+
+.aurora .wide{
+  position:absolute;
+  left:50%; bottom:-16vh;
+  transform:translateX(-50%);
+  width:170%; height:30vh;
+  border-radius:50%;
+  background:rgba(var(--glow),var(--glow-b));
+  filter:blur(var(--aurora-blur-wide));
+  animation:breathe 11s ease-in-out infinite;
+}
+
+.aurora .hot{
+  position:absolute;
+  left:50%; bottom:-8vh;
+  transform:translateX(-50%);
+  width:min(58vw,320px); height:17vh;
+  border-radius:50%;
+  background:rgba(var(--glow),var(--glow-a));
+  filter:blur(var(--aurora-blur-hot));
+  animation:breathe 11s ease-in-out infinite reverse;
+}
+
+/* Grain finishes off any residual banding. It is masked to the
+   shape of the glow, so it cannot land as a rectangle. Delete
+   this block if it ever gets in the way. */
+.aurora::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  opacity:.03;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cfilter id='d'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23d)'/%3E%3C/svg%3E");
+  -webkit-mask-image:radial-gradient(110% 100% at 50% 104%,#000 0%,rgba(0,0,0,.4) 46%,transparent 82%);
+          mask-image:radial-gradient(110% 100% at 50% 104%,#000 0%,rgba(0,0,0,.4) 46%,transparent 82%);
+}
+
+@keyframes breathe{ 0%,100%{opacity:.82} 50%{opacity:1} }
+
+/* ============================================================
+   CRAFT PAPER / BLUEPRINT
+   ============================================================ */
+.paper{
+  color:var(--paper-ink);
+  background-color:var(--paper-1);
+  background-image:
+    repeating-linear-gradient(97deg,rgba(var(--fiber)) 0 1px,transparent 1px 6px),
+    linear-gradient(168deg,var(--paper-1) 0%,var(--paper-2) 100%);
+  transition:background-color var(--t-theme) ease, color var(--t-theme) ease;
+}
+
+/* paper tooth */
+.paper::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  opacity:var(--noise);
+  mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+}
+
+/* drafting grid; --grid switches it on in the dark theme only */
+.paper::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  opacity:var(--grid);
+  background-image:
+    repeating-linear-gradient(to right, rgba(var(--grid-c)) 0 1px,transparent 1px 27px),
+    repeating-linear-gradient(to bottom,rgba(var(--grid-c)) 0 1px,transparent 1px 27px);
+}
+
+/* ---------------- paper contents ---------------- */
+.ok{
+  font-family:Karla,sans-serif;
+  font-size:12.5px;
+  letter-spacing:.11em;
+  color:var(--paper-ink);
+  border:1px solid var(--paper-line);
+  border-radius:99px;
+  padding:0 24px;
+  min-height:44px;
+  opacity:.6;
+  transition:opacity .25s, background .25s;
+}
+.ok:hover,
+.ok:focus-visible{ opacity:1; background:rgba(var(--grid-c)); }
+[data-theme="light"] .ok:hover{ background:rgba(255,255,255,.28); }
+
+.in h2{
+  font-family:Marcellus,serif;
+  font-weight:400;
+  font-size:clamp(24px,6.4vw,30px);
+  letter-spacing:.01em;
+  margin:0 0 26px;
+}
+
+/* Body copy on the paper. Larger and calmer than the old numbered
+   steps: this panel now makes one point rather than listing three. */
+.pitch{
+  font-family:Karla,sans-serif;
+  font-weight:300;
+  font-size:clamp(14.5px,4vw,16.5px);
+  line-height:1.62;
+  margin:0 0 16px;
+}
+
+/* Same shape as the Google button on the cover, in the paper's colours.
+   Consistency matters more than novelty here: every button that moves
+   you forward in Mirra looks like this one. */
+.paper-cta{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:52px;
+  margin-top:14px;
+  padding:0 26px;
+  border:1px solid var(--paper-line);
+  border-radius:99px;
+  font-family:Karla,sans-serif;
+  font-weight:400;
+  font-size:15px;
+  color:var(--paper-ink);
+  text-decoration:none;
+  transition:background .2s, border-color .2s;
+}
+.paper-cta:hover,
+.paper-cta:focus-visible{ background:rgba(var(--grid-c)); }
+[data-theme="light"] .paper-cta:hover{ background:rgba(255,255,255,.3); }
+
+/* ---------------- narrow screens ---------------- */
+@media(max-width:400px){
+  .g{ font-size:14.5px; padding:0 21px; margin-top:46px; }
+}
+
+/* ============================================================
+   LOADING — the pause between signing in and the folder being ready
+   ============================================================ */
+.loading{
+  display:grid;
+  place-items:center;
+  background:var(--bg);
+  color:var(--ink);
+  padding:0 24px;
+  transition:background var(--t-theme) ease, color var(--t-theme) ease;
+}
+.loading-inner{ text-align:center; }
+.loading .name,
+.loading .mirror{ font-size:clamp(40px,12vw,68px); }
+.loading-note{
+  font-family:Karla,sans-serif;
+  font-weight:300;
+  font-size:13px;
+  letter-spacing:.14em;
+  color:var(--soft);
+  margin:30px 0 0;
+  animation:pulse 1.8s ease-in-out infinite;
+}
+@keyframes pulse{ 0%,100%{opacity:.45} 50%{opacity:1} }
+
+
+/* ============================================================
+   BACK
+   The same control on every screen but the hub, in the same corner,
+   with the same words. Testing found "← Клієнти" read as a caption
+   rather than a control: it named where you were, not what pressing
+   it would do.
+
+   Raised off the background rather than outlined into it. A border
+   alone is what the rest of the interface uses for surfaces that are
+   not pressable, so the shadow is doing the work of saying otherwise.
+   ============================================================ */
+.back{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  min-height:44px;
+  padding:0 18px 0 14px;
+  font-family:Karla,sans-serif;
+  font-weight:400;
+  font-size:14.5px;
+  color:var(--ink);
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:99px;
+  box-shadow:0 1px 2px rgba(0,0,0,.05), 0 4px 12px -6px rgba(0,0,0,.12);
+  cursor:pointer;
+  transition:border-color .2s, box-shadow .2s, transform .12s;
+}
+.back:hover{
+  border-color:var(--soft);
+  box-shadow:0 1px 2px rgba(0,0,0,.06), 0 6px 16px -6px rgba(0,0,0,.18);
+}
+.back:active{ transform:scale(.97); }
+
+.back svg{
+  width:16px;
+  height:16px;
+  flex:none;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.6;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
+/* Dark surfaces swallow a shadow, so the edge carries it there. */
+[data-theme="dark"] .back{
+  box-shadow:none;
+  border-color:#31312F;
+}
+[data-theme="dark"] .back:hover{ border-color:var(--soft); }
+
+/* ============================================================
+   NOTICE — one transient message pinned to the top
+
+   Three tones. Red is reserved for things that went wrong; a banner
+   confirming a spreadsheet was created has no business looking like a
+   warning, and once every message looks alarming none of them are read.
+   ============================================================ */
+.notice{
+  position:fixed;
+  top:max(14px,env(safe-area-inset-top));
+  left:50%;
+  transform:translateX(-50%);
+  z-index:100;
+  max-width:min(88vw,440px);
+  padding:12px 20px;
+  border-radius:12px;
+  font-family:Karla,sans-serif;
+  font-weight:400;
+  font-size:13.5px;
+  line-height:1.45;
+  text-align:center;
+  box-shadow:0 8px 26px -14px rgba(0,0,0,.5);
+
+  /* Neutral unless told otherwise, so a missing tone is quiet rather
+     than alarming. */
+  color:var(--note);
+  background:var(--note-bg);
+  border:1px solid var(--note-line);
+}
+
+.notice[data-tone="success"]{
+  color:var(--ok);
+  background:var(--ok-bg);
+  border-color:var(--ok-line);
+}
+
+.notice[data-tone="alert"]{
+  color:var(--alert);
+  background:var(--alert-bg);
+  border-color:var(--alert-line);
+}

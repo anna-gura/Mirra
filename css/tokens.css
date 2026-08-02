@@ -1,0 +1,113 @@
+/* ============================================================
+   tokens.css — single source of colours and tuning numbers.
+   Variables only. Edit the palette here and nowhere else.
+   ============================================================ */
+
+:root{
+  /* aurora geometry, shared by both themes */
+  --aurora-h: 24vh;
+  --aurora-blur-wide: 52px;
+  --aurora-blur-hot: 38px;
+
+  /* timings */
+  --t-reveal: 1s;
+  --t-theme: .45s;
+  --t-view: .5s;
+  --ease-reveal: cubic-bezier(.62,.02,.2,1);
+}
+
+/* ---------------- LIGHT ---------------- */
+[data-theme="light"]{
+  --bg:        #F1F1F0;
+  --bg-deep:   #EAE4D8;
+  --ink:       #151514;
+  --soft:      #83837F;
+  --line:      #E0E0DD;
+  --faint:     #A3A29D;
+  --btn:       #FFFFFF;
+  --surface:   #FFFFFF;
+
+  /* aurora — warm incandescent light, roughly 2700K */
+  --glow:      255,186,108;
+  --glow-a:    .46;   /* bright pool under the caption */
+  --glow-b:    .2;    /* diffuse spill */
+  --deep-a:    .85;   /* bottom shading; gold needs something to sit on */
+
+  /* craft paper */
+  --paper-1:    #C7AD87;
+  --paper-2:    #BCA079;
+  --paper-ink:  #382C1D;
+  --paper-soft: #6E5B41;
+  --paper-line: #A98D66;
+  --fiber:      255,255,255,.05;
+  --noise:      .5;
+  --grid:       0;            /* no drafting grid on craft paper */
+  --grid-c:     0,0,0,0;
+
+  /* Messages. Three tones, because a red banner saying a spreadsheet
+     was created reads as a failure — and once every message looks like
+     an error, none of them get read. */
+  --note:       #3D3D3A;
+  --note-bg:    #EDEDEA;
+  --note-line:  #DFDFDA;
+
+  --ok:         #2F5D45;
+  --ok-bg:      #E9F1EC;
+  --ok-line:    #CBDFD3;
+
+  --alert:      #8C2F2F;
+  --alert-bg:   #F8ECEC;
+  --alert-line: #EBD3D3;
+
+  /* Destructive actions. Muted on purpose: red here has to say "this
+     one is different" without turning the corner of a card into a
+     warning sign. */
+  --danger:      #A85A5A;
+  --danger-line: #DEC4C4;
+  --danger-bg:   #F5EAEA;
+}
+
+/* ---------------- DARK ---------------- */
+[data-theme="dark"]{
+  --bg:        #121212;
+  --bg-deep:   #090909;
+  --ink:       #F0F0EE;
+  --soft:      #7E7E7A;
+  --line:      #212120;
+  --faint:     #5E5E5A;
+  --btn:       #1A1A19;
+  --surface:   #191918;
+
+  /* aurora — plain white */
+  --glow:      255,255,255;
+  --glow-a:    .17;
+  --glow-b:    .075;
+  --deep-a:    0;     /* on near-black it adds nothing and bands */
+
+  /* blueprint — dark drafting paper */
+  --paper-1:    #15293C;
+  --paper-2:    #0F1F2E;
+  --paper-ink:  #DBE7F3;
+  --paper-soft: #8DA6BD;
+  --paper-line: #2B4560;
+  --fiber:      190,220,255,.035;
+  --noise:      .28;
+  --grid:       .055;
+  --grid-c:     206,228,250,.8;
+
+  --note:       #DCDCD8;
+  --note-bg:    #232322;
+  --note-line:  #33332F;
+
+  --ok:         #9FCBB2;
+  --ok-bg:      #1A2420;
+  --ok-line:    #2C3D34;
+
+  --alert:      #E2A0A0;
+  --alert-bg:   #2A1A1A;
+  --alert-line: #3D2828;
+
+  --danger:      #C98F8F;
+  --danger-line: #4A3535;
+  --danger-bg:   #271D1D;
+}

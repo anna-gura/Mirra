@@ -1,0 +1,209 @@
+/* ============================================================
+   chooser.css — the fork between opening and creating.
+
+   Two routes of equal weight, so neither is styled as the
+   obvious one: same card, same size, separated by a divider
+   rather than by hierarchy.
+   ============================================================ */
+
+.chooser{
+  display:grid;
+  grid-template-rows:auto 1fr auto;
+  background:var(--bg);
+  color:var(--ink);
+  transition:background var(--t-theme) ease, color var(--t-theme) ease;
+}
+
+/* Back on the left, theme on the right — the same corners as every
+   other screen. Where the way out lives is the one thing an interface
+   may not move around: people reach for it without looking. */
+.ch-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:max(14px,env(safe-area-inset-top)) 18px 0;
+}
+
+.ch-body{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:0 24px;
+  min-height:0;
+}
+
+.ch-inner{
+  width:100%;
+  max-width:380px;
+}
+
+.ch-title{
+  font-family:Marcellus,serif;
+  font-weight:400;
+  font-size:clamp(24px,6.6vw,32px);
+  letter-spacing:.01em;
+  text-align:center;
+  margin:0 0 30px;
+}
+
+/* ---------------- action card ---------------- */
+/* Rounded hard, and one of them filled.
+   Testing found that a card with the same border as everything else
+   around it does not read as pressable to someone whose experience of
+   software is mostly social apps — where anything you tap is a pill or
+   a filled block. The shape is doing the explaining. */
+.action{
+  position:relative;
+  display:block;
+  width:100%;
+  text-align:left;
+  padding:18px 24px;
+  border:1px solid var(--line);
+  border-radius:22px;
+  background:var(--surface);
+  cursor:pointer;
+  transition:border-color .2s, background .2s, transform .12s;
+}
+.action:hover{ border-color:var(--soft); }
+.action:active{ transform:scale(.985); }
+.action[disabled]{ cursor:default; opacity:.5; }
+
+/* The primary route is filled: with two options of equal weight people
+   hesitate, and opening a sheet they already have is the commoner
+   errand of the two. */
+.action-open{
+  background:var(--ink);
+  border-color:var(--ink);
+}
+.action-open .action-name{ color:var(--surface); }
+.action-open .action-hint{ color:var(--surface); opacity:.62; }
+.action-open:hover{ opacity:.9; border-color:var(--ink); }
+
+.action-create{ border-width:1.5px; }
+.action-create:hover{ background:var(--bg); }
+
+.action-name{
+  display:block;
+  font-family:Karla,sans-serif;
+  font-weight:500;
+  font-size:15px;
+  color:var(--ink);
+}
+.action-hint{
+  display:block;
+  font-family:Karla,sans-serif;
+  font-weight:300;
+  font-size:12.5px;
+  line-height:1.45;
+  color:var(--soft);
+  margin-top:3px;
+}
+
+/* the spinner replaces nothing; it sits in the corner while busy */
+.action .spinner{ display:none; }
+.action[data-busy] .spinner{
+  display:block;
+  position:absolute;
+  top:50%; right:18px;
+  margin-top:-8px;
+  width:16px; height:16px;
+  border:1.5px solid var(--line);
+  border-top-color:var(--soft);
+  border-radius:50%;
+  animation:spin .7s linear infinite;
+}
+
+/* ---------------- divider ---------------- */
+.ch-or{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  margin:22px 0;
+  color:var(--soft);
+}
+.ch-or::before,
+.ch-or::after{
+  content:"";
+  flex:1;
+  height:1px;
+  background:var(--line);
+}
+.ch-or span{
+  font-family:Karla,sans-serif;
+  font-weight:300;
+  font-size:12px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  opacity:.8;
+}
+
+
+/* Groups the name field with the button that uses it, so the pair
+   reads as one action rather than two unrelated controls. */
+.ch-new{ margin-top:2px; }
+
+/* ---------------- name field ---------------- */
+.field{ display:block; margin-bottom:14px; }
+
+.field-label{
+  display:block;
+  font-family:Karla,sans-serif;
+  font-weight:300;
+  font-size:11.5px;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:var(--soft);
+  margin-bottom:8px;
+  padding-left:2px;
+}
+
+.field-input{
+  width:100%;
+  min-height:48px;
+  padding:0 16px;
+  font-family:Karla,sans-serif;
+  font-weight:400;
+  font-size:15px;          /* below 16px iOS zooms the page on focus */
+  color:var(--ink);
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:10px;
+  transition:border-color .2s;
+}
+.field-input:hover{ border-color:var(--soft); }
+.field-input:focus{ outline:none; border-color:var(--ink); }
+.field-input:focus-visible{ outline:2px solid var(--soft); outline-offset:2px; }
+.field-input::placeholder{ color:var(--faint); }
+
+/* An empty field looks the same as a field nobody has reached yet, so
+   the one waiting for input says so — a ring rather than a colour,
+   since colour alone is invisible to some readers. */
+.field-input:focus{
+  box-shadow:0 0 0 3px rgba(128,128,128,.12);
+}
+
+/* ---------------- error ---------------- */
+.field-input.is-invalid{
+  border-color:var(--danger);
+  background:var(--danger-bg);
+}
+.field-input.is-invalid:focus{
+  box-shadow:0 0 0 3px rgba(168,90,90,.16);
+}
+
+.field-error{
+  display:block;
+  margin:7px 0 0;
+  padding-left:2px;
+  font-family:Karla,sans-serif;
+  font-weight:300;
+  font-size:12.5px;
+  color:var(--danger);
+}
+
+/* ---------------- bottom bar ---------------- */
+.ch-foot{
+  display:flex;
+  justify-content:center;
+  padding:0 20px max(18px,env(safe-area-inset-bottom));
+}

@@ -1,0 +1,113 @@
+/* ============================================================
+   layout.css — structural frame.
+
+   Top level holds sibling views; only one is visible at a time.
+   Inside the landing view two screens live on a single 200dvh
+   rail, and revealing slides the rail by exactly one screen.
+   ============================================================ */
+
+/* ---------------- view switching ---------------- */
+.view{
+  position:fixed;
+  inset:0;
+  opacity:0;
+  visibility:hidden;
+  transition:opacity var(--t-view) ease, visibility 0s linear var(--t-view);
+}
+.view.is-visible{
+  opacity:1;
+  visibility:visible;
+  transition:opacity var(--t-view) ease, visibility 0s;
+}
+
+/* ---------------- landing ---------------- */
+.stage{
+  overflow:hidden;
+  background:var(--bg);
+}
+
+.rail{
+  position:absolute;
+  left:0; right:0; top:0;
+  height:200dvh;
+  transition:transform var(--t-reveal) var(--ease-reveal);
+  will-change:transform;
+}
+.stage.is-open .rail{ transform:translateY(-100dvh); }
+
+.screen{
+  position:absolute;
+  left:0; right:0;
+  height:100vh;
+  height:100dvh;
+}
+
+/* screen 1 */
+.main{
+  top:0;
+  display:grid;
+  grid-template-rows:auto 1fr auto;
+  background:var(--bg);
+  color:var(--ink);
+  transition:background var(--t-theme) ease, color var(--t-theme) ease;
+}
+
+.top{
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+  padding:max(14px,env(safe-area-inset-top)) 18px 0;
+  position:relative;
+  z-index:3;
+}
+
+.core{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:0 24px;
+  text-align:center;
+  min-height:0;
+  position:relative;
+  z-index:3;
+}
+
+.foot{
+  display:flex;
+  justify-content:center;
+  padding:0 20px max(18px,env(safe-area-inset-bottom));
+  position:relative;
+  z-index:3;
+}
+
+/* screen 2 */
+.paper{ top:100dvh; }
+
+.sheet{
+  position:relative;
+  z-index:2;
+  height:100%;
+  display:grid;
+  grid-template-rows:auto 1fr;
+}
+
+.head{
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+  padding:max(16px,env(safe-area-inset-top)) 20px 0;
+}
+
+.body{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:0 26px max(26px,env(safe-area-inset-bottom));
+  min-height:0;
+}
+
+.in{
+  width:100%;
+  max-width:400px;
+}

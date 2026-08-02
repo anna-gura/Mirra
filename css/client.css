@@ -1,0 +1,356 @@
+/* ============================================================
+   client.css — one person's card.
+
+   Name, phone, two contact blocks. Everything else is folded away:
+   the point of the card is the two or three things done a dozen
+   times a day, not a complete rendering of the row.
+   ============================================================ */
+
+.client{
+  display:grid;
+  grid-template-rows:auto 1fr auto;
+  background:var(--bg);
+  color:var(--ink);
+  transition:background var(--t-theme) ease, color var(--t-theme) ease;
+}
+
+.cd-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:max(14px,env(safe-area-inset-top)) 18px 0;
+}
+
+.cd-body{
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+  padding:0 22px;
+  min-height:0;
+}
+
+.cd-inner{
+  max-width:460px;
+  margin:0 auto;
+  padding-bottom:30px;
+}
+
+/* ---------------- identity ---------------- */
+.cd-name{
+  font-family:Marcellus,serif;
+  font-weight:400;
+  font-size:clamp(28px,7.4vw,38px);
+  line-height:1.1;
+  letter-spacing:.01em;
+  text-align:center;
+  margin:10px 0 6px;
+  overflow-wrap:anywhere;
+}
+
+.cd-phone{
+  font-family:Karla,sans-serif;
+  font-weight:300;
+  font-size:15px;
+  color:var(--soft);
+  text-align:center;
+  margin:0 0 26px;
+  min-height:22px;
+}
+
+/* ---------------- actions ---------------- */
+.cd-acts{
+  display:flex;
+  justify-content:center;
+  gap:12px;
+  margin-bottom:30px;
+}
+
+.cd-act{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:8px;
+  width:88px;
+  padding:15px 0;
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:var(--surface);
+  color:var(--ink);
+  text-decoration:none;
+  cursor:pointer;
+  transition:border-color .2s, transform .12s;
+}
+.cd-act:hover{ border-color:var(--soft); }
+.cd-act:active{ transform:scale(.97); }
+
+.cd-act svg{
+  width:21px;
+  height:21px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.5;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.cd-act span{
+  font-family:Karla,sans-serif;
+  font-weight:400;
+  font-size:12px;
+}
+
+/* Dashed and muted: not ready, and saying so without a paragraph of
+   explanation. The icon still teaches the shape of the app. */
+.cd-act.is-soon,
+.cd-act.is-off{
+  border-style:dashed;
+  background:transparent;
+  color:var(--soft);
+  cursor:default;
+  pointer-events:none;
+}
+.cd-act.is-soon svg,
+.cd-act.is-off svg{ opacity:.65; }
+.cd-act.is-soon span,
+.cd-act.is-off span{ font-weight:300; }
+
+.cd-act em{
+  position:absolute;
+  bottom:-19px;
+  left:0;
+  right:0;
+  font-style:normal;
+  font-family:Karla,sans-serif;
+  font-weight:300;
+  font-size:10px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--faint);
+  text-align:center;
+}
+
+/* ---------------- folding rows ---------------- */
+.cd-line{ border-top:1px solid var(--line); }
+
+.cd-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  width:100%;
+  min-height:64px;
+  padding:15px 2px;
+  text-align:left;
+  background:none;
+  border:none;
+  color:var(--ink);
+  cursor:pointer;
+}
+
+.cd-row-text{ display:block; }
+
+.cd-label{
+  display:block;
+  font-family:Karla,sans-serif;
+  font-weight:300;
+  font-size:11.5px;
+  letter-spacing:.15em;
+  text-transform:uppercase;
+  color:var(--soft);
+  margin-bottom:3px;
+}
+
+.cd-value{
+  display:block;
+  font-family:Karla,sans-serif;
+  font-weight:400;
+  font-size:16px;
+}
+
+.cd-chev{
+  width:8px;
+  height:8px;
+  flex:none;
+  border-right:1.4px solid var(--soft);
+  border-bottom:1.4px solid var(--soft);
+  transform:rotate(45deg);
+  opacity:.55;
+  transition:transform .25s, opacity .25s;
+}
+.cd-row:hover .cd-chev{ opacity:1; }
+[aria-expanded="true"] .cd-chev{ transform:rotate(-135deg); }
+
+/* Height is animated from a measured value: auto is not an animatable
+   length, so the panel is measured and set explicitly. */
+.cd-fold{
+  overflow:hidden;
+  transition:height .28s cubic-bezier(.4,0,.2,1);
+}
+.cd-fold-inner{ padding:0 2px 16px; }
+
+/* ---------------- profile links ---------------- */
+.cd-profile{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  min-height:52px;
+  padding:11px 14px;
+  margin-bottom:8px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--surface);
+  font-family:Karla,sans-serif;
+  text-decoration:none;
+  color:var(--ink);
+  transition:border-color .2s;
+}
+.cd-profile:last-child{ margin-bottom:0; }
+.cd-profile:hover{ border-color:var(--soft); }
+
+.cd-profile-net{
+  font-weight:300;
+  font-size:12.5px;
+  color:var(--soft);
+  display:block;
+  margin-bottom:2px;
+}
+.cd-profile-handle{
+  font-weight:400;
+  font-size:15.5px;
+  overflow-wrap:anywhere;
+}
+
+/* An arrow leaving the box: the row opens something outside Mirra,
+   and that is worth saying before the tap rather than after. */
+.cd-profile-go{
+  width:15px;
+  height:15px;
+  flex:none;
+  fill:none;
+  stroke:var(--soft);
+  stroke-width:1.6;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  opacity:.7;
+}
+.cd-profile:hover .cd-profile-go{ opacity:1; }
+
+/* Entries whose network Mirra does not recognise. Kept visible, since
+   the user typed them on purpose, but plainly not a link. */
+.cd-profile-plain{
+  display:block;
+  padding:13px 14px;
+  margin-bottom:8px;
+  border:1px dashed var(--line);
+  border-radius:12px;
+  font-family:Karla,sans-serif;
+  font-weight:300;
+  font-size:15px;
+  color:var(--soft);
+  overflow-wrap:anywhere;
+}
+
+.cd-none{
+  font-family:Karla,sans-serif;
+  font-weight:300;
+  font-size:14.5px;
+  color:var(--soft);
+  margin:0;
+  padding:4px 2px 8px;
+}
+
+/* ---------------- extra fields ---------------- */
+.cd-extra{ padding-top:6px; }
+
+.cd-field{
+  padding:13px 2px;
+  border-bottom:1px solid var(--line);
+}
+.cd-field:last-child{ border-bottom:none; }
+
+.cd-field-label{
+  display:block;
+  font-family:Karla,sans-serif;
+  font-weight:300;
+  font-size:11.5px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--soft);
+  margin-bottom:4px;
+}
+.cd-field-value{
+  font-family:Karla,sans-serif;
+  font-weight:400;
+  font-size:15.5px;
+  line-height:1.55;
+  overflow-wrap:anywhere;
+}
+
+/* ---------------- more ---------------- */
+.cd-more{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:9px;
+  width:100%;
+  min-height:56px;
+  padding:16px 2px;
+  background:none;
+  border:none;
+  cursor:pointer;
+  font-family:Karla,sans-serif;
+  font-weight:400;
+  font-size:14.5px;
+  color:var(--soft);
+  transition:color .2s;
+}
+.cd-more:hover{ color:var(--ink); }
+
+.cd-arrow{
+  display:flex;
+  transition:transform .28s cubic-bezier(.4,0,.2,1);
+}
+.cd-arrow svg{
+  width:17px;
+  height:17px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.5;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+/* Flipping the same arrow rather than swapping in a second one: the
+   rotation is what says the panel closes again. */
+[aria-expanded="true"] .cd-arrow{ transform:rotate(180deg); }
+
+/* ---------------- bottom bar ---------------- */
+.cd-foot{
+  display:flex;
+  justify-content:center;
+  padding:0 20px max(18px,env(safe-area-inset-bottom));
+}
+
+@media(max-width:400px){
+  .cd-act{ width:80px; padding:13px 0; }
+  .cd-row{ min-height:60px; }
+}
+
+/* A date reads as one phrase, so it wraps as one and the parts keep
+   their spacing when it does. */
+.cd-date{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:baseline;
+  gap:0 6px;
+}
+.cd-weekday{
+  font-weight:300;
+  color:var(--soft);
+}
+.cd-year{
+  font-size:.78em;
+  font-weight:300;
+  color:var(--faint);
+  letter-spacing:.02em;
+}

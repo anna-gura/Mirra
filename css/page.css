@@ -1,0 +1,334 @@
+/* ============================================================
+   page.css — the standalone pages: about, privacy, terms.
+
+   Theme comes from data-theme on <html>, set by ThemeManager, so
+   the choice is shared with the app and survives a reload. An
+   inline script in each page applies it before first paint;
+   without that the wrong theme flashes for a frame.
+   ============================================================ */
+
+[data-theme="light"]{
+  --bg:#F1F1F0;
+  --ink:#151514;
+  --soft:#6E6E6A;
+  --faint:#8E8E89;
+  --line:#DEDEDB;
+  --surface:#FFFFFF;
+  --chip:#FFFFFF;
+}
+
+[data-theme="dark"]{
+  --bg:#121212;
+  --ink:#F0F0EE;
+  --soft:#95948F;
+  --faint:#77766F;
+  --line:#242423;
+  --surface:#191918;
+  --chip:#1B1B1A;
+}
+
+*{ box-sizing:border-box; }
+
+body{
+  margin:0;
+  padding:0 24px 90px;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:Karla,system-ui,sans-serif;
+  font-weight:300;
+  font-size:17px;
+  line-height:1.7;
+  -webkit-font-smoothing:antialiased;
+  transition:background .35s ease, color .35s ease;
+}
+
+.wrap{ max-width:640px; margin:0 auto; }
+
+/* ---------------- masthead ---------------- */
+
+/* Back on the left, theme on the right — the same corners as every
+   screen inside the app. Where the way out lives is the one thing an
+   interface may not move around: people reach for it without looking. */
+header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:13px;
+  padding:26px 0 0;
+}
+
+.back{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  min-height:44px;
+  padding:0 18px 0 14px;
+  font-family:Karla,sans-serif;
+  font-weight:400;
+  font-size:14.5px;
+  color:var(--ink);
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:99px;
+  box-shadow:0 1px 2px rgba(0,0,0,.05), 0 4px 12px -6px rgba(0,0,0,.12);
+  text-decoration:none;
+  cursor:pointer;
+  transition:border-color .2s, box-shadow .2s, transform .12s;
+}
+.back:hover{
+  color:var(--ink);
+  border-color:var(--soft);
+  text-decoration:none;
+  box-shadow:0 1px 2px rgba(0,0,0,.06), 0 6px 16px -6px rgba(0,0,0,.18);
+}
+.back:active{ transform:scale(.97); }
+
+.back svg{
+  width:16px;
+  height:16px;
+  flex:none;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.6;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
+/* Dark surfaces swallow a shadow, so the edge carries it there. */
+[data-theme="dark"] .back{
+  box-shadow:none;
+  border-color:#31312F;
+}
+[data-theme="dark"] .back:hover{ border-color:var(--soft); }
+
+.theme{
+  width:42px; height:42px;
+  border:none; background:none; color:inherit;
+  border-radius:99px;
+  display:grid; place-items:center;
+  cursor:pointer;
+  opacity:.42;
+  transition:opacity .25s;
+}
+.theme:hover, .theme:focus-visible{ opacity:1; }
+.theme svg{
+  width:18px; height:18px;
+  fill:none; stroke:currentColor; stroke-width:1.4;
+  stroke-linecap:round; stroke-linejoin:round;
+}
+[data-theme="light"] .moon{ display:block; }
+[data-theme="light"] .sun { display:none;  }
+[data-theme="dark"]  .moon{ display:none;  }
+[data-theme="dark"]  .sun { display:block; }
+
+/* ---------------- hero ---------------- */
+.hero{ padding:74px 0 12px; }
+.hero .cta{ margin-top:32px; }
+
+h1{
+  font-family:Marcellus,Georgia,serif;
+  font-weight:400;
+  font-size:clamp(44px,11vw,72px);
+  line-height:1;
+  letter-spacing:.01em;
+  margin:0 0 26px;
+}
+
+.lead{
+  font-size:clamp(20px,4.4vw,25px);
+  font-weight:300;
+  line-height:1.45;
+  margin:0 0 14px;
+}
+.lead-sub{
+  font-size:clamp(16px,3.6vw,18px);
+  color:var(--soft);
+  margin:0;
+}
+
+/* ---------------- sections ---------------- */
+section{ padding:56px 0 0; }
+
+h2{
+  font-family:Marcellus,Georgia,serif;
+  font-weight:400;
+  font-size:clamp(23px,5vw,29px);
+  line-height:1.25;
+  letter-spacing:.01em;
+  margin:0 0 20px;
+}
+
+p{ margin:0 0 18px; }
+p:last-child{ margin-bottom:0; }
+
+strong{ font-weight:500; }
+
+a{
+  color:inherit;
+  text-decoration:underline;
+  text-decoration-thickness:1px;
+  text-decoration-color:var(--line);
+  text-underline-offset:4px;
+  transition:text-decoration-color .2s;
+}
+a:hover{ text-decoration-color:currentColor; }
+
+/* ---------------- feature list ---------------- */
+.rows{ margin:0; padding:0; list-style:none; }
+.rows li{
+  padding:20px 0;
+  border-top:1px solid var(--line);
+}
+.rows li:last-child{ border-bottom:1px solid var(--line); }
+.rows b{
+  display:block;
+  font-weight:500;
+  font-size:17px;
+  margin-bottom:3px;
+}
+.rows span{
+  display:block;
+  color:var(--soft);
+  font-size:15.5px;
+  line-height:1.6;
+}
+
+/* A statement set in body type, only bolder — same weight and size as
+   a feature heading. Reads as emphasis, not as another heading level. */
+.claim{
+  font-weight:500;
+  font-size:17px;
+  margin:0 0 14px;
+}
+
+/* a line worth pausing on */
+.pull{
+  font-family:Marcellus,Georgia,serif;
+  font-size:clamp(22px,5vw,28px);
+  line-height:1.35;
+  margin:0 0 20px;
+}
+
+/* A quiet remark that follows a list without competing with it. */
+.aside{
+  margin:24px 0 0;
+  color:var(--soft);
+  font-size:16px;
+  line-height:1.65;
+}
+
+/* A claim worth setting apart from the paragraphs around it. */
+.point{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:20px 22px;
+  margin:0 0 20px;
+}
+.point p:last-child{ margin-bottom:0; }
+
+.note{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:22px 24px;
+  margin:0;
+}
+.note p:last-child{ margin-bottom:0; }
+
+/* ---------------- call to action ---------------- */
+.cta{
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  min-height:54px;
+  padding:0 28px;
+  margin-top:8px;
+  border:1px solid var(--line);
+  border-radius:99px;
+  background:var(--surface);
+  font-size:17px;
+  text-decoration:none;
+  transition:border-color .2s;
+}
+.cta:hover{ border-color:var(--soft); text-decoration:none; }
+
+/* ---------------- document pages ---------------- */
+.doc-title{ padding:56px 0 0; }
+.doc-title h1{ font-size:clamp(30px,6.5vw,42px); margin-bottom:8px; }
+.stamp{ font-size:14px; color:var(--faint); margin:0; }
+
+.doc section{ padding:40px 0 0; }
+.doc h2{ font-size:clamp(20px,4.4vw,24px); margin-bottom:12px; }
+.doc ul{ margin:0 0 18px; padding-left:22px; }
+.doc li{ margin-bottom:10px; }
+
+/* ---------------- footer ---------------- */
+footer{
+  margin-top:72px;
+  padding-top:22px;
+  border-top:1px solid var(--line);
+  font-size:13.5px;
+  line-height:1.9;
+  color:var(--faint);
+}
+footer a{ color:var(--soft); text-decoration-color:transparent; }
+footer a:hover{ color:var(--ink); text-decoration-color:var(--line); }
+
+/* ============================================================
+   ROADMAP
+   Version numbers set beside the entries rather than inside them:
+   the eye should be able to run down the column of what is coming
+   without reading a number first.
+   ============================================================ */
+.rm-now{
+  display:flex;
+  gap:16px;
+  padding:20px 22px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:14px;
+}
+
+.rm-list{
+  list-style:none;
+  margin:0;
+  padding:0;
+  counter-reset:none;
+}
+.rm-list li{
+  display:flex;
+  gap:16px;
+  padding:18px 0;
+  border-top:1px solid var(--line);
+}
+.rm-list li:last-child{ border-bottom:1px solid var(--line); }
+
+.rm-ver{
+  flex:none;
+  width:38px;
+  padding-top:1px;
+  font-family:Marcellus,Georgia,serif;
+  font-size:15px;
+  color:var(--soft);
+  letter-spacing:.02em;
+}
+.rm-now .rm-ver{ color:var(--ink); }
+
+.rm-now b,
+.rm-list b{
+  display:block;
+  font-weight:500;
+  font-size:17px;
+  margin-bottom:3px;
+}
+.rm-now span:not(.rm-ver),
+.rm-list span:not(.rm-ver){
+  display:block;
+  font-size:15.5px;
+  line-height:1.6;
+  color:var(--soft);
+}
+
+/* The open end of the list, held apart from the items with dates. */
+.rm-more b{ color:var(--soft); }

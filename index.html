@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="uk" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="description" content="Mirra — зручний перегляд і редагування таблиці клієнтів із Google Диска.">
+  <title>Mirra</title>
+  <meta name="google-site-verification" content="uH2J-4VKAcDiEE0kQZOL1gIQak6KUfDMboTMo9XYfxI">
+
+  <!-- Applied before the first paint. ThemeManager arrives with the
+       modules, which is one paint too late: coming back from another
+       page in the dark theme, that gap is a flash of white. -->
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem("mirra:theme");
+        if (!t) t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        document.documentElement.dataset.theme = t;
+      } catch (e) {
+        document.documentElement.dataset.theme = "light";
+      }
+    })();
+  </script>
+  <link rel="icon" href="assets/logo-120.png">
+
+  <!-- Everything a browser needs before it will offer to install. -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+
+  <!-- Paints the system bars to match, so an installed app has no
+       stripe of the wrong colour at the top. -->
+  <meta name="theme-color" content="#F1F1F0" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)">
+
+  <!-- Superseded by the manifest, and still what older iOS reads. -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Mirra">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Karla:wght@300;400;500&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/chooser.css">
+  <link rel="stylesheet" href="css/hub.css">
+  <link rel="stylesheet" href="css/clients.css">
+  <link rel="stylesheet" href="css/client.css">
+  <link rel="stylesheet" href="css/form.css">
+  <link rel="stylesheet" href="css/dialog.css">
+  <link rel="stylesheet" href="css/install.css">
+</head>
+<body>
+
+<!-- Transient messages: errors, refusals, network problems -->
+<div class="notice" data-notice role="status" aria-live="polite" hidden></div>
+
+<!-- Asks before anything irreversible. Part of the shell rather than a
+     template: it belongs to no single screen and must be ready the
+     moment it is needed. -->
+<!-- Adding Mirra to a device. One sheet, two faces: a button where the
+     browser will do it, the steps where they must be followed by hand. -->
+<dialog class="install-sheet" data-install-sheet aria-labelledby="install-title">
+  <div class="install-panel">
+    <h2 class="install-title" id="install-title" data-install-title>Mirra як застосунок</h2>
+    <p class="install-lead">Відкриватиметься з головного екрана — без адресного рядка й вкладок.</p>
+
+    <!-- Only reached where the browser has no install dialog of its
+         own. Steps are filled in from the platform, since they differ
+         on every one and only one set is ever true. -->
+    <div data-install-steps></div>
+
+    <div class="install-actions">
+      <button class="install-never" type="button" data-install-never>Не пропонувати тут</button>
+      <button class="install-close" type="button" data-install-close>Закрити</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog class="confirm" data-confirm aria-labelledby="confirm-title">
+  <div class="confirm-panel">
+    <h2 class="confirm-title" id="confirm-title" data-confirm-title></h2>
+    <p class="confirm-message" data-confirm-message hidden></p>
+    <p class="confirm-note" data-confirm-note hidden></p>
+    <div class="confirm-actions">
+      <button class="confirm-cancel" type="button" data-confirm-no>Скасувати</button>
+      <button class="confirm-yes" type="button" data-confirm-yes>Так</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- ==================================================================
+     VIEW · LANDING
+     ================================================================== -->
+<div class="view stage is-visible" data-view="landing" data-stage>
+  <div class="rail">
+
+    <!-- screen 1 — cover -->
+    <section class="screen main" data-screen="main" aria-label="Головна">
+
+      <div class="top">
+        <button class="theme" type="button" data-theme-toggle aria-label="Змінити тему">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path class="moon" d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/>
+            <g class="sun">
+              <circle cx="12" cy="12" r="4"/>
+              <path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/>
+            </g>
+          </svg>
+        </button>
+      </div>
+
+      <div class="core">
+        <h1 class="name">Mirra</h1>
+        <div class="mirror" aria-hidden="true">Mirra</div>
+
+        <button class="g" type="button" data-signin>
+          <span class="g-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M23.06 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h6.19a5.29 5.29 0 0 1-2.3 3.47v2.88h3.72c2.17-2 3.45-4.94 3.45-8.36z"/>
+              <path fill="#34A853" d="M12 24c3.12 0 5.73-1.04 7.64-2.81l-3.72-2.88c-1.03.69-2.35 1.1-3.92 1.1-3.01 0-5.56-2.03-6.47-4.76H1.68v2.98A11.99 11.99 0 0 0 12 24z"/>
+              <path fill="#FBBC05" d="M5.53 14.65a7.2 7.2 0 0 1 0-4.6V7.07H1.68a12 12 0 0 0 0 10.77l3.85-2.99z"/>
+              <path fill="#EA4335" d="M12 4.75c1.7 0 3.22.58 4.42 1.72l3.3-3.3C17.73 1.2 15.12 0 12 0 7.4 0 3.42 2.64 1.68 6.49l3.85 2.98C6.44 6.78 8.99 4.75 12 4.75z"/>
+            </svg>
+          </span>
+          <span class="spinner" aria-hidden="true"></span>
+          <span data-signin-label>Увійти через Google</span>
+        </button>
+
+        <button class="install-line" type="button" data-install hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3v11M8 10.5l4 3.5 4-3.5"/>
+            <path d="M4 16.5v2.5h16v-2.5"/>
+          </svg>
+          Додати на головний екран
+        </button>
+      </div>
+
+      <div class="aurora" aria-hidden="true">
+        <div class="deep"></div>
+        <div class="wide"></div>
+        <div class="hot"></div>
+      </div>
+
+      <div class="foot">
+        <button class="more" type="button" data-reveal-open aria-expanded="false" aria-controls="about">
+          Хочу знати більше
+        </button>
+      </div>
+
+    </section>
+
+    <!-- screen 2 — explanation on craft paper -->
+    <section class="screen paper" id="about" data-screen="panel" aria-label="Як це працює">
+      <div class="sheet">
+
+        <div class="head">
+          <button class="ok" type="button" data-reveal-close>Зрозуміло</button>
+        </div>
+
+        <div class="body">
+          <div class="in">
+            <h2>Що це таке</h2>
+
+            <p class="pitch">Ваші записи про клієнтів живуть у зошиті, у нотатках телефона або в таблиці, яку незручно відкривати на ходу?</p>
+
+            <p class="pitch">Mirra показує їх зручно — з якого б пристрою ви не зайшли. Записи при цьому залишаються у вашій Google Таблиці.</p>
+
+            <a class="paper-cta" href="about.html">Навіщо вам Mirra</a>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<!-- Every other screen is fetched from views/ at startup. The cover
+     stays inline so the first paint never waits on a request. -->
+<div data-views></div>
+
+<script type="module" src="js/App.js"></script>
+</body>
+</html>

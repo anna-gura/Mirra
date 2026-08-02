@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Mirra — простий робочий простір для малого бізнесу</title>
+  <meta name="description" content="Mirra — простий робочий простір для малого бізнесу. Клієнти, записи й нагадування під рукою. Менше часу на рутину, більше на людей.">
+  <meta name="google-site-verification" content="uH2J-4VKAcDiEE0kQZOL1gIQak6KUfDMboTMo9XYfxI">
+  <link rel="icon" href="assets/logo-120.png">
+  <script>
+    /* Applied before first paint; otherwise the wrong theme shows for a frame. */
+    (function () {
+      try {
+        var t = localStorage.getItem("mirra:theme");
+        if (!t) t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        document.documentElement.dataset.theme = t;
+      } catch (e) {
+        document.documentElement.dataset.theme = "light";
+      }
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Karla:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/page.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <a class="back" href="index.html">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5 8 12l6.5 7"/></svg>
+      Головна
+    </a>
+    <button class="theme" type="button" data-theme-toggle aria-label="Змінити тему">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path class="moon" d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/>
+        <g class="sun">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/>
+        </g>
+      </svg>
+    </button>
+  </header>
+
+  <div class="hero">
+    <h1>Mirra</h1>
+    <p class="lead">Простий робочий простір для малого бізнесу.</p>
+    <p class="lead-sub">Менше часу на рутину — більше на клієнтів.</p>
+    <a class="cta" href="index.html">Відкрити Mirra →</a>
+  </div>
+
+  <section>
+    <h2>Головна думка</h2>
+
+    <p class="claim">Mirra існує, щоб ви працювали з людьми, а не з таблицями.</p>
+
+    <p>Робота з клієнтами складається з двох різних речей. Перша — власне робота: стрижка, урок, зйомка, розмова. Друга — усе навколо неї: записати, згадати, знайти, передзвонити, не забути.</p>
+
+    <p>Друга частина потрібна, але вона не має з'їдати вечори. Mirra робить так, щоб вона займала якнайменше часу.</p>
+  </section>
+
+  <section>
+    <h2>Для кого</h2>
+
+    <p class="claim">Для всіх, хто працює з людьми й веде записи про них.</p>
+
+    <p>Коли клієнтів стає більше, ніж вміщує пам'ять, потрібне місце, де все записано — і куди можна зазирнути будь-коли.</p>
+  </section>
+
+  <section>
+    <h2>Що вона вміє зараз</h2>
+
+    <ul class="rows">
+      <li>
+        <b>База клієнтів завжди під рукою</b>
+        <span>Не тільки за комп'ютером. Відкрили телефон — і всі записи перед вами.</span>
+      </li>
+      <li>
+        <b>Знайти потрібне за секунди</b>
+        <span>Почніть писати ім'я або номер — потрібна людина знайдеться одразу.</span>
+      </li>
+      <li>
+        <b>Подзвонити чи написати в один дотик</b>
+        <span>Просто з картки клієнта, без копіювання номерів.</span>
+      </li>
+      <li>
+        <b>Записати одразу</b>
+        <span>Клієнт ще перед вами — а запис уже внесений. Без «потім допишу».</span>
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Мінімум кліків</h2>
+
+    <p class="claim">Mirra не намагається вміти все. Вона ховає зайве.</p>
+
+    <p>Складні системи для бізнесу спершу вимагають, щоб ви їх вивчили. Заповнили поля, які вам не потрібні. Розібралися з розділами, у які ви ніколи не зайдете.</p>
+
+    <p>Тут навпаки. На екрані лише те, чим ви користуєтесь щодня — і воно за один-два дотики.</p>
+  </section>
+
+  <section>
+    <h2>Ваші записи залишаються вашими</h2>
+
+    <div class="note">
+      <p><strong>Ваші записи не проходять через Mirra.</strong> Вони йдуть із вашого пристрою напряму в Google — застосунок не є проміжною ланкою й нічого в себе не забирає.</p>
+      <p>Реєстрації теж немає: ви входите своїм акаунтом Google, а Mirra не заводить жодного облікового запису й не зберігає ваших даних.</p>
+    </div>
+
+    <p>Сайт, з якого ви відкриваєте Mirra, віддає лише сам застосунок — сторінки й код, однакові для всіх. Далі все відбувається у вашому браузері, між вами та Google.</p>
+
+    <p>Ваша таблиця залишається звичайним файлом на вашому Google Диску. Захочете відкрити її самі, за комп'ютером — усе на місці. Перестанете користуватися Mirra — записи нікуди не подінуться.</p>
+  </section>
+
+  <section>
+    <h2>Тільки те, що ви дозволили</h2>
+
+    <p>Mirra бачить <strong>лише ті файли, які ви самі їй відкрили</strong>. Решта вашого Диска для неї не існує — вона не знає, які там файли, і не може їх відкрити.</p>
+
+    <p>З часом Mirra працюватиме й з іншими сервісами Google — календарем, поштою, картами. Правило залишиться тим самим: <strong>найвужчий дозвіл із можливих і жодного зайвого</strong>. Кожен новий доступ ви даєте окремо й можете забрати будь-коли.</p>
+
+    <p>Подробиці — у <a href="privacy.html">політиці конфіденційності</a>.</p>
+  </section>
+
+  <section>
+    <h2>Скільки коштує</h2>
+    <p>Безкоштовно. Реєструватися теж не потрібно — ви входите своїм акаунтом Google.</p>
+  </section>
+
+  <section>
+    <h2>Що з'явиться далі</h2>
+
+    <p>Запис клієнтів у календарі, облік прибутку, маршрут до клієнта, готові шаблони повідомлень, нагадування про дні народження.</p>
+
+    <p class="aside">Mirra розвивається разом із користувачами.<br>
+    Ми додаємо та доопрацьовуємо функції на основі ваших побажань.</p>
+
+    <p style="margin-top:24px"><a class="cta" href="roadmap.html">Подивитися плани розвитку →</a></p>
+  </section>
+
+  <section>
+    <h2>Відкритий код</h2>
+
+    <p>Увесь код Mirra відкритий. Це означає дві речі.</p>
+
+    <p>По-перше, будь-хто може подивитися, що саме застосунок робить із даними — не повірити на слово, а перевірити. По-друге, Mirra можна запустити <strong>у себе</strong>: на власному комп'ютері чи сервері, під власним доменом, ні від кого не залежачи.</p>
+
+    <p>Як це зробити, описано в <a href="https://github.com/Anna-Gura/Mirra#readme" target="_blank" rel="noopener">інструкції на GitHub</a>.</p>
+  </section>
+
+  <section>
+    <p class="pull">Mirra економить час кожного дня.</p>
+    <a class="cta" href="index.html">Відкрити Mirra →</a>
+  </section>
+
+  <footer>
+    <a href="roadmap.html">Плани розвитку</a> ·
+    <a href="privacy.html">Політика конфіденційності</a> ·
+    <a href="terms.html">Умови використання</a> ·
+    <a href="https://github.com/Anna-Gura/Mirra#readme" target="_blank" rel="noopener">Технічний опис</a>
+    <br>
+    Mirra · Anna Gura · <a href="mailto:paintedfox.studio@gmail.com">paintedfox.studio@gmail.com</a>
+  </footer>
+
+</div>
+
+<script type="module" src="js/page.js"></script>
+</body>
+</html>
