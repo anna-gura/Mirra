@@ -12,7 +12,7 @@
  * replayed from one would fail in a way nobody could diagnose.
  */
 
-const VERSION = "mirra-v6";
+const VERSION = "mirra-v7";
 
 /**
  * Files the app is made of. Listed rather than discovered, because a
@@ -49,6 +49,7 @@ const SHELL = [
   "./views/client.tpl",
   "./views/client-form.tpl",
 
+  "./favicon.ico",
   "./assets/logo-120.png",
   "./assets/icon-192.png",
   "./assets/icon-512.png",

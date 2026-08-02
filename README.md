@@ -227,6 +227,20 @@ tell them.
 
 ---
 
+## Deploy checklist
+
+After moving to a new domain, four places need it:
+
+| Where | What |
+|---|---|
+| `robots.txt` | the `Sitemap:` line |
+| `sitemap.xml` | every `<loc>` |
+| Google Cloud → Clients | JavaScript origins and redirect URIs |
+| Google Cloud → API key | website restrictions |
+| Google Auth Platform → Branding | the three links and authorized domains |
+
+Everything else derives the address from wherever it is served.
+
 ## Templates
 
 Screens live in `views/*.tpl` and are fetched once at startup.

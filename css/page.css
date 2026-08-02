@@ -332,3 +332,15 @@ footer a:hover{ color:var(--ink); text-decoration-color:var(--line); }
 
 /* The open end of the list, held apart from the items with dates. */
 .rm-more b{ color:var(--soft); }
+
+/* An English summary sitting inside a Ukrainian page. Set apart so it
+   reads as a deliberate second voice rather than a translation someone
+   forgot to finish. */
+.en{
+  padding-top:52px;
+  border-top:1px solid var(--line);
+}
+.en h2{
+  font-size:clamp(20px,4.4vw,25px);
+  color:var(--soft);
+}
