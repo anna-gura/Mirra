@@ -1,5 +1,6 @@
 import { ScreenManager }        from "./core/ScreenManager.js";
 import { ViewLoader }           from "./core/ViewLoader.js";
+import { SiteMeta }             from "./core/SiteMeta.js";
 import { AuthServiceFactory }   from "./services/AuthServiceFactory.js";
 import { GoogleApiClient }      from "./services/GoogleApiClient.js";
 import { DriveRepository }      from "./services/DriveRepository.js";
@@ -84,6 +85,8 @@ class MirraApp {
 
   /** Builds everything and puts the first screen on. */
   async start() {
+    SiteMeta.apply();
+
     this.#notice  = new Notice();
     this.#confirm = new ConfirmDialog();
     this.#theme  = new ThemeManager().init();

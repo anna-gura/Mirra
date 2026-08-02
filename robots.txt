@@ -6,4 +6,7 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://REPLACE-WITH-YOUR-DOMAIN/sitemap.xml
+# The one place in the project that has to name the domain outright, and
+# only because the format allows nothing else. Sitemaps can also be
+# submitted directly in Google Search Console, which needs no file.
+Sitemap: https://mirra.pages.dev/sitemap.xml

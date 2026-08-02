@@ -2,31 +2,31 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 
   <url>
-    <loc>https://REPLACE-WITH-YOUR-DOMAIN/about.html</loc>
+    <loc>https://mirra.pages.dev/about.html</loc>
     <lastmod>2026-08-01</lastmod>
     <priority>1.0</priority>
   </url>
 
   <url>
-    <loc>https://REPLACE-WITH-YOUR-DOMAIN/</loc>
+    <loc>https://mirra.pages.dev/</loc>
     <lastmod>2026-08-01</lastmod>
     <priority>0.8</priority>
   </url>
 
   <url>
-    <loc>https://REPLACE-WITH-YOUR-DOMAIN/roadmap.html</loc>
+    <loc>https://mirra.pages.dev/roadmap.html</loc>
     <lastmod>2026-08-01</lastmod>
     <priority>0.6</priority>
   </url>
 
   <url>
-    <loc>https://REPLACE-WITH-YOUR-DOMAIN/privacy.html</loc>
+    <loc>https://mirra.pages.dev/privacy.html</loc>
     <lastmod>2026-08-01</lastmod>
     <priority>0.5</priority>
   </url>
 
   <url>
-    <loc>https://REPLACE-WITH-YOUR-DOMAIN/terms.html</loc>
+    <loc>https://mirra.pages.dev/terms.html</loc>
     <lastmod>2026-08-01</lastmod>
     <priority>0.5</priority>
   </url>

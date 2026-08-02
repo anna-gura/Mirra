@@ -12,7 +12,7 @@
  * replayed from one would fail in a way nobody could diagnose.
  */
 
-const VERSION = "mirra-v4";
+const VERSION = "mirra-v5";
 
 /**
  * Files the app is made of. Listed rather than discovered, because a
@@ -59,6 +59,7 @@ const SHELL = [
   "./js/core/ScreenManager.js",
   "./js/core/ScriptLoader.js",
   "./js/core/ViewLoader.js",
+  "./js/core/SiteMeta.js",
   "./js/domain/Client.js",
   "./js/domain/ClientDraft.js",
   "./js/domain/ClientList.js",

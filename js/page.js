@@ -1,4 +1,5 @@
 import { ThemeManager } from "./ui/ThemeManager.js";
+import { SiteMeta } from "./core/SiteMeta.js";
 
 /**
  * Bootstrap for the standalone pages.
@@ -8,3 +9,4 @@ import { ThemeManager } from "./ui/ThemeManager.js";
  * with — one key in storage, one behaviour.
  */
 new ThemeManager().init();
+SiteMeta.apply();
