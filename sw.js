@@ -12,7 +12,7 @@
  * replayed from one would fail in a way nobody could diagnose.
  */
 
-const VERSION = "mirra-v3";
+const VERSION = "mirra-v4";
 
 /**
  * Files the app is made of. Listed rather than discovered, because a
@@ -27,6 +27,8 @@ const SHELL = [
   "./privacy.html",
   "./terms.html",
   "./manifest.webmanifest",
+  "./sitemap.xml",
+  "./robots.txt",
 
   "./css/tokens.css",
   "./css/base.css",

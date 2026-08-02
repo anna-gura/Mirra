@@ -7,6 +7,27 @@
   <meta name="description" content="Mirra — простий робочий простір для малого бізнесу. Клієнти, записи й нагадування під рукою. Менше часу на рутину, більше на людей.">
   <meta name="google-site-verification" content="uH2J-4VKAcDiEE0kQZOL1gIQak6KUfDMboTMo9XYfxI">
   <link rel="icon" href="assets/logo-120.png">
+  <!-- Canonical address, so the same page reached by two paths is not
+       counted as two competing pages. -->
+  <link rel="canonical" href="https://REPLACE-WITH-YOUR-DOMAIN/about.html">
+
+  <!-- What a link to this page looks like when shared. Without these a
+       messenger shows a bare URL, which nobody clicks. -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Mirra">
+  <meta property="og:locale" content="uk_UA">
+  <meta property="og:title" content="Про Mirra — простий робочий простір для малого бізнесу">
+  <meta property="og:description" content="Mirra існує, щоб ви працювали з людьми, а не з таблицями. Клієнти під рукою, мінімум кліків, ваші дані залишаються вашими.">
+  <meta property="og:url" content="https://REPLACE-WITH-YOUR-DOMAIN/about.html">
+  <meta property="og:image" content="https://REPLACE-WITH-YOUR-DOMAIN/assets/social-preview.png">
+  <meta property="og:image:width" content="1280">
+  <meta property="og:image:height" content="640">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Про Mirra — простий робочий простір для малого бізнесу">
+  <meta name="twitter:description" content="Mirra існує, щоб ви працювали з людьми, а не з таблицями. Клієнти під рукою, мінімум кліків, ваші дані залишаються вашими.">
+  <meta name="twitter:image" content="https://REPLACE-WITH-YOUR-DOMAIN/assets/social-preview.png">
+
   <script>
     /* Applied before first paint; otherwise the wrong theme shows for a frame. */
     (function () {
@@ -23,6 +44,39 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Karla:wght@300;400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/page.css">
+  <!-- Structured data. This is what lets a search result show more
+       than a blue link: the name, that it is free, that it is an
+       application rather than an article. -->
+  <script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Mirra",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web",
+    "url": "https://REPLACE-WITH-YOUR-DOMAIN/",
+    "description": "Простий робочий простір для малого бізнесу: база клієнтів у власній Google Таблиці, без серверів і реєстрації.",
+    "inLanguage": "uk",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "author": {
+      "@type": "Person",
+      "name": "Anna Gura",
+      "url": "https://github.com/Anna-Gura"
+    },
+    "softwareVersion": "1.0.0",
+    "featureList": [
+      "База клієнтів із пошуком",
+      "Картка клієнта з дзвінком і повідомленнями",
+      "Соцмережі та месенджери",
+      "Робота офлайн і встановлення на пристрій"
+    ]
+  }
+  </script>
+
 </head>
 <body>
 <div class="wrap">

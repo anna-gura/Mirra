@@ -167,7 +167,26 @@ Pages, nginx. Three requirements:
 
 Then add the deployed origin to the Cloud Console lists from step 2.
 
-#### Deploying from GitHub without committing credentials
+#### Deploying with credentials kept out of the repository
+
+`build.sh` writes `js/credentials.js` from environment variables during
+the build. Set the build command to `bash build.sh` on any host that
+builds from a repository — Cloudflare Pages, Netlify, Vercel — and add
+three variables in its dashboard:
+
+```
+MIRRA_CLIENT_ID
+MIRRA_API_KEY
+MIRRA_APP_ID
+```
+
+Leave the output directory as the project root. There is nothing to
+compile; the script only writes one file.
+
+If a variable is missing the build fails with a message naming it,
+rather than publishing a site whose sign-in button quietly does nothing.
+
+#### GitHub Pages
 
 `.github/workflows/deploy.yml` publishes to GitHub Pages and writes
 `js/credentials.js` from repository secrets during the build. The

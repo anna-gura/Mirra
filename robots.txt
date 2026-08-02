@@ -1,0 +1,9 @@
+# Mirra — https://github.com/Anna-Gura/Mirra
+#
+# Everything here is public documentation. The application itself sits
+# behind a Google sign-in, so there is nothing private to keep out of.
+
+User-agent: *
+Allow: /
+
+Sitemap: https://REPLACE-WITH-YOUR-DOMAIN/sitemap.xml
