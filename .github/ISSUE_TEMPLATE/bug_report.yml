@@ -1,0 +1,67 @@
+name: Bug report
+description: Something does not work the way it should
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. A few details make a bug findable —
+        please fill in what you can, and skip anything that does not apply.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, and what you saw instead of what you expected.
+      placeholder: |
+        I tapped a client in the list and the card opened empty.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to reproduce it
+      description: The shortest path from opening Mirra to seeing the problem.
+      placeholder: |
+        1. Sign in
+        2. Open Клієнти
+        3. Tap any name
+    validations:
+      required: true
+
+  - type: textarea
+    id: console
+    attributes:
+      label: Console output
+      description: |
+        Open the developer tools (F12) and copy anything red from the
+        Console tab. This is usually the fastest way to a fix — the exact
+        text is far more useful than a screenshot of it.
+      render: text
+
+  - type: input
+    id: environment
+    attributes:
+      label: Browser and device
+      placeholder: Chrome 141 on Android 14 / Safari on iPhone 15
+    validations:
+      required: true
+
+  - type: dropdown
+    id: installed
+    attributes:
+      label: How were you using Mirra?
+      options:
+        - In a browser tab
+        - Installed on the home screen
+        - Both, same result
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        **Please do not include client data.** Names, phone numbers or
+        screenshots of a real client list are not needed to fix anything,
+        and they belong to the people they describe. Blur or replace them.
