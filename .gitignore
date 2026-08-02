@@ -1,0 +1,15 @@
+# Credentials live here and never in the repository.
+# Copy js/credentials.example.js to js/credentials.js and fill it in.
+js/credentials.js
+
+# Editor and OS noise
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# Nothing here is built, but keep these out if tooling ever arrives
+node_modules/
+dist/
+.env
+.env.*
