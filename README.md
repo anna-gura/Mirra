@@ -227,6 +227,18 @@ tell them.
 
 ---
 
+### A note on Wrangler deployments
+
+Cloudflare's Workers deployment publishes the whole working directory,
+including `.git`. Without `.assetsignore` the repository history is
+served at `/.git/` — public code either way, but it is precisely what
+automated scanners probe for, and it stops being harmless the moment
+anything private enters the tree.
+
+`.assetsignore` keeps that and the other development-only files out of
+the deployment. Anything added to the project that should not be public
+belongs in that list as well as in `.gitignore`.
+
 ## Deploy checklist
 
 After moving to a new domain, four places need it:
