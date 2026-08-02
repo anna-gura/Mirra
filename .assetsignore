@@ -1,0 +1,26 @@
+# Files that live in the repository but have no business being served.
+#
+# Wrangler publishes the whole working directory, which includes the git
+# metadata: without this, https://your-domain/.git/ hands out the entire
+# repository history to anyone who asks. Harmless for a public project,
+# but it is exactly what automated scanners probe for, and it would stop
+# being harmless the moment anything private landed in the tree.
+
+.git
+.git/**
+.github
+.github/**
+.vscode
+.vscode/**
+.wrangler
+.wrangler/**
+
+# Development-only files. They cost bandwidth and tell a scanner what
+# the project is built from, and no visitor ever needs them.
+build.sh
+.gitignore
+.assetsignore
+README.md
+LICENSE
+NOTICE
+js/credentials.example.js
