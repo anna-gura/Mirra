@@ -1,0 +1,55 @@
+name: Feature request
+description: Suggest something Mirra should do
+labels: ["idea"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Mirra collects nothing, so it cannot see what people need or where
+        they get stuck. Suggestions are the only signal there is — thank you
+        for sending one.
+
+        Worth a glance first: the [roadmap](../../blob/main/ROADMAP.md) may
+        already list it.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is taking too long today
+      description: |
+        The situation rather than the solution. What are you doing when you
+        wish Mirra did something it does not?
+      placeholder: |
+        Every evening I write the same reminder to tomorrow's clients,
+        one by one.
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you have in mind
+      description: Optional. If you already picture how it might work, describe it.
+
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: How often does this come up?
+      description: |
+        This decides more than anything else. Mirra's whole point is that
+        routine work takes as little time as possible, so something done
+        daily outranks something done twice a year.
+      options:
+        - Several times a day
+        - Daily
+        - Weekly
+        - Occasionally
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        Not everything suggested will be built. Mirra stays useful by
+        keeping the screen empty of what most people never touch, so an
+        idea being declined is not a judgement on the idea.
