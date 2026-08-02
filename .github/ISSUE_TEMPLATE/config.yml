@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Ask a question
+    url: mailto:paintedfox.studio@gmail.com
+    about: For anything that is not a bug or a feature request.
+  - name: Security concern
+    url: mailto:paintedfox.studio@gmail.com
+    about: Please write privately rather than opening a public issue.
