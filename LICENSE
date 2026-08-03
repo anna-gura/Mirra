@@ -3,9 +3,7 @@ Mirra Licence 1.0
 Copyright (c) 2026 Anna Gura
 https://github.com/anna-gura/Mirra
 
-This licence is written in English and in Ukrainian. Both versions carry
-the same meaning; where they differ, the English text governs.
-Ukrainian text follows the English.
+This licence is written in English and in Ukrainian. Both versions carry the same meaning; where they differ, the English text governs. Ukrainian text follows the English.
 
 ===============================================================================
 ENGLISH
@@ -13,130 +11,93 @@ ENGLISH
 
 1. DEFINITIONS
 
-   "Software" means the Mirra source code, assets and documentation
-   distributed under this licence, in whole or in part.
+   "Software" means the Mirra source code, assets and documentation distributed under this licence, in whole or in part.
 
-   "Derivative" means anything based on the Software: a fork, a
-   modification, a translation, or a work that incorporates any part of
-   the Software.
+   "Derivative" means anything based on the Software: a fork, a modification, a translation, or a work that incorporates any part of the Software.
 
-   "You" means any person or organisation exercising rights under this
-   licence.
+   "You" means any person or organisation exercising rights under this licence.
 
    "Author" means Anna Gura, the copyright holder.
 
-   "Operational Use" means using the Software as a tool to carry on your
-   own activity — including a business, and including one that earns
-   money — where the Software itself is not what is being sold.
+   "Operational Use" means using the Software as a tool to carry on your own activity — including a business, and including one that earns money — where the Software itself is not what is being sold.
 
-   "Commercial Exploitation" means deriving revenue from the Software or
-   a Derivative as such. It includes, without limitation:
+   "Commercial Exploitation" means deriving revenue from the Software or a Derivative as such. It includes, without limitation:
 
      (a) selling, licensing, renting or sublicensing the Software or a
          Derivative;
      (b) charging any fee for access to it, or making access conditional
          on a paid subscription or plan;
-     (c) offering it, or a service built on it, as a paid or
-         ad-supported product;
+     (c) offering it, or a service built on it, as a paid or ad-supported product;
      (d) including it in a product or service that is sold;
-     (e) charging third parties to host, deploy, customise, integrate or
-         support it.
+     (e) charging third parties to host, deploy, customise, integrate or support it.
 
-   Operational Use is never Commercial Exploitation, whatever your
-   activity earns.
+   Operational Use is never Commercial Exploitation, whatever your activity earns.
 
 2. GRANT
 
-   Subject to the conditions and restrictions below, the Author grants
-   you a worldwide, royalty-free, non-exclusive licence to:
+   Subject to the conditions and restrictions below, the Author grants you a worldwide, royalty-free, non-exclusive licence to:
 
      (a) use the Software, including Operational Use;
      (b) read, study and analyse the source;
      (c) copy the Software and fork the repository;
      (d) modify the Software and create Derivatives;
-     (e) run the Software on your own hardware or hosting, for yourself
-         or for others free of charge;
+     (e) run the Software on your own hardware or hosting, for yourself or for others free of charge;
      (f) distribute the Software or a Derivative, free of charge.
 
 3. CONDITIONS
 
-   Every copy of the Software or a Derivative that you distribute or
-   make available must:
+   Every copy of the Software or a Derivative that you distribute or make available must:
 
      (a) retain this licence file and all copyright notices;
 
-     (b) credit the Author and link to the original repository, in a
-         place a user can reasonably find — an about screen, a footer,
-         a README. The following is sufficient:
+     (b) credit the Author and link to the original repository, in a place a user can reasonably find — an about screen, a footer, a README. The following is sufficient:
 
              Based on Mirra by Anna Gura
              https://github.com/anna-gura/Mirra
 
      (c) state prominently that it has been modified, if it has;
 
-     (d) carry a name and visual identity distinct from Mirra
-         (see section 5).
+     (d) carry a name and visual identity distinct from Mirra (see section 5).
 
 4. RESTRICTIONS
 
-     (a) Commercial Exploitation of the Software or any Derivative is
-         not permitted under this licence.
+     (a) Commercial Exploitation of the Software or any Derivative is not permitted under this licence.
 
-     (b) You may not remove, obscure or misstate the attribution
-         required by section 3.
+     (b) You may not remove, obscure or misstate the attribution required by section 3.
 
-     (c) You may not represent yourself as the Author, present the
-         Software as your own original work, or state or imply that a
-         Derivative is endorsed by, affiliated with or maintained by the
-         Author.
+     (c) You may not represent yourself as the Author, present the Software as your own original work, or state or imply that a Derivative is endorsed by, affiliated with or maintained by the Author.
 
-     (d) You may not apply technical or legal measures that restrict
-         others from exercising the rights this licence grants them.
+     (d) You may not apply technical or legal measures that restrict others from exercising the rights this licence grants them.
 
 5. NAME AND IDENTITY
 
-   This licence covers the code. It grants no right to the name "Mirra",
-   the wordmark, the logo or the visual identity of the project.
+   This licence covers the code. It grants no right to the name "Mirra", the wordmark, the logo or the visual identity of the project.
 
-   A Derivative you distribute must use a different name and must not
-   present itself as Mirra or as a version of Mirra.
+   A Derivative you distribute must use a different name and must no present itself as Mirra or as a version of Mirra.
 
-   This is not about credit. It is so that nobody encounters something
-   broken, abandoned, or careless with their data while believing it to
-   be this project.
+   This is not about credit. It is so that nobody encounters something broken, abandoned, or careless with their data while believing it to be this project.
 
 6. CONTRIBUTIONS
 
    Contributions are welcome, by pull request or otherwise.
 
-   By submitting a contribution you grant the Author a perpetual,
-   worldwide, irrevocable, royalty-free, non-exclusive licence to use,
-   reproduce, modify, distribute and sublicense it, including under
-   licence terms other than this one.
+   By submitting a contribution you grant the Author a perpetual, worldwide, irrevocable, royalty-free, non-exclusive licence to use, reproduce, modify, distribute and sublicense it, including under licence terms other than this one.
 
-   This is what makes section 7 possible: without it, the Author could
-   not offer a commercial licence covering a codebase that others have
-   contributed to.
+   This is what makes section 7 possible: without it, the Author could not offer a commercial licence covering a codebase that others have contributed to.
 
-   You retain copyright in your contribution. The Author decides what is
-   merged, and is under no obligation to merge anything.
+   You retain copyright in your contribution. The Author decides what is merged, and is under no obligation to merge anything.
 
 7. COMMERCIAL LICENSING
 
    If you want to do anything section 4(a) forbids, ask.
 
-   The Author is the sole copyright holder and may grant a separate
-   licence on negotiated terms. This includes the case where a project
-   that began as non-commercial later becomes commercial: get in touch
-   before that happens rather than after.
+   The Author is the sole copyright holder and may grant a separate licence on negotiated terms. This includes the case where a project that began as non-commercial later becomes commercial: get in touch before that happens rather than after.
 
        paintedfox.studio@gmail.com
 
 8. THE HOSTED APPLICATION
 
-   Mirra as published by the Author is free to use and always will be
-   under this licence. Nothing here restricts anyone from using it to
-   run their business.
+   Mirra as published by the Author is free to use and always will be under this licence. Nothing here restricts anyone from using it to run their business.
 
    What is protected is the code, not its use.
 
@@ -144,26 +105,17 @@ ENGLISH
 
    Your rights under this licence end automatically if you breach it.
 
-   They are reinstated if you cure the breach within 30 days of becoming
-   aware of it, provided the Author has not notified you otherwise. A
-   second breach of the same term is not curable in this way.
+   They are reinstated if you cure the breach within 30 days of becoming aware of it, provided the Author has not notified you otherwise. A second breach of the same term is not curable in this way.
 
 10. NO WARRANTY
 
-   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-   EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-   NON-INFRINGEMENT.
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT.
 
-   IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR
-   OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
-   ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-   OTHER DEALINGS IN THE SOFTWARE.
+   IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 11. SEVERABILITY
 
-   If any provision of this licence is held unenforceable, the remainder
-   stays in force.
+   If any provision of this licence is held unenforceable, the remainder stays in force.
 
 
 ===============================================================================
@@ -172,151 +124,106 @@ ENGLISH
 
 1. ВИЗНАЧЕННЯ
 
-   "Програма" — вихідний код, ресурси та документація Mirra, що
-   поширюються за цією ліцензією, повністю або частково.
+   "Програма" — вихідний код, ресурси та документація Mirra, що поширюються за цією ліцензією, повністю або частково.
 
-   "Похідна робота" — усе, що створене на основі Програми: форк,
-   модифікація, переклад або робота, що містить будь-яку її частину.
+   "Похідна робота" — усе, що створене на основі Програми: форк, модифікація, переклад або робота, що містить будь-яку її частину.
 
-   "Ви" — будь-яка особа чи організація, що користується правами за цією
-   ліцензією.
+   "Ви" — будь-яка особа чи організація, що користується правами за цією ліцензією.
 
    "Автор" — Анна Гура, власниця авторських прав.
 
-   "Операційне використання" — використання Програми як інструмента для
-   ведення власної діяльності, зокрема бізнесу, зокрема прибуткового, —
-   за умови, що предметом продажу є не сама Програма.
+   "Операційне використання" — використання Програми як інструмента для ведення власної діяльності, зокрема бізнесу, зокрема прибуткового, — за умови, що предметом продажу є не сама Програма.
 
-   "Комерційна експлуатація" — отримання доходу з Програми або похідної
-   роботи як таких. Зокрема, але не виключно:
+   "Комерційна експлуатація" — отримання доходу з Програми або похідної роботи як таких. Зокрема, але не виключно:
 
      (а) продаж, ліцензування, оренда або субліцензування;
      (б) стягнення плати за доступ, зокрема через підписку чи тариф;
-     (в) надання її або побудованого на ній сервісу як платного продукту
-         чи продукту з рекламою;
+     (в) надання її або побудованого на ній сервісу як платного продукту чи продукту з рекламою;
      (г) включення до продукту або сервісу, що продається;
-     (ґ) стягнення з третіх осіб плати за розміщення, розгортання,
-         налаштування, інтеграцію чи підтримку.
+     (ґ) стягнення з третіх осіб плати за розміщення, розгортання, налаштування, інтеграцію чи підтримку.
 
-   Операційне використання ніколи не є комерційною експлуатацією,
-   незалежно від того, скільки заробляє ваша діяльність.
+   Операційне використання ніколи не є комерційною експлуатацією, незалежно від того, скільки заробляє ваша діяльність.
 
 2. НАДАНІ ПРАВА
 
-   За умов, викладених нижче, Автор надає вам всесвітню, безоплатну,
-   невиключну ліцензію на:
+   За умов, викладених нижче, Автор надає вам всесвітню, безоплатну, невиключну ліцензію на:
 
      (а) використання Програми, зокрема операційне;
      (б) перегляд, вивчення й аналіз коду;
      (в) копіювання Програми та створення форків репозиторію;
      (г) зміну Програми та створення похідних робіт;
-     (ґ) запуск Програми на власному обладнанні чи хостингу — для себе
-         або безоплатно для інших;
+     (ґ) запуск Програми на власному обладнанні чи хостингу — для себе або безоплатно для інших;
      (д) безоплатне поширення Програми або похідної роботи.
 
 3. УМОВИ
 
-   Кожна копія Програми чи похідної роботи, яку ви поширюєте або робите
-   доступною, має:
+   Кожна копія Програми чи похідної роботи, яку ви поширюєте або робите доступною, має:
 
-     (а) зберігати цей файл ліцензії та всі повідомлення про авторські
-         права;
+     (а) зберігати цей файл ліцензії та всі повідомлення про авторські права;
 
-     (б) зазначати авторство з посиланням на оригінальний репозиторій —
-         у місці, яке користувач може знайти: екран «про застосунок»,
-         футер, README. Достатньо такого формулювання:
+     (б) зазначати авторство з посиланням на оригінальний репозиторій — у місці, яке користувач може знайти: екран «про застосунок», футер, README. Достатньо такого формулювання:
 
              Створено на основі Mirra від Anna Gura
              https://github.com/anna-gura/Mirra
 
      (в) чітко вказувати, що до неї внесено зміни, якщо їх внесено;
 
-     (г) мати назву та візуальну ідентичність, відмінні від Mirra
-         (див. розділ 5).
+     (г) мати назву та візуальну ідентичність, відмінні від Mirra (див. розділ 5).
 
 4. ОБМЕЖЕННЯ
 
-     (а) Комерційна експлуатація Програми або похідної роботи за цією
-         ліцензією не дозволена.
+     (а) Комерційна експлуатація Програми або похідної роботи за цією ліцензією не дозволена.
 
-     (б) Заборонено вилучати, приховувати чи спотворювати зазначення
-         авторства, вимагане розділом 3.
+     (б) Заборонено вилучати, приховувати чи спотворювати зазначення авторства, вимагане розділом 3.
 
-     (в) Заборонено видавати себе за Автора, подавати Програму як власну
-         оригінальну розробку, а також стверджувати або натякати, що
-         похідна робота схвалена Автором, пов'язана з ним чи ним
-         підтримується.
+     (в) Заборонено видавати себе за Автора, подавати Програму як власну оригінальну розробку, а також стверджувати або натякати, що похідна робота схвалена Автором, пов'язана з ним чи ним підтримується.
 
-     (г) Заборонено застосовувати технічні або юридичні засоби, що
-         обмежують інших у реалізації наданих цією ліцензією прав.
+     (г) Заборонено застосовувати технічні або юридичні засоби, що обмежують інших у реалізації наданих цією ліцензією прав.
 
 5. НАЗВА ТА ІДЕНТИЧНІСТЬ
 
-   Ця ліцензія поширюється на код. Вона не надає жодних прав на назву
-   "Mirra", логотип чи візуальну ідентичність проєкту.
+   Ця ліцензія поширюється на код. Вона не надає жодних прав на назву "Mirra", логотип чи візуальну ідентичність проєкту.
 
-   Похідна робота, яку ви поширюєте, має мати іншу назву й не може
-   подаватися як Mirra або як версія Mirra.
+   Похідна робота, яку ви поширюєте, має мати іншу назву й не може подаватися як Mirra або як версія Mirra.
 
-   Річ не в авторському самолюбстві. Річ у тому, щоб ніхто не натрапив
-   на щось зламане, покинуте або недбале щодо його даних, вважаючи це
-   цим проєктом.
+   Річ не в авторському самолюбстві. Річ у тому, щоб ніхто не натрапив на щось зламане, покинуте або недбале щодо його даних, вважаючи це цим проєктом.
 
 6. ВНЕСКИ
 
    Пропозиції змін вітаються — через pull request або інакше.
 
-   Надсилаючи внесок, ви надаєте Автору безстрокову, всесвітню,
-   безвідкличну, безоплатну, невиключну ліцензію на використання,
-   відтворення, зміну, поширення та субліцензування цього внеску,
-   зокрема на умовах, відмінних від цієї ліцензії.
+   Надсилаючи внесок, ви надаєте Автору безстрокову, всесвітню, безвідкличну, безоплатну, невиключну ліцензію на використання, відтворення, зміну, поширення та субліцензування цього внеску, зокрема на умовах, відмінних від цієї ліцензії.
 
-   Саме це робить можливим розділ 7: без такого дозволу Автор не змогла
-   б надати комерційну ліцензію на код, до якого долучалися інші.
+   Саме це робить можливим розділ 7: без такого дозволу Автор не змогла б надати комерційну ліцензію на код, до якого долучалися інші.
 
-   Авторські права на ваш внесок залишаються за вами. Автор вирішує, що
-   приймати, і не зобов'язана приймати будь-що.
+   Авторські права на ваш внесок залишаються за вами. Автор вирішує, що приймати, і не зобов'язана приймати будь-що.
 
 7. КОМЕРЦІЙНЕ ЛІЦЕНЗУВАННЯ
 
    Якщо ви хочете зробити те, що забороняє пункт 4(а) — напишіть.
 
-   Автор є єдиною власницею авторських прав і може надати окрему
-   ліцензію на узгоджених умовах. Це стосується й випадку, коли проєкт
-   починався як некомерційний, а згодом став комерційним: звертайтеся до
-   того, як це станеться, а не після.
+   Автор є єдиною власницею авторських прав і може надати окрему ліцензію на узгоджених умовах. Це стосується й випадку, коли проєкт починався як некомерційний, а згодом став комерційним: звертайтеся до того, як це станеться, а не після.
 
        paintedfox.studio@gmail.com
 
 8. ЩОДО САМОГО ЗАСТОСУНКУ
 
-   Mirra у вигляді, опублікованому Автором, є безкоштовною й
-   залишатиметься такою за цією ліцензією. Ніщо тут не обмежує
-   використання її для ведення бізнесу.
+   Mirra у вигляді, опублікованому Автором, є безкоштовною й залишатиметься такою за цією ліцензією. Ніщо тут не обмежує використання її для ведення бізнесу.
 
    Захищений код, а не його використання.
 
 9. ПРИПИНЕННЯ
 
-   Ваші права за цією ліцензією припиняються автоматично в разі її
-   порушення.
+   Ваші права за цією ліцензією припиняються автоматично в разі її порушення.
 
-   Вони поновлюються, якщо ви усунете порушення протягом 30 днів з
-   моменту, коли дізналися про нього, і якщо Автор не повідомила про
-   інше. Повторне порушення того самого пункту в такий спосіб не
-   усувається.
+   Вони поновлюються, якщо ви усунете порушення протягом 30 днів з моменту, коли дізналися про нього, і якщо Автор не повідомила про інше. Повторне порушення того самого пункту в такий спосіб не усувається.
 
 10. ВІДСУТНІСТЬ ГАРАНТІЙ
 
-   ПРОГРАМА НАДАЄТЬСЯ "ЯК Є", БЕЗ БУДЬ-ЯКИХ ГАРАНТІЙ, ПРЯМИХ ЧИ
-   НЕПРЯМИХ, ЗОКРЕМА ГАРАНТІЙ ПРИДАТНОСТІ ДЛЯ ПРОДАЖУ, ПРИДАТНОСТІ ДЛЯ
-   ПЕВНОЇ МЕТИ ТА ВІДСУТНОСТІ ПОРУШЕНЬ ПРАВ ТРЕТІХ ОСІБ.
+   ПРОГРАМА НАДАЄТЬСЯ "ЯК Є", БЕЗ БУДЬ-ЯКИХ ГАРАНТІЙ, ПРЯМИХ ЧИ НЕПРЯМИХ, ЗОКРЕМА ГАРАНТІЙ ПРИДАТНОСТІ ДЛЯ ПРОДАЖУ, ПРИДАТНОСТІ ДЛЯ ПЕВНОЇ МЕТИ ТА ВІДСУТНОСТІ ПОРУШЕНЬ ПРАВ ТРЕТІХ ОСІБ.
 
-   АВТОР ЗА ЖОДНИХ ОБСТАВИН НЕ НЕСЕ ВІДПОВІДАЛЬНОСТІ ЗА БУДЬ-ЯКІ
-   ПРЕТЕНЗІЇ, ЗБИТКИ ЧИ ІНШУ ВІДПОВІДАЛЬНІСТЬ, ЩО ВИНИКАЮТЬ ІЗ ПРОГРАМИ
-   АБО У ЗВ'ЯЗКУ З НЕЮ ЧИ З ЇЇ ВИКОРИСТАННЯМ.
+   АВТОР ЗА ЖОДНИХ ОБСТАВИН НЕ НЕСЕ ВІДПОВІДАЛЬНОСТІ ЗА БУДЬ-ЯКІ ПРЕТЕНЗІЇ, ЗБИТКИ ЧИ ІНШУ ВІДПОВІДАЛЬНІСТЬ, ЩО ВИНИКАЮТЬ ІЗ ПРОГРАМИ АБО У ЗВ'ЯЗКУ З НЕЮ ЧИ З ЇЇ ВИКОРИСТАННЯМ.
 
 11. ПОДІЛЬНІСТЬ
 
-   Якщо будь-яке положення цієї ліцензії буде визнане нечинним, решта
-   зберігає силу.
+   Якщо будь-яке положення цієї ліцензії буде визнане нечинним, решта зберігає силу.
