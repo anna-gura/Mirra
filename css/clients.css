@@ -256,3 +256,67 @@
   /* Two rows now, so the letters clear a taller bar. */
   .cl-letter{ top:124px; }
 }
+
+/* ---------------- tags ---------------- */
+
+/* Shown only while a tag is being typed, so it costs nothing the rest
+   of the time. Wrapping rather than scrolling now that the count is
+   bounded: a horizontal row hides its own contents, and three chips
+   have no need to. */
+.cl-tagbar{
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+  margin:10px 0 2px;
+  animation:tagbar-in .18s ease-out;
+}
+
+@keyframes tagbar-in{
+  from{ opacity:0; transform:translateY(-4px); }
+}
+@media (prefers-reduced-motion:reduce){
+  .cl-tagbar{ animation:none; }
+}
+
+.cl-tag{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  flex:none;
+  min-height:36px;
+  padding:0 13px;
+  font-family:Karla,sans-serif;
+  font-weight:300;
+  font-size:13px;
+  color:var(--soft);
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:99px;
+  cursor:pointer;
+  white-space:nowrap;
+  transition:border-color .2s, color .2s, background .2s;
+}
+.cl-tag:hover{ color:var(--ink); border-color:var(--soft); }
+
+/* Filled when active, so the state is legible without reading the
+   search box to find out why the list is short. */
+.cl-tag[aria-pressed="true"]{
+  color:var(--bg);
+  background:var(--ink);
+  border-color:var(--ink);
+  font-weight:400;
+}
+
+.cl-tag em{
+  font-style:normal;
+  font-size:11px;
+  opacity:.6;
+}
+
+/* Dashed, so it reads as a control rather than as another tag one
+   could filter by. */
+.cl-tag-more{
+  border-style:dashed;
+  background:none;
+  font-size:12.5px;
+}

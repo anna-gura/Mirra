@@ -1,5 +1,6 @@
 import { SocialCatalog } from "../domain/SocialCatalog.js";
 import { DateValue } from "../domain/DateValue.js";
+import { NoteTags } from "../domain/NoteTags.js";
 
 /**
  * ClientCardView — renders one person.
@@ -14,7 +15,7 @@ import { DateValue } from "../domain/DateValue.js";
  * an animatable length. Each panel is measured when it opens, so it
  * fits its contents rather than a guess.
  */
-export class ClientCardView {
+export class ClientCardView extends EventTarget {
   #root;
   #name;
   #phone;
@@ -35,6 +36,7 @@ export class ClientCardView {
    * @param {string} [options.selector]
    */
   constructor({ selector = '[data-view="client"]' } = {}) {
+    super();
     this.#root = document.querySelector(selector);
     if (!this.#root) {
       console.error(`ClientCardView: ${selector} not found — is views/client.html in place?`);
@@ -54,6 +56,12 @@ export class ClientCardView {
     this.#scroller          = this.#root.querySelector("[data-scroll]");
 
     this.#onFoldClick = event => {
+      const tag = event.target.closest("[data-tag]");
+      if (tag) {
+        this.dispatchEvent(new CustomEvent("tag", { detail: { tag: tag.dataset.tag } }));
+        return;
+      }
+
       const trigger = event.target.closest("[data-fold]");
       if (trigger) this.#toggleFold(trigger);
     };
@@ -262,7 +270,19 @@ export class ClientCardView {
         date: new DateValue(client.lastVisit, dateFormat).parts(),
       });
     }
-    if (client.notes) fields.push({ label: "Нотатки", value: client.notes });
+    /* A note holding nothing but tags leaves no prose behind, and a
+       heading over an empty line reads as something failing to load. */
+    if (client.notes && (client.noteText || client.tags.length)) {
+      /* Tags are pulled out and shown as chips, so the note reads as the
+         sentence it was written as rather than a line peppered with
+         hashes. The chips are also where a tap can lead somewhere,
+         which plain text cannot. */
+      fields.push({
+        label: "Нотатки",
+        value: client.noteText,
+        tags: client.tags,
+      });
+    }
     fields.push(...client.extras);
 
     if (!this.#extra) return;
@@ -285,11 +305,38 @@ export class ClientCardView {
       label.className = "cd-field-label";
       label.textContent = field.label;
 
-      row.append(label, field.date ? this.#buildDate(field.date) : this.#buildValue(field.value));
+      row.append(label);
+
+      if (field.tags?.length) row.append(this.#buildTags(field.tags));
+      if (field.date) row.append(this.#buildDate(field.date));
+      else if (field.value) row.append(this.#buildValue(field.value));
       fragment.append(row);
     }
 
     return fragment;
+  }
+
+  /**
+   * Tags as tappable chips.
+   *
+   * Tapping one goes back to the list filtered by it — which is the
+   * point of tagging at all: seeing this client reminds you of a
+   * category, and the category is one tap away.
+   */
+  #buildTags(tags) {
+    const row = document.createElement("div");
+    row.className = "cd-tags";
+
+    row.replaceChildren(...tags.map(tag => {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "cd-tag";
+      chip.dataset.tag = tag;
+      chip.textContent = tag;
+      return chip;
+    }));
+
+    return row;
   }
 
   #buildValue(text) {

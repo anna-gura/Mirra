@@ -15,6 +15,9 @@ import { ClientList } from "../domain/ClientList.js";
  * one screen.
  */
 export class ClientListView extends EventTarget {
+  /** How many tag suggestions are shown before the rest are folded away. */
+  static TAGS_SHOWN = 3;
+
   #root;
   #title;
   #count;
@@ -22,12 +25,15 @@ export class ClientListView extends EventTarget {
   #scroller;
   #search;
   #searchClear;
+  #tagbar;
   #list = null;
   #query = "";
   #savedScroll = 0;
   #onClick;
   #onSearch;
   #onClearSearch;
+  #onTagClick;
+  #tagsExpanded = false;
 
   /**
    * @param {object} [options]
@@ -42,6 +48,7 @@ export class ClientListView extends EventTarget {
     this.#scroller = this.#root?.querySelector("[data-scroll]");
     this.#search   = this.#root?.querySelector("[data-search]");
     this.#searchClear = this.#root?.querySelector("[data-search-clear]");
+    this.#tagbar   = this.#root?.querySelector("[data-tagbar]");
 
     /* One listener on the container rather than one per row: the list is
        rebuilt on every reload, and per-row listeners would have to be
@@ -50,6 +57,22 @@ export class ClientListView extends EventTarget {
        is already in memory, so the work is a pass over an array —
        waiting would only make typing feel laggy. */
     this.#onSearch = event => this.setQuery(event.target.value);
+
+    /* Tapping a chip toggles it: pressing the one already active clears
+       the filter, which is what people try first when they want out. */
+    this.#onTagClick = event => {
+      if (event.target.closest("[data-tags-more]")) {
+        this.#tagsExpanded = true;
+        this.#paintTags();
+        return;
+      }
+
+      const chip = event.target.closest("[data-tag]");
+      if (!chip) return;
+
+      const tag = chip.dataset.tag;
+      this.setQuery(this.#query.trim() === tag ? "#" : tag);
+    };
     this.#onClearSearch = () => {
       this.setQuery("");
       this.#search?.focus();
@@ -66,6 +89,7 @@ export class ClientListView extends EventTarget {
 
   init() {
     this.#host?.addEventListener("click", this.#onClick);
+    this.#tagbar?.addEventListener("click", this.#onTagClick);
     this.#search?.addEventListener("input", this.#onSearch);
     this.#searchClear?.addEventListener("click", this.#onClearSearch);
     return this;
@@ -98,6 +122,11 @@ export class ClientListView extends EventTarget {
    * @param {string} query
    */
   setQuery(query) {
+    /* Collapsed again on every change: the expanded list belongs to the
+       moment it was opened in, and leaving it open means the next
+       search starts under a wall of chips. */
+    if ((query ?? "") !== this.#query) this.#tagsExpanded = false;
+
     this.#query = query ?? "";
 
     if (this.#search && this.#search.value !== this.#query) {
@@ -168,6 +197,7 @@ export class ClientListView extends EventTarget {
   destroy() {
     this.#host?.removeEventListener("click", this.#onClick);
     this.#search?.removeEventListener("input", this.#onSearch);
+    this.#tagbar?.removeEventListener("click", this.#onTagClick);
     this.#searchClear?.removeEventListener("click", this.#onClearSearch);
   }
 
@@ -193,6 +223,8 @@ export class ClientListView extends EventTarget {
   #paint() {
     if (!this.#list) return;
 
+    this.#paintTags();
+
     const matches = this.#list.filter(this.#query);
     this.#count.textContent = this.#countText(matches.length);
 
@@ -201,6 +233,76 @@ export class ClientListView extends EventTarget {
         ? this.#buildGroups(this.#list.groupsOf(matches))
         : this.#buildEmpty()
     );
+  }
+
+  /**
+   * Draws the tags present in the sheet, marking the active one.
+   *
+   * Hidden entirely when there are none, rather than shown empty: a bar
+   * that is usually blank teaches people to stop looking at it.
+   */
+  /**
+   * Draws tag suggestions, and only while a tag is being typed.
+   *
+   * An always-visible bar of every tag in the sheet is fine with six and
+   * unusable with sixty — it becomes a wall above the names people came
+   * for. Showing it in answer to a typed # makes it appear exactly when
+   * it is wanted and take no room otherwise.
+   */
+  #paintTags() {
+    if (!this.#tagbar) return;
+
+    const suggestions = this.#list.suggestTags(this.#query);
+
+    this.#tagbar.hidden = suggestions.length === 0;
+    if (!suggestions.length) return;
+
+    const active = this.#query.trim().toLocaleLowerCase("uk");
+
+    /* A handful at a time. Three fits a phone without the last one
+       falling off the edge, which is what makes a scrolling row feel
+       broken rather than scrollable. */
+    const visible = this.#tagsExpanded
+      ? suggestions
+      : suggestions.slice(0, ClientListView.TAGS_SHOWN);
+
+    const chips = visible.map(({ tag, count }) => {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "cl-tag";
+      chip.dataset.tag = tag;
+      chip.setAttribute("aria-pressed", String(tag === active));
+
+      const label = document.createElement("span");
+      label.textContent = tag;
+
+      const badge = document.createElement("em");
+      badge.textContent = String(count);
+
+      chip.append(label, badge);
+      return chip;
+    });
+
+    const hidden = suggestions.length - visible.length;
+    if (hidden > 0) chips.push(this.#buildMore(hidden));
+
+    this.#tagbar.replaceChildren(...chips);
+  }
+
+  /**
+   * The control that reveals the rest.
+   *
+   * Carries the number rather than three dots alone: "ще 12" answers
+   * the question the dots raise, and costs the same space.
+   */
+  #buildMore(hidden) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "cl-tag cl-tag-more";
+    button.dataset.tagsMore = "";
+    button.setAttribute("aria-label", `Показати решту теґів: ще ${hidden}`);
+    button.textContent = `… ще ${hidden}`;
+    return button;
   }
 
   /**

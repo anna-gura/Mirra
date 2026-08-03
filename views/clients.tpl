@@ -37,12 +37,17 @@
             <path d="m15.5 15.5 4 4"/>
           </svg>
           <input class="cl-search-input" type="search" data-search
-                 placeholder="Ім'я або телефон" aria-label="Пошук клієнтів"
+                 placeholder="Ім'я, телефон або #тег" aria-label="Пошук клієнтів"
                  autocomplete="off" spellcheck="false" enterkeyhint="search">
           <button class="cl-search-clear" type="button" data-search-clear
                   aria-label="Очистити пошук" hidden>×</button>
         </div>
       </div>
+
+      <!-- Filled from the tags actually present in the sheet. Offering
+           them is what makes tagging discoverable: nobody types a hash
+           into a search box on a hunch. -->
+      <div class="cl-tagbar" data-tagbar hidden></div>
 
       <div data-client-list></div>
     </div>
