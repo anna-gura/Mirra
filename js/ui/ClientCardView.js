@@ -271,6 +271,10 @@ export class ClientCardView extends EventTarget {
         label: "День народження",
         value: client.birthday,
         date: date.parts(),
+        /* No weekday. Which day of the week somebody was born on in 1998
+           is a fact about 1998, not about them — where the same detail
+           on a recent visit answers a question people actually ask. */
+        weekday: false,
         /* Only when a year was written. A birthday recorded as 15.03 is
            perfectly useful for remembering to send a message; it simply
            cannot say how old anyone is. */
@@ -325,7 +329,9 @@ export class ClientCardView extends EventTarget {
       row.append(label);
 
       if (field.tags?.length) row.append(this.#buildTags(field.tags));
-      if (field.date) row.append(this.#buildDate(field.date, field.note));
+      if (field.date) {
+        row.append(this.#buildDate(field.date, field.note, field.weekday !== false));
+      }
       else if (field.value) row.append(this.#buildValue(field.value));
       fragment.append(row);
     }
@@ -372,7 +378,7 @@ export class ClientCardView extends EventTarget {
    * part least often needed: a last visit is nearly always this year
    * or the one before.
    */
-  #buildDate(parts, note = "") {
+  #buildDate(parts, note = "", withWeekday = true) {
     const value = document.createElement("span");
     value.className = "cd-field-value cd-date";
 
@@ -384,7 +390,7 @@ export class ClientCardView extends EventTarget {
     /* A date with no year has no weekday either — the 15th of March fell
        on a different day in every year there has been — and an empty
        pair of brackets is worse than saying nothing. */
-    if (parts.weekday) {
+    if (withWeekday && parts.weekday) {
       const weekday = document.createElement("span");
       weekday.className = "cd-weekday";
       weekday.textContent = `(${parts.weekday})`;
