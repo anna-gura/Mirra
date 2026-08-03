@@ -26,10 +26,9 @@ export class ClientFormView extends EventTarget {
   #scroller;
   #fields = new Map();
   #menus = [];
-  #datePicker = null;
+  #datePickers = new Map();
   #phoneInput = null;
   #nameInputs = [];
-  #dateMount;
   #draft = null;
   #onClick;
   #onInput;
@@ -51,7 +50,6 @@ export class ClientFormView extends EventTarget {
     this.#messengerRows = this.#root.querySelector("[data-messenger-rows]");
     this.#extraFields   = this.#root.querySelector("[data-extra-fields]");
     this.#scroller      = this.#root.querySelector("[data-scroll]");
-    this.#dateMount     = this.#root.querySelector("[data-date-mount]");
 
     this.#root.querySelectorAll("[data-field]").forEach(input => {
       this.#fields.set(input.dataset.field, input);
@@ -128,7 +126,7 @@ export class ClientFormView extends EventTarget {
        an input that silently ignores what is typed into it. */
     if (this.#phoneInput) this.#phoneInput.value = draft.phone;
     else this.#setValue("phone", draft.phone);
-    this.#renderDate(draft.lastVisit);
+    this.#renderDates(draft);
     this.#setValue("notes", draft.notes);
 
     this.#renderEntries(this.#socialRows, draft.socials, "social");
@@ -149,7 +147,8 @@ export class ClientFormView extends EventTarget {
   destroy() {
     this.#menus.forEach(entry => entry.menu.destroy());
     this.#menus = [];
-    this.#datePicker?.destroy();
+    this.#datePickers.forEach(picker => picker.destroy());
+    this.#datePickers.clear();
     this.#root?.removeEventListener("click", this.#onClick);
     this.#root?.removeEventListener("input", this.#onInput);
     this.#root?.removeEventListener("change", this.#onInput);
@@ -269,23 +268,35 @@ export class ClientFormView extends EventTarget {
   }
 
   /**
-   * The picker is built once and reused. Rebuilding it per client would
-   * throw away a live document listener each time and leave the focus
-   * ring pointing at an element no longer in the page.
+   * One picker per date field, keyed by the draft property it writes to.
+   *
+   * Each is built once and reused. Rebuilding per client would throw
+   * away a live document listener each time and leave the focus ring
+   * pointing at an element no longer in the page.
    */
-  #renderDate(value) {
-    if (!this.#dateMount) return;
+  #renderDates(draft) {
+    for (const mount of this.#root.querySelectorAll("[data-date-mount]")) {
+      const field = mount.dataset.dateMount;
+      if (!field) continue;
 
-    if (!this.#datePicker) {
-      this.#datePicker = new DatePicker({ value });
-      this.#datePicker.addEventListener("change", event => {
-        if (this.#draft) this.#draft.lastVisit = event.detail.value;
-      });
-      this.#dateMount.replaceChildren(this.#datePicker.element);
-      return;
+      let picker = this.#datePickers.get(field);
+
+      if (!picker) {
+        picker = new DatePicker({
+          value: draft[field] ?? "",
+          allowNoYear: field === "birthday",
+        });
+        picker.addEventListener("change", event => {
+          if (this.#draft) this.#draft[field] = event.detail.value;
+        });
+
+        mount.replaceChildren(picker.element);
+        this.#datePickers.set(field, picker);
+        continue;
+      }
+
+      picker.value = draft[field] ?? "";
     }
-
-    this.#datePicker.value = value;
   }
 
   #renderExtras(extras) {

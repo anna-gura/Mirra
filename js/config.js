@@ -88,11 +88,11 @@ export const config = Object.freeze({
        so name, phone and notes lead. */
     headers: Object.freeze([
       "Ім'я", "Прізвище", "Телефон", "Соцмережі", "Месенджери",
-      "Останній візит", "Нотатки",
+      "День народження", "Останній візит", "Нотатки",
     ]),
 
-    /** Column holding dates, so Sheets can offer a date picker there. */
-    dateColumn: "Останній візит",
+    /** Columns holding dates, so Sheets offers a date picker in them. */
+    dateColumns: Object.freeze(["День народження", "Останній візит"]),
   }),
 });
 

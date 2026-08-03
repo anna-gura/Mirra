@@ -20,9 +20,30 @@ export class ClientSchema {
     phone:      ["телефон", "номер", "номер телефону", "phone", "mobile", "тел"],
     socials:    ["соцмережі", "соцмережи", "соцсети", "socials", "social"],
     messengers: ["месенджери", "мессенджеры", "messengers", "messenger"],
+    birthday:   ["день народження", "днь народження", "день рождения", "birthday",
+                 "дата народження", "др"],
     lastVisit:  ["останній візит", "останнiй вiзит", "последний визит", "дата візиту",
                  "last visit", "дата"],
     notes:      ["нотатки", "заметки", "примітки", "коментар", "notes", "note", "comment"],
+  });
+
+  /**
+   * What a column is called when Mirra creates one.
+   *
+   * Only ever used for writing. Reading goes through HEADINGS above,
+   * which accepts every spelling people actually use — so a sheet that
+   * calls it "ДР" is understood, and a column Mirra adds is spelled out
+   * in full.
+   */
+  static LABELS = Object.freeze({
+    firstName:  "Ім'я",
+    lastName:   "Прізвище",
+    phone:      "Телефон",
+    socials:    "Соцмережі",
+    messengers: "Месенджери",
+    birthday:   "День народження",
+    lastVisit:  "Останній візит",
+    notes:      "Нотатки",
   });
 
   /** @type {Record<string, number>} field → column index, -1 when absent */
@@ -73,6 +94,24 @@ export class ClientSchema {
   read(values, field) {
     const index = this.indexOf(field);
     return index >= 0 ? (values[index] ?? "").trim() : "";
+  }
+
+  /**
+   * @param {string} field
+   * @returns {string} the heading Mirra would write for it
+   */
+  static labelFor(field) {
+    return ClientSchema.LABELS[field] ?? field;
+  }
+
+  /**
+   * Known fields this sheet has no column for.
+   *
+   * @param {string[]} [fields] which to check; defaults to all of them
+   * @returns {string[]}
+   */
+  missing(fields = Object.keys(ClientSchema.LABELS)) {
+    return fields.filter(field => !this.has(field));
   }
 
   /**

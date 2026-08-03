@@ -76,6 +76,11 @@ export class Client {
   }
 
   /** @returns {string} */
+  get birthday() {
+    return this.#schema.read(this.#values, "birthday");
+  }
+
+  /** @returns {string} */
   get lastVisit() {
     return this.#schema.read(this.#values, "lastVisit");
   }

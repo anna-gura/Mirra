@@ -263,11 +263,31 @@ export class ClientCardView extends EventTarget {
   #fillExtras(client, dateFormat) {
     const fields = [];
 
+    if (client.birthday) {
+      const date = new DateValue(client.birthday, dateFormat);
+      const age = date.age;
+
+      fields.push({
+        label: "День народження",
+        value: client.birthday,
+        date: date.parts(),
+        /* No weekday. Which day of the week somebody was born on in 1998
+           is a fact about 1998, not about them — where the same detail
+           on a recent visit answers a question people actually ask. */
+        weekday: false,
+        /* Only when a year was written. A birthday recorded as 15.03 is
+           perfectly useful for remembering to send a message; it simply
+           cannot say how old anyone is. */
+        note: age === null ? "" : `${age} ${DateValue.pluraliseYears(age)}`,
+      });
+    }
+
     if (client.lastVisit) {
       fields.push({
         label: "Останній візит",
         value: client.lastVisit,
         date: new DateValue(client.lastVisit, dateFormat).parts(),
+        soon: "автоматизація згодом",
       });
     }
     /* A note holding nothing but tags leaves no prose behind, and a
@@ -305,10 +325,13 @@ export class ClientCardView extends EventTarget {
       label.className = "cd-field-label";
       label.textContent = field.label;
 
+      if (field.soon) label.append(this.#buildSoon(field.soon));
       row.append(label);
 
       if (field.tags?.length) row.append(this.#buildTags(field.tags));
-      if (field.date) row.append(this.#buildDate(field.date));
+      if (field.date) {
+        row.append(this.#buildDate(field.date, field.note, field.weekday !== false));
+      }
       else if (field.value) row.append(this.#buildValue(field.value));
       fragment.append(row);
     }
@@ -355,23 +378,57 @@ export class ClientCardView extends EventTarget {
    * part least often needed: a last visit is nearly always this year
    * or the one before.
    */
-  #buildDate(parts) {
+  #buildDate(parts, note = "", withWeekday = true) {
     const value = document.createElement("span");
     value.className = "cd-field-value cd-date";
 
     const dayMonth = document.createElement("span");
     dayMonth.textContent = parts.dayMonth;
 
-    const weekday = document.createElement("span");
-    weekday.className = "cd-weekday";
-    weekday.textContent = `(${parts.weekday})`;
+    value.append(dayMonth);
 
-    const year = document.createElement("span");
-    year.className = "cd-year";
-    year.textContent = parts.year;
+    /* A date with no year has no weekday either — the 15th of March fell
+       on a different day in every year there has been — and an empty
+       pair of brackets is worse than saying nothing. */
+    if (withWeekday && parts.weekday) {
+      const weekday = document.createElement("span");
+      weekday.className = "cd-weekday";
+      weekday.textContent = `(${parts.weekday})`;
+      value.append(" ", weekday);
+    }
 
-    value.append(dayMonth, " ", weekday, " ", year);
+    if (parts.year) {
+      const year = document.createElement("span");
+      year.className = "cd-year";
+      year.textContent = parts.year;
+      value.append(" ", year);
+    }
+
+    /* The age set apart from the date rather than folded into it: one is
+       what was written down, the other is worked out from it, and they
+       should not look like the same kind of fact. */
+    if (note) {
+      const age = document.createElement("span");
+      age.className = "cd-age";
+      age.textContent = note;
+      value.append(" ", age);
+    }
+
     return value;
+  }
+
+  /**
+   * A quiet marker on a field that will do more later.
+   *
+   * Saying so where the field is beats a changelog nobody reads: it
+   * explains why the value sits there doing nothing, and it teaches the
+   * shape of the app before the shape arrives.
+   */
+  #buildSoon(text) {
+    const badge = document.createElement("em");
+    badge.className = "cd-soon";
+    badge.textContent = text;
+    return badge;
   }
 
   /* ---------------- folding ---------------- */

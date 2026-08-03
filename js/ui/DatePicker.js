@@ -28,7 +28,10 @@ export class DatePicker extends EventTarget {
   #panel;
   #grid;
   #caption;
+  #monthSelect;
+  #yearSelect;
   #locale;
+  #allowNoYear = false;
   #placeholder;
   #value = "";
   #viewYear;
@@ -43,9 +46,10 @@ export class DatePicker extends EventTarget {
    * @param {string} [params.locale]
    * @param {string} [params.placeholder]
    */
-  constructor({ value = "", locale = "uk-UA", placeholder = "Не вказано" } = {}) {
+  constructor({ value = "", locale = "uk-UA", placeholder = "Не вказано", allowNoYear = false } = {}) {
     super();
     this.#locale = locale;
+    this.#allowNoYear = allowNoYear;
     this.#placeholder = placeholder;
 
     this.#build();
@@ -67,7 +71,9 @@ export class DatePicker extends EventTarget {
     this.#value = /^\d{4}-\d{2}-\d{2}$/.test(next ?? "") ? next : "";
 
     const anchor = this.#value ? this.#parse(this.#value) : this.#today();
-    this.#viewYear = anchor.year;
+    /* Year zero would put the grid a couple of millennia back, so a
+       yearless date opens on the current year while keeping its month. */
+    this.#viewYear = anchor.year === 0 ? new Date().getUTCFullYear() : anchor.year;
     this.#viewMonth = anchor.month;
 
     this.#syncLabel();
@@ -141,9 +147,15 @@ export class DatePicker extends EventTarget {
     const previous = this.#navButton("‹", "Попередній місяць", -1);
     const next = this.#navButton("›", "Наступний місяць", 1);
 
+    /* Month and year are chosen directly rather than paged to. Arrows
+       are fine for a visit last week and useless for a birthday in
+       1990: four hundred presses is not a way to enter a date. */
+    this.#monthSelect = this.#buildMonthSelect();
+    this.#yearSelect = this.#buildYearSelect();
+
     this.#caption = document.createElement("span");
     this.#caption.className = "cal-caption";
-    this.#caption.setAttribute("aria-live", "polite");
+    this.#caption.append(this.#monthSelect, this.#yearSelect);
 
     head.append(previous, this.#caption, next);
 
@@ -173,7 +185,21 @@ export class DatePicker extends EventTarget {
     clear.textContent = "Очистити";
     clear.addEventListener("click", () => this.#choose(""));
 
-    foot.append(today, clear);
+    foot.append(today);
+
+    /* Offered only where a year is genuinely optional. A birthday
+       recorded as 15.03 still says when to send a message; a visit
+       without a year says nothing at all. */
+    if (this.#allowNoYear) {
+      const noYear = document.createElement("button");
+      noYear.type = "button";
+      noYear.className = "cal-action";
+      noYear.textContent = "Без року";
+      noYear.addEventListener("click", () => this.#dropYear());
+      foot.append(noYear);
+    }
+
+    foot.append(clear);
 
     this.#panel.append(head, weekdays, this.#grid, foot);
     this.#element.append(this.#trigger, this.#panel);
@@ -223,10 +249,94 @@ export class DatePicker extends EventTarget {
     return svg;
   }
 
+  /**
+   * Month names from Intl, so they are spelled and ordered correctly in
+   * whatever language the picker is set to.
+   */
+  #buildMonthSelect() {
+    const select = document.createElement("select");
+    select.className = "cal-select";
+    select.setAttribute("aria-label", "Місяць");
+
+    const format = new Intl.DateTimeFormat(this.#locale, { month: "long", timeZone: "UTC" });
+
+    for (let month = 1; month <= 12; month += 1) {
+      const option = document.createElement("option");
+      option.value = String(month);
+      option.textContent = format.format(new Date(Date.UTC(2000, month - 1, 1)));
+      select.append(option);
+    }
+
+    select.addEventListener("change", () => {
+      this.#viewMonth = Number(select.value);
+      this.#renderGrid();
+    });
+
+    return select;
+  }
+
+  /**
+   * A century back and a couple of years forward.
+   *
+   * Wide enough for any birthday anyone is likely to enter, short
+   * enough to scroll — which is the whole reason this exists rather
+   * than a pair of arrows.
+   */
+  #buildYearSelect() {
+    const select = document.createElement("select");
+    select.className = "cal-select cal-select-year";
+    select.setAttribute("aria-label", "Рік");
+
+    const now = new Date().getUTCFullYear();
+
+    for (let year = now + 2; year >= now - 110; year -= 1) {
+      const option = document.createElement("option");
+      option.value = String(year);
+      option.textContent = String(year);
+      select.append(option);
+    }
+
+    select.addEventListener("change", () => {
+      this.#viewYear = Number(select.value);
+      this.#renderGrid();
+    });
+
+    return select;
+  }
+
+  /**
+   * Keeps the year list able to represent the year on display.
+   *
+   * A date already in the sheet can fall outside the offered range —
+   * somebody born in 1905, or a visit recorded far ahead — and a select
+   * that cannot hold its own value silently shows a different one.
+   */
+  /**
+   * Whether the value on display has no year.
+   * @returns {boolean}
+   */
+  get #isYearless() {
+    return (this.#value ?? "").startsWith("0000-");
+  }
+
+  #syncYears(year) {
+    const known = [...this.#yearSelect.options].some(o => o.value === String(year));
+
+    if (!known) {
+      const option = document.createElement("option");
+      option.value = String(year);
+      option.textContent = String(year);
+      this.#yearSelect.append(option);
+    }
+
+    this.#yearSelect.value = String(year);
+  }
+
   /* ---------------- rendering ---------------- */
 
   #renderGrid() {
-    this.#caption.textContent = this.#monthName(this.#viewYear, this.#viewMonth);
+    this.#monthSelect.value = String(this.#viewMonth);
+    this.#syncYears(this.#viewYear);
 
     const todayIso = this.#iso(this.#today());
     const cells = [];
@@ -270,11 +380,18 @@ export class DatePicker extends EventTarget {
     }
 
     const { year, month, day } = this.#parse(this.#value);
-    const date = new Date(Date.UTC(year, month - 1, day));
+
+    /* A leap year stands in when none was chosen, so the 29th of
+       February can still be shown. */
+    const date = new Date(Date.UTC(this.#isYearless ? 2000 : year, month - 1, day));
 
     this.#label.textContent = new Intl.DateTimeFormat(this.#locale, {
-      day: "numeric", month: "long", year: "numeric", timeZone: "UTC",
+      day: "numeric",
+      month: "long",
+      ...(this.#isYearless ? {} : { year: "numeric" }),
+      timeZone: "UTC",
     }).format(date);
+
     this.#label.classList.remove("is-empty");
   }
 
@@ -323,6 +440,26 @@ export class DatePicker extends EventTarget {
     this.#renderGrid();
   }
 
+  /**
+   * Keeps the day and month on display, and drops the year.
+   *
+   * Year zero stands for "no year" — see DateValue.NO_YEAR. Nothing
+   * real falls on it, and it passes through anything expecting an ISO
+   * string without special handling.
+   */
+  #dropYear() {
+    const month = String(this.#viewMonth).padStart(2, "0");
+    const day = this.#selectedDay() ?? 1;
+
+    this.#choose(`0000-${month}-${String(day).padStart(2, "0")}`);
+  }
+
+  /** @returns {number|null} the day currently chosen, if any */
+  #selectedDay() {
+    const match = (this.#value ?? "").match(/^\d{4}-\d{2}-(\d{2})$/);
+    return match ? Number(match[1]) : null;
+  }
+
   #choose(iso) {
     const changed = iso !== this.#value;
     this.value = iso;
@@ -349,12 +486,6 @@ export class DatePicker extends EventTarget {
 
   #iso({ year, month, day }) {
     return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-  }
-
-  #monthName(year, month) {
-    return new Intl.DateTimeFormat(this.#locale, {
-      month: "long", year: "numeric", timeZone: "UTC",
-    }).format(new Date(Date.UTC(year, month - 1, 1)));
   }
 
   /** Weekday abbreviations in the right order, from the locale. */

@@ -21,6 +21,7 @@ export class ClientDraft {
   firstName = "";
   lastName = "";
   phone = "";
+  birthday = "";         // ISO, as a date input speaks
   lastVisit = "";        // ISO, as a date input speaks
   notes = "";
 
@@ -72,6 +73,33 @@ export class ClientDraft {
   }
 
   /**
+   * Fields that hold something but have nowhere to go.
+   *
+   * A sheet the user brought themselves may have no birthday column,
+   * and writing one silently drops what they typed. Naming them lets
+   * the application ask before that happens, rather than losing it and
+   * saying nothing.
+   *
+   * @returns {string[]}
+   */
+  get unwritableFields() {
+    const filled = {
+      firstName: this.firstName.trim(),
+      lastName: this.lastName.trim(),
+      phone: this.phone.trim(),
+      birthday: this.birthday,
+      lastVisit: this.lastVisit,
+      notes: this.notes.trim(),
+      socials: this.socials.some(entry => entry.handle.trim()) ? "1" : "",
+      messengers: this.messengers.some(entry => entry.handle.trim()) ? "1" : "",
+    };
+
+    return Object.entries(filled)
+      .filter(([field, value]) => value && !this.#schema.has(field))
+      .map(([field]) => field);
+  }
+
+  /**
    * Builds the row to send to the sheet.
    * @param {string} [dateFormat]
    * @returns {string[]}
@@ -90,8 +118,9 @@ export class ClientDraft {
     this.#write(row, "socials", this.#stringify(this.socials, this.#unknownSocials));
     this.#write(row, "messengers", this.#stringify(this.messengers, this.#unknownMessengers));
 
-    const visit = this.lastVisit ? DateValue.fromIso(this.lastVisit).format(dateFormat) : "";
-    this.#write(row, "lastVisit", visit);
+    for (const field of ["birthday", "lastVisit"]) {
+      this.#write(row, field, this.#formatDate(this[field], dateFormat));
+    }
 
     for (const extra of this.extras) {
       row[extra.index] = extra.value.trim();
@@ -113,8 +142,9 @@ export class ClientDraft {
     this.phone     = this.#schema.read(this.#original, "phone");
     this.notes     = this.#schema.read(this.#original, "notes");
 
-    const visit = new DateValue(this.#schema.read(this.#original, "lastVisit"), dateFormat);
-    this.lastVisit = visit.iso;
+    for (const field of ["birthday", "lastVisit"]) {
+      this[field] = new DateValue(this.#schema.read(this.#original, field), dateFormat).iso;
+    }
 
     const socials = SocialCatalog.parse(this.#schema.read(this.#original, "socials"));
     this.socials = socials.filter(p => p.network).map(p => ({ id: p.network.id, handle: p.handle }));
@@ -128,6 +158,33 @@ export class ClientDraft {
       ...column,
       value: this.#original[column.index] ?? "",
     }));
+  }
+
+  /**
+   * A date as the sheet should hold it.
+   *
+   * Dates are sent with USER_ENTERED so that Sheets stores a real date
+   * rather than a string — which is what makes sorting and filtering
+   * work for someone who opens the file directly.
+   *
+   * That same helpfulness ruins a date with no year: given "15/03",
+   * Sheets decides the year must be this one and writes 15/03/2026,
+   * inventing a fact nobody supplied. A leading apostrophe is the
+   * spreadsheet's own way of saying "this is text, leave it alone" —
+   * it is not stored and not displayed, and the cell reads exactly as
+   * it was written.
+   *
+   * @param {string} iso
+   * @param {string} dateFormat
+   * @returns {string}
+   */
+  #formatDate(iso, dateFormat) {
+    if (!iso) return "";
+
+    const date = DateValue.fromIso(iso);
+    const written = date.format(dateFormat);
+
+    return date.hasYear ? written : `'${written}`;
   }
 
   #write(row, field, value) {

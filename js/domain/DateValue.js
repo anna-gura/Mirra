@@ -24,10 +24,22 @@ export class DateValue {
 
   static DEFAULT_FORMAT = "dd/mm/yyyy";
 
+  /**
+   * The year written when there is no year.
+   *
+   * A birthday is often recorded as 15.03 and nothing more, which is
+   * perfectly useful for remembering to send a message. ISO dates have
+   * no way to say "no year", and an <input type="date"> cannot hold
+   * one — so year zero stands in for it. Nothing real falls on it, and
+   * it survives being passed through anything expecting an ISO string.
+   */
+  static NO_YEAR = 0;
+
   #raw;
   #year = null;
   #month = null;
   #day = null;
+  #hasYear = true;
 
   /**
    * @param {string} raw as stored in the sheet
@@ -63,7 +75,9 @@ export class DateValue {
    */
   get iso() {
     if (!this.isValid) return "";
-    return `${this.#year}-${this.#pad(this.#month)}-${this.#pad(this.#day)}`;
+
+    const year = this.#hasYear ? this.#year : DateValue.NO_YEAR;
+    return `${String(year).padStart(4, "0")}-${this.#pad(this.#month)}-${this.#pad(this.#day)}`;
   }
 
   /**
@@ -78,6 +92,15 @@ export class DateValue {
     const day = this.#pad(this.#day);
     const month = this.#pad(this.#month);
     const year = String(this.#year);
+
+    /* Written back exactly as short as it was given: a birthday entered
+       as 15.03 must not come out of the sheet as 15.03.2026, which would
+       be a year nobody chose. */
+    if (!this.#hasYear) {
+      return shape.order === "mdy"
+        ? [month, day].join(shape.separator)
+        : [day, month].join(shape.separator);
+    }
 
     const parts = shape.order === "ymd" ? [year, month, day]
                 : shape.order === "mdy" ? [month, day, year]
@@ -105,14 +128,73 @@ export class DateValue {
   parts(locale = "uk-UA") {
     if (!this.isValid) return null;
 
-    const date = new Date(Date.UTC(this.#year, this.#month - 1, this.#day));
+    /* A leap year stands in when none was given, so the 29th of
+       February survives being formatted. */
+    const year = this.#hasYear ? this.#year : 2000;
+    const date = new Date(Date.UTC(year, this.#month - 1, this.#day));
     const shape = { timeZone: "UTC" };
 
     return {
       dayMonth: new Intl.DateTimeFormat(locale, { ...shape, day: "numeric", month: "long" }).format(date),
-      weekday:  new Intl.DateTimeFormat(locale, { ...shape, weekday: "long" }).format(date),
-      year:     String(this.#year),
+      /* Meaningless without a year: the 15th of March fell on a
+         different weekday in every year there has been. */
+      weekday:  this.#hasYear
+        ? new Intl.DateTimeFormat(locale, { ...shape, weekday: "long" }).format(date)
+        : "",
+      year:     this.#hasYear ? String(this.#year) : "",
     };
+  }
+
+  /** @returns {boolean} whether a year was actually written */
+  get hasYear() {
+    return this.isValid && this.#hasYear;
+  }
+
+  /**
+   * Whole years since this date, or null when there is no year to
+   * count from.
+   *
+   * Returned rather than displayed, so the caller decides what to do
+   * with an unknown age. A birthday written as "15.03" is perfectly
+   * useful for remembering to send a message; it simply cannot say how
+   * old anyone is, and inventing a number would be worse than saying
+   * nothing.
+   *
+   * @returns {number|null}
+   */
+  get age() {
+    if (!this.hasYear) return null;
+
+    const today = new Date();
+    let age = today.getFullYear() - this.#year;
+
+    /* The birthday has not come round yet this year, so a year is
+       subtracted — otherwise everyone born in December is a year older
+       for eleven months. */
+    const hadBirthday =
+      today.getMonth() + 1 > this.#month ||
+      (today.getMonth() + 1 === this.#month && today.getDate() >= this.#day);
+
+    if (!hadBirthday) age -= 1;
+
+    return age >= 0 && age < 130 ? age : null;
+  }
+
+  /**
+   * Ukrainian needs three plural forms for years.
+   * 1 рік · 2–4 роки · 5–20 років, then it repeats by last digit.
+   *
+   * @param {number} age
+   * @returns {string}
+   */
+  static pluraliseYears(age) {
+    const lastTwo = age % 100;
+    const lastOne = age % 10;
+
+    if (lastTwo > 10 && lastTwo < 20) return "років";
+    if (lastOne === 1) return "рік";
+    if (lastOne >= 2 && lastOne <= 4) return "роки";
+    return "років";
   }
 
   /** @returns {string} */
@@ -133,6 +215,10 @@ export class DateValue {
     /* A four-digit group is unmistakably the year, wherever it sits. */
     const yearIndex = numbers.findIndex(part => part.length === 4);
 
+    if (yearIndex >= 0 && values[yearIndex] === DateValue.NO_YEAR) {
+      this.#hasYear = false;
+    }
+
     if (yearIndex === 0) {
       this.#assign(values[0], values[1], values[2]);
       return;
@@ -145,11 +231,13 @@ export class DateValue {
       return;
     }
 
-    /* No year at all — "03.03" and the like. Assuming the current year
-       is a guess, but it is the one the writer almost certainly meant,
-       and leaving the date unreadable helps nobody. */
+    /* No year at all — "03.03" and the like. The current year is
+       assumed so the date is usable, but the absence is recorded:
+       a birthday written without a year gives no age, and guessing one
+       would be worse than showing none. */
     const [a, b] = values;
     const { day, month } = this.#resolveOrder(a, b, format);
+    this.#hasYear = false;
     this.#assign(values[2] ?? new Date().getFullYear(), month, day);
   }
 
@@ -172,13 +260,17 @@ export class DateValue {
     if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) return;
     if (month < 1 || month > 12 || day < 1 || day > 31) return;
 
+    if (year === DateValue.NO_YEAR) this.#hasYear = false;
+
     /* Round-tripping through Date catches the 31st of February and
-       friends: the constructor rolls them over, so a mismatch means
-       the date was never real. */
-    const probe = new Date(Date.UTC(year, month - 1, day));
+       friends: the constructor rolls them over, so a mismatch means the
+       date was never real. A leap year is used when none was given, so
+       the 29th of February is not rejected for want of one. */
+    const probeYear = this.#hasYear ? year : 2000;
+    const probe = new Date(Date.UTC(probeYear, month - 1, day));
     if (probe.getUTCMonth() !== month - 1 || probe.getUTCDate() !== day) return;
 
-    this.#year = year;
+    this.#year = this.#hasYear ? year : DateValue.NO_YEAR;
     this.#month = month;
     this.#day = day;
   }
