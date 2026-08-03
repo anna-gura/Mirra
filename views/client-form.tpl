@@ -66,7 +66,8 @@
 
       <label class="fm-field">
         <span class="fm-label">Нотатки</span>
-        <textarea class="fm-input fm-area" rows="3" data-field="notes" maxlength="500"></textarea>
+        <textarea class="fm-input fm-area" rows="3" data-field="notes" maxlength="500"
+                  placeholder="Будь-що про клієнта. Слово з #  стане теґом, за яким можна шукати."></textarea>
       </label>
 
       <div data-extra-fields></div>

@@ -54,6 +54,50 @@ export class ClientList {
    * @param {string} query
    * @returns {Client[]}
    */
+  /**
+   * Tags matching what has been typed so far, most used first.
+   *
+   * A hash on its own returns everything, which is what someone who
+   * types it is asking for. Anything after it narrows by prefix, so
+   * "#кор" reaches "#коротке-волосся" without typing the rest.
+   *
+   * @param {string} query
+   * @returns {Array<{tag: string, count: number}>}
+   */
+  suggestTags(query) {
+    const typed = (query ?? "").trim().toLocaleLowerCase("uk");
+    if (!typed.startsWith("#")) return [];
+
+    const all = this.tags;
+    if (typed === "#") return all;
+
+    return all.filter(({ tag }) => tag.startsWith(typed));
+  }
+
+  /**
+   * Every tag used anywhere in the sheet, with how many clients carry
+   * it, most used first.
+   *
+   * Counted rather than merely listed: a tag on twelve people is worth
+   * offering, one used once is noise, and only the count tells them
+   * apart.
+   *
+   * @returns {Array<{tag: string, count: number}>}
+   */
+  get tags() {
+    const counts = new Map();
+
+    for (const client of this.clients) {
+      for (const tag of client.tags) {
+        counts.set(tag, (counts.get(tag) ?? 0) + 1);
+      }
+    }
+
+    return [...counts.entries()]
+      .map(([tag, count]) => ({ tag, count }))
+      .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag, "uk"));
+  }
+
   filter(query) {
     const trimmed = (query ?? "").trim();
     if (!trimmed) return this.clients;

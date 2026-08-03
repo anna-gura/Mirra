@@ -120,6 +120,12 @@ class MirraApp {
     this.#auth.addEventListener("signin", () => this.#bootstrap());
     this.#clients.addEventListener("select", event => this.#openClient(event.detail.rowNumber));
 
+    /* A tag tapped on a card returns to the list filtered by it. That is
+       what tagging is for: seeing one client reminds you of a category,
+       and the category should be one tap away rather than a search you
+       have to retype. */
+    this.#card.addEventListener("tag", event => this.#showTag(event.detail.tag));
+
     this.#bind();
     this.#checkConfig();
 
@@ -635,6 +641,14 @@ class MirraApp {
     }
 
     this.#backToList();
+  }
+
+  /**
+   * @param {string} tag
+   */
+  #showTag(tag) {
+    this.#screens.show("clients");
+    this.#clients.setQuery(tag).resetScroll();
   }
 
   #backToList() {

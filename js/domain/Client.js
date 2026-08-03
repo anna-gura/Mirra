@@ -1,5 +1,6 @@
 import { SocialCatalog } from "./SocialCatalog.js";
 import { PhoneNumber } from "./PhoneNumber.js";
+import { NoteTags } from "./NoteTags.js";
 
 /**
  * Client — one person, read out of one row.
@@ -23,6 +24,7 @@ export class Client {
   #messengers = null;
   #phone = null;
   #searchText = null;
+  #tags = null;
   #searchDigits = null;
 
   /**
@@ -96,6 +98,36 @@ export class Client {
   }
 
   /**
+   * Hashtags found in the note, lowercased and without repeats.
+   * @returns {string[]}
+   */
+  get tags() {
+    this.#tags ??= NoteTags.parse(this.notes);
+    return this.#tags;
+  }
+
+  /**
+   * The note with its tags taken out, for showing the prose alone.
+   * @returns {string}
+   */
+  get noteText() {
+    return NoteTags.strip(this.notes);
+  }
+
+  /**
+   * @param {string} query a tag, with or without its hash
+   * @returns {boolean}
+   */
+  hasTag(query) {
+    const wanted = query.trim().toLocaleLowerCase("uk");
+    const normalised = wanted.startsWith("#") ? wanted : `#${wanted}`;
+
+    /* Prefix rather than exact match, so the list narrows as the tag is
+       typed instead of staying empty until the last character. */
+    return this.tags.some(tag => tag.startsWith(normalised));
+  }
+
+  /**
    * The name lowercased for comparison, built once per client.
    *
    * toLocaleLowerCase with a locale rather than toLowerCase: the plain
@@ -125,6 +157,12 @@ export class Client {
    * @returns {boolean}
    */
   matches(text, digits) {
+    /* A query starting with # is asking about tags and nothing else.
+       Without this, searching #волосся would also return everyone whose
+       note happens to contain the word — which is not what somebody
+       typing a hash means. */
+    if (text.startsWith("#")) return this.hasTag(text);
+
     if (text && this.searchText.includes(text)) return true;
     return Boolean(digits) && this.searchDigits.includes(digits);
   }
