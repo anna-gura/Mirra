@@ -12,7 +12,7 @@
  * replayed from one would fail in a way nobody could diagnose.
  */
 
-const VERSION = "mirra-v8";
+const VERSION = "mirra-v10";
 
 /**
  * Files the app is made of. Listed rather than discovered, because a
@@ -71,6 +71,7 @@ const SHELL = [
   "./js/errors.js",
   "./js/page.js",
   "./js/services/AuthService.js",
+  "./js/services/TokenStore.js",
   "./js/services/AuthServiceFactory.js",
   "./js/services/DriveRepository.js",
   "./js/services/GoogleApiClient.js",

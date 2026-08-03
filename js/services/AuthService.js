@@ -1,5 +1,6 @@
 import { ScriptLoader } from "../core/ScriptLoader.js";
 import { config } from "../config.js";
+import { TokenStore } from "./TokenStore.js";
 import {
   AccessDeniedError,
   AuthError,
@@ -33,6 +34,18 @@ export class AuthService extends EventTarget {
   #token = null;
   #expiresAt = 0;
   #pending = null;   // { promise, resolve, reject } of the request in flight
+  #store = new TokenStore();
+
+  constructor() {
+    super();
+
+    /* Read here rather than inside init(), because init() loads a
+       library over the network and resume() asks whether we are signed
+       in before that finishes. Restoring later meant the answer was
+       always "no", and the app went to Google for a token it already
+       had — which is the flash of a popup opening and closing again. */
+    this.#restore();
+  }
 
   /**
    * Loads the Google library and prepares the token client.
@@ -94,6 +107,8 @@ export class AuthService extends EventTarget {
    * @throws {AccessDeniedError|SignInAbandonedError|PopupBlockedError|AuthError}
    */
   requestToken({ silent = false } = {}) {
+    if (this.isSignedIn) return Promise.resolve(this.#token);
+
     // A second popup while one is open confuses Google and the user.
     if (this.#pending) return this.#pending.promise;
 
@@ -102,15 +117,56 @@ export class AuthService extends EventTarget {
       : this.init().then(() => this.#ask(silent));
   }
 
+  /**
+   * Tries to get a token without showing anything.
+   *
+   * Google returns one straight away when the person is signed in to
+   * their account in this browser and has granted access before —
+   * which, for someone using Mirra daily, is always. No window opens
+   * and nothing is clicked; the app simply starts signed in.
+   *
+   * Failure here is ordinary, not exceptional: it means they signed out
+   * of Google or withdrew the permission, and the cover screen is the
+   * right answer. So it resolves false rather than throwing.
+   *
+   * @returns {Promise<boolean>} whether a token was obtained
+   */
+  async resume() {
+    /* A stored token that is still good is the whole answer. Google is
+       not asked, no window opens, and the app starts on the hub — which
+       is what someone opening Mirra for the fourth time today expects.
+
+       The library is still loaded, just not waited for: it is needed
+       only when this token expires, and by then it will have arrived.
+       Warming it now also means the eventual sign-in click is not spent
+       waiting on a download, which is what browsers block popups for. */
+    if (this.isSignedIn) {
+      this.init().catch(error => console.warn("Google preload failed", error));
+      return true;
+    }
+
+    try {
+      await this.init();
+      await this.#ask(true);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   /** Drops the local token without revoking it; forces a renewal. */
   invalidate() {
     this.#token = null;
     this.#expiresAt = 0;
+    this.#store.clear();
   }
 
   /** Revokes the token at Google and clears local state. */
   async signOut() {
     const token = this.#token;
+
+    /* invalidate() clears the stored copy as well, which is what makes
+       signing out actually stick across visits. */
     this.invalidate();
 
     if (token && window.google?.accounts?.oauth2) {
@@ -122,7 +178,7 @@ export class AuthService extends EventTarget {
   /* ---------------- private ---------------- */
 
   /** Opens the popup and hands back a promise for its outcome. */
-  #ask(silent) {
+  #ask(_silent) {
     const pending = {};
     pending.promise = new Promise((resolve, reject) => {
       pending.resolve = resolve;
@@ -130,7 +186,12 @@ export class AuthService extends EventTarget {
     });
     this.#pending = pending;
 
-    this.#tokenClient.requestAccessToken({ prompt: silent ? "" : "consent" });
+    /* `prompt` is left empty even for a deliberate sign-in. Forcing
+       "consent" showed the permission screen every single time, including
+       to someone who granted it months ago — Google shows an account
+       chooser or a consent screen when either is actually needed, and
+       returns silently when neither is. */
+    this.#tokenClient.requestAccessToken({ prompt: "" });
     return pending.promise;
   }
 
@@ -162,6 +223,7 @@ export class AuthService extends EventTarget {
     this.#token = response.access_token;
     this.#expiresAt =
       Date.now() + (Number(response.expires_in) - config.TOKEN_SAFETY_MARGIN) * 1000;
+    this.#store.write(this.#token, this.#expiresAt);
 
     pending?.resolve(this.#token);
     this.dispatchEvent(new CustomEvent("signin"));
@@ -189,6 +251,15 @@ export class AuthService extends EventTarget {
       default:
         pending.reject(new AuthError(error?.type ?? "unknown", error));
     }
+  }
+
+  /** Picks up a token left by an earlier visit, if it is still good. */
+  #restore() {
+    const record = this.#store.read();
+    if (!record) return;
+
+    this.#token = record.token;
+    this.#expiresAt = record.expiresAt;
   }
 
   #takePending() {
