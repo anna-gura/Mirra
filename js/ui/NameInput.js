@@ -49,16 +49,32 @@ export class NameInput {
   }
 
   /**
+   * Characters that begin a new part of a name.
+   *
+   * The apostrophe is deliberately absent. It is one character doing two
+   * unrelated jobs: in O'Connor it joins two name parts and the letter
+   * after it is capital, while in Зав'ялова it is a soft sign inside a
+   * single word and the letter after it is not. Nothing in the string
+   * distinguishes them — only the language does.
+   *
+   * Ukrainian names carry apostrophes far more often than Irish ones,
+   * so the rule follows the commoner case. Somebody writing O'Connor
+   * capitalises the C themselves and this leaves it alone; somebody
+   * writing Зав'ялова is not fought with on every keystroke.
+   */
+  static SEPARATORS = "\\s\\-–—";
+
+  /**
    * @param {string} value
    * @returns {string}
    */
   static capitalise(value) {
-    /* Split on the separators rather than on spaces alone, so
-       double-barrelled names and initials each get their capital.
-       toLocaleUpperCase with a locale rather than the plain version:
+    /* toLocaleUpperCase with a locale rather than the plain version:
        the plain one gets Turkish dotted i wrong. */
+    const pattern = new RegExp(`(^|[${NameInput.SEPARATORS}])(\\p{L})`, "gu");
+
     return value.replace(
-      /(^|[\s'’\-–—])(\p{L})/gu,
+      pattern,
       (whole, separator, letter) => separator + letter.toLocaleUpperCase("uk")
     );
   }
