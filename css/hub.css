@@ -23,6 +23,32 @@
   padding:max(14px,env(safe-area-inset-top)) 18px 0;
 }
 
+/* Matched to the theme toggle exactly: same box, same opacity, same
+   way of waking up. Two controls of equal importance should not differ
+   in how loudly they ask to be noticed. */
+.hub-icon{
+  width:44px;
+  height:44px;
+  border-radius:99px;
+  display:grid;
+  place-items:center;
+  color:var(--ink);
+  opacity:.4;
+  transition:opacity .25s;
+}
+.hub-icon:hover,
+.hub-icon:focus-visible{ opacity:1; }
+
+.hub-icon svg{
+  width:18px;
+  height:18px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.4;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
 .hub-body{
   display:flex;
   align-items:center;

@@ -80,6 +80,21 @@ export class RedirectAuthService extends EventTarget {
   }
 
   /**
+   * Matches AuthService.resume(), so the application can start the same
+   * way whichever strategy is in use.
+   *
+   * There is no silent path here: renewing means leaving the page. A
+   * token restored from storage counts as resumed, and anything else
+   * waits for the person to press the button.
+   *
+   * @returns {Promise<boolean>}
+   */
+  async resume() {
+    await this.init().catch(() => {});
+    return this.isSignedIn;
+  }
+
+  /**
    * @returns {Promise<string>} resolves only if a token is already held;
    *          otherwise navigates away and never settles
    */

@@ -123,10 +123,12 @@ class MirraApp {
     this.#bind();
     this.#checkConfig();
 
-    /* In popup mode this warms up the Google library, so the click that
-       opens the popup is not spent waiting on a network request. In
-       redirect mode it is what reads the token back out of the URL. */
-    this.#auth.init().catch(error => this.#report(error));
+    /* Tries to pick the session back up before showing anything.
+       Warming up the Google library is part of it: in popup mode the
+       click that opens the window must not be spent waiting on a
+       network request, and in redirect mode this is what reads the
+       token back out of the URL. */
+    this.#resume();
     MirraApp.registerWorker();
 
     return this;
@@ -223,6 +225,31 @@ class MirraApp {
   /** Cover screen. Moving on is left to the signin event. */
   async #signIn(button) {
     await this.#run(button, () => this.#auth.requestToken());
+  }
+
+  /**
+   * Picks the session back up without asking, where that is possible.
+   *
+   * Somebody who opens Mirra six times a day should be asked to sign in
+   * once, not six times. Google returns a token silently when they are
+   * signed in to their account and have granted access before — which,
+   * for anyone using this daily, is always.
+   *
+   * The cover screen shows only when that fails: they signed out of
+   * Google, or withdrew the permission. Both are real reasons to ask
+   * again; nothing else is.
+   */
+  async #resume() {
+    try {
+      const resumed = await this.#auth.resume();
+      if (resumed) return this.#bootstrap();
+    } catch (error) {
+      console.warn("Could not resume the session", error);
+    }
+
+    /* Nothing to resume, so the cover stays where it is. Deliberately
+       silent: being unable to continue a session that ended normally is
+       not a failure worth reporting. */
   }
 
   /**
