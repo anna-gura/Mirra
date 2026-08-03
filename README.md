@@ -85,7 +85,7 @@ in Google Cloud rather than in code.
 ### 1. Get the files
 
 ```bash
-git clone https://github.com/Anna-Gura/Mirra.git
+git clone https://github.com/anna-gura/Mirra.git
 cd Mirra
 ```
 
