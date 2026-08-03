@@ -350,12 +350,52 @@
 }
 
 .cal-caption{
-  font-family:Marcellus,serif;
-  font-size:16px;
-  letter-spacing:.01em;
-  text-align:center;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
   flex:1;
+  min-width:0;
 }
+
+/* Native selects here rather than the app's own menu. A month list and
+   a hundred years both open better as the platform's own picker on a
+   phone, and this one sits inside a dialog where a second popup layer
+   would be one too many. */
+.cal-select{
+  appearance:none;
+  -webkit-appearance:none;
+  font-family:Marcellus,serif;
+  font-size:15.5px;
+  letter-spacing:.01em;
+  color:var(--ink);
+  background:none;
+  border:1px solid transparent;
+  border-radius:8px;
+  padding:5px 7px;
+  min-height:34px;
+  cursor:pointer;
+  text-align:center;
+  text-align-last:center;
+  transition:border-color .18s, background .18s;
+}
+.cal-select:hover{
+  border-color:var(--line);
+  background:var(--bg);
+}
+.cal-select:focus-visible{
+  outline:none;
+  border-color:var(--soft);
+}
+
+.cal-select option{
+  font-family:Karla,sans-serif;
+  font-size:15px;
+  color:var(--ink);
+  background:var(--surface);
+}
+
+.cal-select-year{ font-variant-numeric:tabular-nums; }
 
 .cal-nav{
   width:36px;

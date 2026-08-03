@@ -185,6 +185,11 @@ export class SettingsService {
         safe.sections[name] = {
           spreadsheetId: value.spreadsheetId,
           sheetTitle: typeof value.sheetTitle === "string" ? value.sheetTitle : "",
+          /* Whether Mirra made this sheet, and may therefore add columns
+             to it without asking. Absent in files written by earlier
+             versions, and absent means no — the cautious answer, and the
+             right one for a sheet somebody brought themselves. */
+          managed: value.managed === true,
         };
       }
     }

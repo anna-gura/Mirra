@@ -282,7 +282,10 @@ export class ClientFormView extends EventTarget {
       let picker = this.#datePickers.get(field);
 
       if (!picker) {
-        picker = new DatePicker({ value: draft[field] ?? "" });
+        picker = new DatePicker({
+          value: draft[field] ?? "",
+          allowNoYear: field === "birthday",
+        });
         picker.addEventListener("change", event => {
           if (this.#draft) this.#draft[field] = event.detail.value;
         });

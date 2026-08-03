@@ -7,6 +7,7 @@ import { SheetsError } from "../errors.js";
  * @property {string}     title       name of the file
  * @property {string}     sheetTitle  name of the tab that was read
  * @property {number}     sheetId     numeric id of that tab, used for edits
+ * @property {number}     columnCount how wide the grid is, data or not
  * @property {string[]}   headers     first row, blanks filled in
  * @property {string[][]} rows        everything below the first row
  * @property {number}     width       widest row, in columns
@@ -43,7 +44,7 @@ export class SheetsRepository {
   async load(spreadsheetId, sheetTitle) {
     const meta = await this.#api.get(
       `${config.SHEETS_API}/${spreadsheetId}` +
-      "?fields=properties.title,sheets.properties(title,sheetId)"
+      "?fields=properties.title,sheets.properties(title,sheetId,gridProperties.columnCount)"
     );
 
     const tabs = meta.sheets?.map(sheet => sheet.properties) ?? [];
@@ -60,7 +61,8 @@ export class SheetsRepository {
     );
 
     return this.#toSnapshot(
-      spreadsheetId, meta.properties.title, tab.title, tab.sheetId, values.values ?? []
+      spreadsheetId, meta.properties.title, tab.title, tab.sheetId,
+      tab.gridProperties?.columnCount ?? 26, values.values ?? []
     );
   }
 
@@ -116,6 +118,7 @@ export class SheetsRepository {
       created.properties.title,
       created.sheets[0].properties.title,
       created.sheets[0].properties.sheetId,
+      created.sheets[0].properties.gridProperties?.columnCount ?? headers.length,
       [Array.from(headers)]
     );
   }
@@ -216,6 +219,53 @@ export class SheetsRepository {
   }
 
   /**
+   * Adds columns to the right-hand end of a sheet.
+   *
+   * Always to the right, and never anywhere else. Columns a user added
+   * themselves keep their positions, formulas that reference them keep
+   * pointing at the same cells, and a sheet edited by an older version
+   * of Mirra keeps working — because nothing that was there has moved.
+   *
+   * This is the whole compatibility story in one rule: features may add
+   * columns, and that is all they may do.
+   *
+   * @param {import("./SheetsRepository.js").SheetSnapshot} snapshot
+   * @param {string[]} names headings to append
+   * @returns {Promise<void>}
+   */
+  async addColumns(snapshot, names) {
+    if (!names.length) return;
+
+    const at = snapshot.width;                    // zero-based, past the last column
+    const needed = at + names.length;
+
+    /* The grid can be wider than the data — a new sheet has 26 columns
+       whatever is written in them — so it is only extended when the new
+       headings would fall outside it. */
+    if (needed > snapshot.columnCount) {
+      await this.#api.post(`${config.SHEETS_API}/${snapshot.spreadsheetId}:batchUpdate`, {
+        requests: [{
+          appendDimension: {
+            sheetId: snapshot.sheetId,
+            dimension: "COLUMNS",
+            length: needed - snapshot.columnCount,
+          },
+        }],
+      });
+    }
+
+    const from = SheetsRepository.columnLetter(at + 1);
+    const to = SheetsRepository.columnLetter(needed);
+    const range = `${snapshot.sheetTitle}!${from}1:${to}1`;
+
+    await this.#api.put(
+      `${config.SHEETS_API}/${snapshot.spreadsheetId}/values/${encodeURIComponent(range)}` +
+      "?valueInputOption=USER_ENTERED",
+      { values: [names] }
+    );
+  }
+
+  /**
    * Removes a row from the sheet.
    *
    * deleteDimension rather than clearing the values: clearing leaves an
@@ -271,7 +321,7 @@ export class SheetsRepository {
    * below it. Padding everything to one width here means the grid never
    * has to guess.
    */
-  #toSnapshot(spreadsheetId, title, sheetTitle, sheetId, values) {
+  #toSnapshot(spreadsheetId, title, sheetTitle, sheetId, columnCount, values) {
     const width = values.reduce((widest, row) => Math.max(widest, row.length), 0);
 
     const headers = Array.from({ length: width }, (_, index) => {
@@ -283,6 +333,6 @@ export class SheetsRepository {
       Array.from({ length: width }, (_, index) => row[index] ?? "")
     );
 
-    return { spreadsheetId, title, sheetTitle, sheetId, headers, rows, width };
+    return { spreadsheetId, title, sheetTitle, sheetId, columnCount, headers, rows, width };
   }
 }

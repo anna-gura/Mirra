@@ -379,15 +379,24 @@ export class ClientCardView extends EventTarget {
     const dayMonth = document.createElement("span");
     dayMonth.textContent = parts.dayMonth;
 
-    const weekday = document.createElement("span");
-    weekday.className = "cd-weekday";
-    weekday.textContent = `(${parts.weekday})`;
+    value.append(dayMonth);
 
-    const year = document.createElement("span");
-    year.className = "cd-year";
-    year.textContent = parts.year;
+    /* A date with no year has no weekday either — the 15th of March fell
+       on a different day in every year there has been — and an empty
+       pair of brackets is worse than saying nothing. */
+    if (parts.weekday) {
+      const weekday = document.createElement("span");
+      weekday.className = "cd-weekday";
+      weekday.textContent = `(${parts.weekday})`;
+      value.append(" ", weekday);
+    }
 
-    value.append(dayMonth, " ", weekday, " ", year);
+    if (parts.year) {
+      const year = document.createElement("span");
+      year.className = "cd-year";
+      year.textContent = parts.year;
+      value.append(" ", year);
+    }
 
     /* The age set apart from the date rather than folded into it: one is
        what was written down, the other is worked out from it, and they

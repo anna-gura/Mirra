@@ -15,6 +15,8 @@ import { ClientListView }       from "./ui/ClientListView.js";
 import { ClientCardView }       from "./ui/ClientCardView.js";
 import { ClientFormView }       from "./ui/ClientFormView.js";
 import { ClientDraft }          from "./domain/ClientDraft.js";
+import { ClientSchema }         from "./domain/ClientSchema.js";
+import { ClientList }           from "./domain/ClientList.js";
 import { Notice }               from "./ui/Notice.js";
 import { ConfirmDialog }        from "./ui/ConfirmDialog.js";
 import { InstallPrompt }        from "./ui/InstallPrompt.js";
@@ -320,12 +322,47 @@ class MirraApp {
    * @param {object} saved the section as recorded in settings
    */
   async #fetchClients(saved) {
-    const [snapshot, file] = await Promise.all([
+    const [loaded, file] = await Promise.all([
       this.#sheets.load(saved.spreadsheetId, saved.sheetTitle),
       this.#drive.getFile(saved.spreadsheetId),
     ]);
 
+    const snapshot = file.trashed ? loaded : await this.#catchUp(saved, loaded);
     return { snapshot, file };
+  }
+
+  /**
+   * Brings a Mirra-made sheet up to date with the current version.
+   *
+   * New releases add fields, and a sheet created by an older one has no
+   * column for them. Since Mirra made this sheet, it may fix that
+   * quietly — appending the missing headings on the right, where they
+   * disturb nothing that is already there.
+   *
+   * Sheets the user brought themselves are never touched. Their layout
+   * is their business, and a tool that rearranges a file it was merely
+   * shown is a tool nobody should trust with one.
+   *
+   * @param {object} saved
+   * @param {object} snapshot
+   * @returns {Promise<object>} the snapshot, re-read if columns were added
+   */
+  async #catchUp(saved, snapshot) {
+    if (!saved.managed) return snapshot;
+
+    const missing = new ClientSchema(snapshot.headers).missing();
+    if (!missing.length) return snapshot;
+
+    try {
+      await this.#sheets.addColumns(snapshot, missing.map(ClientSchema.labelFor));
+      return await this.#sheets.load(saved.spreadsheetId, saved.sheetTitle);
+    } catch (error) {
+      /* A sheet one column short still works — every field Mirra cannot
+         write simply does not appear. Failing to widen it is not a
+         reason to refuse to open it. */
+      console.warn("Could not add the missing columns", error);
+      return snapshot;
+    }
   }
 
   /**
@@ -406,7 +443,11 @@ class MirraApp {
       const token = await this.#auth.getToken();
       const file = await this.#picker.open(token);
       const snapshot = await this.#sheets.load(file.id);
-      await this.#remember(snapshot);
+
+      /* Picked rather than created, so it is theirs: Mirra reads it,
+         works with whatever columns it has, and adds nothing without
+         being asked. */
+      await this.#remember(snapshot, false);
       this.#showClients(snapshot);
     });
   }
@@ -425,7 +466,7 @@ class MirraApp {
         folderId: this.#settings.folderId,
         title: this.#chooser.title,
       });
-      await this.#remember(snapshot);
+      await this.#remember(snapshot, true);
       this.#showClients(snapshot);
       this.#notice.done("Таблицю створено в теці Mirra на вашому Диску.");
     });
@@ -577,19 +618,98 @@ class MirraApp {
       return;
     }
 
+    /* Anything typed into a field the sheet has no column for would be
+       dropped on the way out, so the offer to add one comes before the
+       write rather than after the loss. */
+    const widened = await this.#offerColumns(draft, saved);
+    if (widened === null) return;
+
     await this.#run(button, async () => {
-      const values = draft.toRow(this.#settings.dateFormat);
-      const isNew = draft.isNew;
+      const values = (widened ?? draft).toRow(this.#settings.dateFormat);
+      const isNew = (widened ?? draft).isNew;
 
       const rowNumber = isNew
         ? await this.#sheets.appendRow(saved.spreadsheetId, saved.sheetTitle, values)
         : (await this.#sheets.updateRow(
-            saved.spreadsheetId, saved.sheetTitle, draft.rowNumber, values
-          ), draft.rowNumber);
+            saved.spreadsheetId, saved.sheetTitle, (widened ?? draft).rowNumber, values
+          ), (widened ?? draft).rowNumber);
+
+      /* Redrawn from the widened snapshot when columns were added, so
+         the list and the card agree about how many there are. */
+      if (widened) this.#clients.render(this.#snapshot);
 
       this.#applyLocally(rowNumber, values);
       this.#notice.done(isNew ? "Клієнта додано." : "Зміни збережено.");
     });
+  }
+
+  /**
+   * Offers to add columns for anything the sheet cannot hold.
+   *
+   * Only ever reached with a sheet the user brought themselves — one
+   * Mirra made is widened on load without asking. Here the sheet is
+   * theirs, so the choice is theirs too, and both answers are
+   * reasonable: add the column, or save the rest and let this field go.
+   *
+   * @param {ClientDraft} draft
+   * @param {object} saved
+   * @returns {Promise<ClientDraft|null|undefined>}
+   *   a rebuilt draft when columns were added, undefined to save as is,
+   *   null to abandon the save entirely
+   */
+  async #offerColumns(draft, saved) {
+    const missing = draft.unwritableFields;
+    if (!missing.length) return undefined;
+
+    const labels = missing.map(ClientSchema.labelFor);
+
+    const add = await this.#confirm.ask({
+      title: labels.length === 1 ? "Немає потрібного стовпця" : "Немає потрібних стовпців",
+      message: labels.join(", "),
+      note: "У вашій таблиці немає такого стовпця, тож ці дані нікуди записати. "
+          + "Додати його в кінець таблиці? Наявні стовпці залишаться на місці. "
+          + "Якщо відмовитись, зміни не збережуться.",
+      confirmLabel: "Додати стовпець",
+      cancelLabel: "Нічого не змінювати",
+    });
+
+    /* Refusing abandons the save entirely rather than writing some of
+       the fields. A partial save is the worst of the three outcomes: it
+       reports success, changes the sheet, and quietly drops whatever had
+       nowhere to go. */
+    if (!add) return null;
+
+    try {
+      await this.#sheets.addColumns(this.#snapshot, labels);
+      const snapshot = await this.#sheets.load(saved.spreadsheetId, saved.sheetTitle);
+      this.#snapshot = snapshot;
+
+      /* Rebuilt against the widened sheet: the draft holds column
+         positions from the schema it was made with, and those have just
+         changed. */
+      const rebuilt = new ClientDraft({
+        schema: new ClientList(snapshot).schema,
+        values: draft.isNew ? [] : snapshot.rows[draft.rowNumber - 2] ?? [],
+        rowNumber: draft.rowNumber,
+        dateFormat: this.#settings.dateFormat,
+      });
+
+      Object.assign(rebuilt, {
+        firstName: draft.firstName,
+        lastName: draft.lastName,
+        phone: draft.phone,
+        birthday: draft.birthday,
+        lastVisit: draft.lastVisit,
+        notes: draft.notes,
+        socials: draft.socials,
+        messengers: draft.messengers,
+      });
+
+      return rebuilt;
+    } catch (error) {
+      this.#report(error);
+      return null;
+    }
   }
 
   /**
@@ -694,10 +814,15 @@ class MirraApp {
   }
 
   /** Records the spreadsheet so the next visit skips this step. */
-  #remember(snapshot) {
+  /**
+   * @param {object} snapshot
+   * @param {boolean} managed whether Mirra created this sheet
+   */
+  #remember(snapshot, managed) {
     return this.#settings.setSection(MirraApp.CLIENTS_SECTION, {
       spreadsheetId: snapshot.spreadsheetId,
       sheetTitle: snapshot.sheetTitle,
+      managed,
     });
   }
 
