@@ -381,3 +381,32 @@
 }
 .cd-tag:hover,
 .cd-tag:focus-visible{ color:var(--ink); border-color:var(--soft); }
+
+/* ---------------- age, and fields with a future ---------------- */
+
+/* The age set apart from the date it comes from: one was written down,
+   the other is worked out, and they should not read as the same kind
+   of fact. */
+.cd-age{
+  font-size:.85em;
+  font-weight:300;
+  color:var(--soft);
+  white-space:nowrap;
+}
+.cd-age::before{
+  content:"·";
+  margin-right:5px;
+  opacity:.5;
+}
+
+/* Says why a field sits there doing nothing yet. Set in the label
+   rather than beside the value, so it describes the field rather than
+   whatever happens to be in it. */
+.cd-soon{
+  font-style:normal;
+  font-size:10px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--faint);
+  margin-left:9px;
+}

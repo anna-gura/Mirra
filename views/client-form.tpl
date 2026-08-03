@@ -48,8 +48,16 @@
       </label>
 
       <div class="fm-field">
-        <span class="fm-label">Останній візит</span>
-        <div data-date-mount></div>
+        <span class="fm-label">День народження</span>
+        <div data-date-mount="birthday"></div>
+      </div>
+
+      <div class="fm-field">
+        <span class="fm-label">
+          Останній візит
+          <em class="fm-soon">автоматизація згодом</em>
+        </span>
+        <div data-date-mount="lastVisit"></div>
       </div>
 
       <div class="fm-group">

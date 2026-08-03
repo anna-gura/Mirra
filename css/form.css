@@ -664,3 +664,14 @@
 
 .fm-phone-typed{ color:transparent; }
 .fm-phone-rest{ color:var(--faint); }
+
+/* Matches the marker on the card, so the same promise looks the same
+   in both places. */
+.fm-soon{
+  font-style:normal;
+  font-size:9.5px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--faint);
+  margin-left:8px;
+}

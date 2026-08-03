@@ -134,31 +134,33 @@ export class SheetsRepository {
    * over rather than losing the file that was just created.
    */
   async #applyDateValidation(created, headers) {
-    const column = headers.indexOf(config.NEW_SHEET.dateColumn);
-    if (column < 0) return;
-
     const sheetId = created.sheets?.[0]?.properties?.sheetId;
     if (sheetId === undefined) return;
 
-    try {
-      await this.#api.post(`${config.SHEETS_API}/${created.spreadsheetId}:batchUpdate`, {
-        requests: [{
-          setDataValidation: {
-            range: {
-              sheetId,
-              startRowIndex: 1,
-              startColumnIndex: column,
-              endColumnIndex: column + 1,
-            },
-            rule: {
-              condition: { type: "DATE_IS_VALID" },
-              inputMessage: "Дата останнього візиту",
-              strict: false,
-              showCustomUi: true,
-            },
+    const requests = config.NEW_SHEET.dateColumns
+      .map(name => ({ name, column: headers.indexOf(name) }))
+      .filter(({ column }) => column >= 0)
+      .map(({ name, column }) => ({
+        setDataValidation: {
+          range: {
+            sheetId,
+            startRowIndex: 1,
+            startColumnIndex: column,
+            endColumnIndex: column + 1,
           },
-        }],
-      });
+          rule: {
+            condition: { type: "DATE_IS_VALID" },
+            inputMessage: name,
+            strict: false,
+            showCustomUi: true,
+          },
+        },
+      }));
+
+    if (!requests.length) return;
+
+    try {
+      await this.#api.post(`${config.SHEETS_API}/${created.spreadsheetId}:batchUpdate`, { requests });
     } catch (error) {
       console.warn("Date validation could not be applied", error);
     }

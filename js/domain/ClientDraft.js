@@ -21,6 +21,7 @@ export class ClientDraft {
   firstName = "";
   lastName = "";
   phone = "";
+  birthday = "";         // ISO, as a date input speaks
   lastVisit = "";        // ISO, as a date input speaks
   notes = "";
 
@@ -90,8 +91,10 @@ export class ClientDraft {
     this.#write(row, "socials", this.#stringify(this.socials, this.#unknownSocials));
     this.#write(row, "messengers", this.#stringify(this.messengers, this.#unknownMessengers));
 
-    const visit = this.lastVisit ? DateValue.fromIso(this.lastVisit).format(dateFormat) : "";
-    this.#write(row, "lastVisit", visit);
+    for (const field of ["birthday", "lastVisit"]) {
+      const iso = this[field];
+      this.#write(row, field, iso ? DateValue.fromIso(iso).format(dateFormat) : "");
+    }
 
     for (const extra of this.extras) {
       row[extra.index] = extra.value.trim();
@@ -113,8 +116,9 @@ export class ClientDraft {
     this.phone     = this.#schema.read(this.#original, "phone");
     this.notes     = this.#schema.read(this.#original, "notes");
 
-    const visit = new DateValue(this.#schema.read(this.#original, "lastVisit"), dateFormat);
-    this.lastVisit = visit.iso;
+    for (const field of ["birthday", "lastVisit"]) {
+      this[field] = new DateValue(this.#schema.read(this.#original, field), dateFormat).iso;
+    }
 
     const socials = SocialCatalog.parse(this.#schema.read(this.#original, "socials"));
     this.socials = socials.filter(p => p.network).map(p => ({ id: p.network.id, handle: p.handle }));

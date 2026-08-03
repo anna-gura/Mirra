@@ -28,6 +28,7 @@ export class DateValue {
   #year = null;
   #month = null;
   #day = null;
+  #hasYear = true;
 
   /**
    * @param {string} raw as stored in the sheet
@@ -115,6 +116,58 @@ export class DateValue {
     };
   }
 
+  /** @returns {boolean} whether a year was actually written */
+  get hasYear() {
+    return this.isValid && this.#hasYear;
+  }
+
+  /**
+   * Whole years since this date, or null when there is no year to
+   * count from.
+   *
+   * Returned rather than displayed, so the caller decides what to do
+   * with an unknown age. A birthday written as "15.03" is perfectly
+   * useful for remembering to send a message; it simply cannot say how
+   * old anyone is, and inventing a number would be worse than saying
+   * nothing.
+   *
+   * @returns {number|null}
+   */
+  get age() {
+    if (!this.hasYear) return null;
+
+    const today = new Date();
+    let age = today.getFullYear() - this.#year;
+
+    /* The birthday has not come round yet this year, so a year is
+       subtracted — otherwise everyone born in December is a year older
+       for eleven months. */
+    const hadBirthday =
+      today.getMonth() + 1 > this.#month ||
+      (today.getMonth() + 1 === this.#month && today.getDate() >= this.#day);
+
+    if (!hadBirthday) age -= 1;
+
+    return age >= 0 && age < 130 ? age : null;
+  }
+
+  /**
+   * Ukrainian needs three plural forms for years.
+   * 1 рік · 2–4 роки · 5–20 років, then it repeats by last digit.
+   *
+   * @param {number} age
+   * @returns {string}
+   */
+  static pluraliseYears(age) {
+    const lastTwo = age % 100;
+    const lastOne = age % 10;
+
+    if (lastTwo > 10 && lastTwo < 20) return "років";
+    if (lastOne === 1) return "рік";
+    if (lastOne >= 2 && lastOne <= 4) return "роки";
+    return "років";
+  }
+
   /** @returns {string} */
   toString() {
     return this.format();
@@ -145,11 +198,13 @@ export class DateValue {
       return;
     }
 
-    /* No year at all — "03.03" and the like. Assuming the current year
-       is a guess, but it is the one the writer almost certainly meant,
-       and leaving the date unreadable helps nobody. */
+    /* No year at all — "03.03" and the like. The current year is
+       assumed so the date is usable, but the absence is recorded:
+       a birthday written without a year gives no age, and guessing one
+       would be worse than showing none. */
     const [a, b] = values;
     const { day, month } = this.#resolveOrder(a, b, format);
+    this.#hasYear = false;
     this.#assign(values[2] ?? new Date().getFullYear(), month, day);
   }
 
