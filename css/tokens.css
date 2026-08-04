@@ -59,6 +59,16 @@
   --alert-bg:   #F8ECEC;
   --alert-line: #EBD3D3;
 
+  /* Tags. Warm gold, taken from the aurora that lights the cover rather
+     than from the blue every interface reaches for by default — this
+     palette is porcelain, tan and candlelight, and a link blue sat in
+     it like a sticker.
+
+     5.3:1 against the background, and 3:1 against the body text beside
+     it: legible on its own, and different enough that a tagged word is
+     visibly not an ordinary one. */
+  --accent:      #7D5E2E;
+
   /* Destructive actions. Muted on purpose: red here has to say "this
      one is different" without turning the corner of a card into a
      warning sign. */
@@ -106,6 +116,8 @@
   --alert:      #E2A0A0;
   --alert-bg:   #2A1A1A;
   --alert-line: #3D2828;
+
+  --accent:      #D4B483;
 
   --danger:      #C98F8F;
   --danger-line: #4A3535;

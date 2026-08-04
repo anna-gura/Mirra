@@ -355,32 +355,63 @@
   letter-spacing:.02em;
 }
 
-/* ---------------- tags on a card ---------------- */
+/* ---------------- tags ---------------- */
 
-/* Above the note rather than inside it: the note reads as the sentence
-   it was written as, and the tags become somewhere to go. */
+/* Chips above the note: a glance at which categories this person is
+   in, before reading anything. */
 .cd-tags{
   display:flex;
   flex-wrap:wrap;
   gap:6px;
-  margin:2px 0 8px;
+  margin:2px 0 9px;
 }
 
-.cd-tag{
+.cd-chip{
   min-height:32px;
   padding:0 12px;
   font-family:Karla,sans-serif;
-  font-weight:300;
+  font-weight:400;
   font-size:12.5px;
-  color:var(--soft);
+  color:var(--accent);
   background:var(--surface);
   border:1px solid var(--line);
   border-radius:99px;
   cursor:pointer;
-  transition:border-color .2s, color .2s;
+  transition:border-color .2s;
 }
-.cd-tag:hover,
-.cd-tag:focus-visible{ color:var(--ink); border-color:var(--soft); }
+.cd-chip:hover,
+.cd-chip:focus-visible{ border-color:var(--accent); }
+
+/* Dark surfaces need a warmer edge, or a gold word sits inside a grey
+   ring and the two look unrelated. */
+[data-theme="dark"] .cd-chip{ border-color:#332B22; }
+
+/* The note itself is a paragraph, so it is set as one. */
+.cd-note{
+  display:block;
+  line-height:1.65;
+  overflow-wrap:anywhere;
+}
+
+/* A tagged word inside the sentence: same colour as its chip, no hash,
+   no border, no pill. A chip in the middle of a line breaks the line,
+   and colour alone is enough to say this word is also a category. */
+.cd-tag{
+  display:inline;
+  padding:0;
+  font:inherit;
+  color:var(--accent);
+  background:none;
+  border:none;
+  border-radius:3px;
+  cursor:pointer;
+  transition:opacity .18s;
+}
+.cd-tag:hover{ opacity:.7; }
+.cd-tag:focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:2px;
+}
 
 /* ---------------- age, and fields with a future ---------------- */
 
