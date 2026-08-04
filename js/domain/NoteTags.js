@@ -84,7 +84,12 @@ export class NoteTags {
         parts.push({ type: "text", value: note.slice(cursor, start) });
       }
 
-      parts.push({ type: "tag", value: tag });
+      /* The hash is carried separately from the word. In the sheet it is
+         what makes a tag a tag, and in a list of chips it says which
+         kind of thing you are looking at — but inside a sentence it is
+         punctuation nobody wrote for a reader, and "#алергія на аміак"
+         should read as "алергія на аміак" with one word standing out. */
+      parts.push({ type: "tag", value: tag, label: tag.slice(1) });
       cursor = start + tag.length;
     }
 

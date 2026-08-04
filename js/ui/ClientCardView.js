@@ -278,7 +278,7 @@ export class ClientCardView extends EventTarget {
         /* Only when a year was written. A birthday recorded as 15.03 is
            perfectly useful for remembering to send a message; it simply
            cannot say how old anyone is. */
-        note: age === null ? "" : `${age} ${DateValue.pluraliseYears(age)}`,
+        age: age === null ? "" : `${age} ${DateValue.pluraliseYears(age)}`,
       });
     }
 
@@ -292,15 +292,15 @@ export class ClientCardView extends EventTarget {
     }
     /* A note holding nothing but tags leaves no prose behind, and a
        heading over an empty line reads as something failing to load. */
-    if (client.notes && (client.noteText || client.tags.length)) {
-      /* Tags are pulled out and shown as chips, so the note reads as the
-         sentence it was written as rather than a line peppered with
-         hashes. The chips are also where a tap can lead somewhere,
-         which plain text cannot. */
+    if (client.notes) {
+      /* Both, because they answer different questions. The chips are a
+         glance — which categories is this person in — and the note is
+         the sentence somebody wrote, which loses its meaning if the
+         tagged words are cut out of it. */
       fields.push({
         label: "Нотатки",
-        value: client.noteText,
         tags: client.tags,
+        note: client.notes,
       });
     }
     fields.push(...client.extras);
@@ -329,9 +329,11 @@ export class ClientCardView extends EventTarget {
       row.append(label);
 
       if (field.tags?.length) row.append(this.#buildTags(field.tags));
+
       if (field.date) {
-        row.append(this.#buildDate(field.date, field.note, field.weekday !== false));
+        row.append(this.#buildDate(field.date, field.age, field.weekday !== false));
       }
+      else if (field.note) row.append(this.#buildNote(field.note));
       else if (field.value) row.append(this.#buildValue(field.value));
       fragment.append(row);
     }
@@ -340,11 +342,22 @@ export class ClientCardView extends EventTarget {
   }
 
   /**
-   * Tags as tappable chips.
+   * The note as written, with its tags marked where they stand.
    *
-   * Tapping one goes back to the list filtered by it — which is the
-   * point of tagging at all: seeing this client reminds you of a
-   * category, and the category is one tap away.
+   * Built from segments rather than by replacing text, so nothing typed
+   * is ever interpreted as markup — the words go in through textContent
+   * and only the tags become elements.
+   *
+   * Tapping a tag returns to the list filtered by it, which is the point
+   * of tagging at all: seeing this client reminds you of a category, and
+   * the category should be one tap away.
+   */
+  /**
+   * Tags as chips, for reading at a glance.
+   *
+   * Tapping one returns to the list filtered by it, which is the point
+   * of tagging at all: seeing this client reminds you of a category,
+   * and the category should be one tap away.
    */
   #buildTags(tags) {
     const row = document.createElement("div");
@@ -353,13 +366,46 @@ export class ClientCardView extends EventTarget {
     row.replaceChildren(...tags.map(tag => {
       const chip = document.createElement("button");
       chip.type = "button";
-      chip.className = "cd-tag";
+      chip.className = "cd-chip";
       chip.dataset.tag = tag;
       chip.textContent = tag;
       return chip;
     }));
 
     return row;
+  }
+
+  /**
+   * The note as written, with the tagged words picked out by colour.
+   *
+   * The hash is dropped here and kept on the chips. In a sentence it is
+   * punctuation nobody wrote for a reader: "#алергія на аміак" was
+   * meant to be read as "алергія на аміак" with one word standing out,
+   * and the colour says everything the hash was there to say.
+   *
+   * Built from segments rather than by replacing text, so nothing typed
+   * is ever interpreted as markup — words go in through textContent and
+   * only the tags become elements.
+   */
+  #buildNote(note) {
+    const value = document.createElement("span");
+    value.className = "cd-field-value cd-note";
+
+    for (const part of NoteTags.segments(note)) {
+      if (part.type === "text") {
+        value.append(part.value);
+        continue;
+      }
+
+      const tag = document.createElement("button");
+      tag.type = "button";
+      tag.className = "cd-tag";
+      tag.dataset.tag = part.value;
+      tag.textContent = part.label;
+      value.append(tag);
+    }
+
+    return value;
   }
 
   #buildValue(text) {
@@ -378,7 +424,7 @@ export class ClientCardView extends EventTarget {
    * part least often needed: a last visit is nearly always this year
    * or the one before.
    */
-  #buildDate(parts, note = "", withWeekday = true) {
+  #buildDate(parts, age = "", withWeekday = true) {
     const value = document.createElement("span");
     value.className = "cd-field-value cd-date";
 
@@ -407,11 +453,11 @@ export class ClientCardView extends EventTarget {
     /* The age set apart from the date rather than folded into it: one is
        what was written down, the other is worked out from it, and they
        should not look like the same kind of fact. */
-    if (note) {
-      const age = document.createElement("span");
-      age.className = "cd-age";
-      age.textContent = note;
-      value.append(" ", age);
+    if (age) {
+      const badge = document.createElement("span");
+      badge.className = "cd-age";
+      badge.textContent = age;
+      value.append(" ", badge);
     }
 
     return value;
