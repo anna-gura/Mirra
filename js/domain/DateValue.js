@@ -197,6 +197,48 @@ export class DateValue {
     return "років";
   }
 
+  /**
+   * Days until this date comes round again, ignoring the year.
+   *
+   * A birthday is an anniversary rather than a moment: the year it
+   * happened is a fact about the person, and the day and month are what
+   * recur. So the comparison drops the year entirely, which is also why
+   * this works for a date recorded as 15.03 with no year at all.
+   *
+   * The 29th of February falls back to the 1st of March in ordinary
+   * years — the same answer a calendar app gives, and the same one most
+   * people give when asked.
+   *
+   * @param {Date} [today] overridable so the behaviour can be tested
+   * @returns {number|null} 0 today, 1 tomorrow, null when there is no date
+   */
+  daysUntilAnniversary(today = new Date()) {
+    if (!this.isValid) return null;
+
+    const start = new Date(Date.UTC(
+      today.getFullYear(), today.getMonth(), today.getDate()
+    ));
+
+    for (let year = start.getUTCFullYear(); year <= start.getUTCFullYear() + 1; year += 1) {
+      const target = DateValue.#anniversaryIn(year, this.#month, this.#day);
+      const days = Math.round((target - start) / 86400000);
+      if (days >= 0) return days;
+    }
+
+    return null;
+  }
+
+  /**
+   * The date this anniversary falls on in a given year.
+   *
+   * February the 29th does not exist three years in four; Date rolls it
+   * over to the 1st of March, which is where it is usually observed.
+   */
+  static #anniversaryIn(year, month, day) {
+    const date = new Date(Date.UTC(year, month - 1, day));
+    return date;
+  }
+
   /** @returns {string} */
   toString() {
     return this.format();
