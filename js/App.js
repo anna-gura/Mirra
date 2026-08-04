@@ -271,6 +271,7 @@ class MirraApp {
     try {
       await this.#settings.load();
       this.#card.dateFormat = this.#settings.dateFormat;
+      this.#clients.dateFormat = this.#settings.dateFormat;
       this.#screens.show("hub");
     } catch (error) {
       this.#report(error);

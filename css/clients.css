@@ -320,3 +320,23 @@
   background:none;
   font-size:12.5px;
 }
+
+/* The name takes the space it needs and the cake sits after it, so a
+   long name pushes the marker along rather than wrapping under it. */
+.cl-name{
+  flex:1;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+/* Only ever present on the day. Sized down a little: an emoji at full
+   text size outweighs the name beside it, and the name is what the
+   list is for. */
+.cl-cake{
+  flex:none;
+  font-size:14px;
+  line-height:1;
+  margin-left:8px;
+}

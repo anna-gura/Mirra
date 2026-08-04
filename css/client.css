@@ -47,6 +47,24 @@
   overflow-wrap:anywhere;
 }
 
+/* Under the name, on the two or three days a year it has anything to
+   say. Set in the accent rather than in ink: it is an aside, not part
+   of who the person is. */
+.cd-birthday{
+  font-family:Karla,sans-serif;
+  font-weight:400;
+  font-size:14px;
+  color:var(--accent);
+  text-align:center;
+  margin:0 0 6px;
+}
+
+/* The day itself carries a little more weight than the warning does. */
+.cd-birthday.is-today{
+  font-weight:500;
+  font-size:15px;
+}
+
 .cd-phone{
   font-family:Karla,sans-serif;
   font-weight:300;

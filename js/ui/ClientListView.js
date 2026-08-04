@@ -113,6 +113,13 @@ export class ClientListView extends EventTarget {
     return this;
   }
 
+  /**
+   * How ambiguous dates should be read. Set by the application from
+   * settings; the view has no business fetching it itself.
+   * @type {string}
+   */
+  dateFormat = undefined;
+
   /** @returns {string} */
   get query() {
     return this.#query;
@@ -342,7 +349,25 @@ export class ClientListView extends EventTarget {
     button.type = "button";
     button.className = "cl-row";
     button.dataset.row = String(client.rowNumber);
-    button.textContent = client.displayName;
+
+    const name = document.createElement("span");
+    name.className = "cl-name";
+    name.textContent = client.displayName;
+    button.append(name);
+
+    /* Only on the day itself. A marker that turns up for a week stops
+       being an event, and a list where half the rows are decorated is
+       a list where none of the decoration is read.
+
+       No words: it appears so rarely that it is noticed, and the card
+       explains it in full for anyone who wonders. */
+    if (client.birthdayStatus(this.dateFormat).isToday) {
+      const cake = document.createElement("span");
+      cake.className = "cl-cake";
+      cake.textContent = "🎂";
+      cake.title = "Сьогодні день народження";
+      button.append(cake);
+    }
 
     item.append(button);
     return item;

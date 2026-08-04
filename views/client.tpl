@@ -23,6 +23,11 @@
     <div class="cd-inner">
 
       <h2 class="cd-name" data-client-name>—</h2>
+
+      <!-- Only ever shown in the few days around the date, so it stays
+           an event rather than another permanent line. -->
+      <p class="cd-birthday" data-client-birthday hidden></p>
+
       <p class="cd-phone" data-client-phone></p>
 
       <!-- Anchors rather than buttons: tel: and sms: are handled by the

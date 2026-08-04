@@ -19,6 +19,7 @@ export class ClientCardView extends EventTarget {
   #root;
   #name;
   #phone;
+  #birthdayLine;
   #socials;
   #socialsSummary;
   #messengers;
@@ -45,6 +46,7 @@ export class ClientCardView extends EventTarget {
 
     this.#name              = this.#find("[data-client-name]");
     this.#phone             = this.#find("[data-client-phone]");
+    this.#birthdayLine      = this.#root.querySelector("[data-client-birthday]");
     this.#socials           = this.#find("[data-socials]");
     this.#socialsSummary    = this.#find("[data-socials-summary]");
     this.#messengers        = this.#find("[data-messengers]");
@@ -116,6 +118,7 @@ export class ClientCardView extends EventTarget {
     const phone = client.phoneNumber;
 
     this.#setText(this.#name, client.displayName);
+    this.#showBirthday(client);
     this.#setText(this.#phone, phone.isValid ? phone.display : "Телефон не вказано");
     this.#setAction(this.#call, phone.isValid ? phone.dialUri : null);
     this.#setAction(this.#sms, phone.isValid ? phone.smsUri : null);
@@ -133,6 +136,7 @@ export class ClientCardView extends EventTarget {
 
     this.#client = null;
     this.#setText(this.#name, "—");
+    if (this.#birthdayLine) this.#birthdayLine.hidden = true;
     this.#setText(this.#phone, "");
     this.#setAction(this.#call, null);
     this.#setAction(this.#sms, null);
@@ -352,6 +356,23 @@ export class ClientCardView extends EventTarget {
    * of tagging at all: seeing this client reminds you of a category, and
    * the category should be one tap away.
    */
+  /**
+   * The line under the name, on the days it has something to say.
+   *
+   * Hidden the rest of the time rather than left empty. A row that is
+   * usually blank is a row people stop looking at, and this one only
+   * works if it is noticed on the two or three days a year it appears.
+   */
+  #showBirthday(client) {
+    if (!this.#birthdayLine) return;
+
+    const status = client.birthdayStatus(this.dateFormat);
+
+    this.#birthdayLine.textContent = status.message;
+    this.#birthdayLine.hidden = !status.message;
+    this.#birthdayLine.classList.toggle("is-today", status.isToday);
+  }
+
   /**
    * Tags as chips, for reading at a glance.
    *

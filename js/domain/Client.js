@@ -1,6 +1,7 @@
 import { SocialCatalog } from "./SocialCatalog.js";
 import { PhoneNumber } from "./PhoneNumber.js";
 import { NoteTags } from "./NoteTags.js";
+import { Birthday } from "./Birthday.js";
 
 /**
  * Client — one person, read out of one row.
@@ -25,6 +26,7 @@ export class Client {
   #phone = null;
   #searchText = null;
   #tags = null;
+  #birthday = null;
   #searchDigits = null;
 
   /**
@@ -78,6 +80,20 @@ export class Client {
   /** @returns {string} */
   get birthday() {
     return this.#schema.read(this.#values, "birthday");
+  }
+
+  /**
+   * Whether the birthday is today or near it.
+   *
+   * The date format matters when the day and month could be read either
+   * way round, so it is passed in rather than assumed.
+   *
+   * @param {string} [dateFormat]
+   * @returns {Birthday}
+   */
+  birthdayStatus(dateFormat) {
+    this.#birthday ??= new Birthday(this.birthday, dateFormat);
+    return this.#birthday;
   }
 
   /** @returns {string} */
