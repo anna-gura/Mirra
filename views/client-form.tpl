@@ -47,6 +47,18 @@
         </span>
       </label>
 
+      <div class="fm-group">
+        <span class="fm-label">Соцмережі</span>
+        <div data-social-rows></div>
+        <button class="fm-add" type="button" data-add-social>+ Додати мережу</button>
+      </div>
+
+      <div class="fm-group">
+        <span class="fm-label">Месенджери</span>
+        <div data-messenger-rows></div>
+        <button class="fm-add" type="button" data-add-messenger>+ Додати месенджер</button>
+      </div>
+
       <div class="fm-field">
         <span class="fm-label">День народження</span>
         <div data-date-mount="birthday"></div>
@@ -61,15 +73,9 @@
       </div>
 
       <div class="fm-group">
-        <span class="fm-label">Соцмережі</span>
-        <div data-social-rows></div>
-        <button class="fm-add" type="button" data-add-social>+ Додати мережу</button>
-      </div>
-
-      <div class="fm-group">
-        <span class="fm-label">Месенджери</span>
-        <div data-messenger-rows></div>
-        <button class="fm-add" type="button" data-add-messenger>+ Додати месенджер</button>
+        <span class="fm-label">Пов'язані люди</span>
+        <div data-link-rows></div>
+        <button class="fm-add" type="button" data-add-link>+ Пов'язати з клієнтом</button>
       </div>
 
       <label class="fm-field">

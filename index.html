@@ -78,6 +78,7 @@
   <link rel="stylesheet" href="css/client.css">
   <link rel="stylesheet" href="css/form.css">
   <link rel="stylesheet" href="css/dialog.css">
+  <link rel="stylesheet" href="css/picker.css">
   <link rel="stylesheet" href="css/install.css">
 </head>
 <body>
@@ -107,11 +108,40 @@
   </div>
 </dialog>
 
+<!-- Choosing which client to link to. In the middle of the screen
+     because it is a decision, not a field: everything else waits. -->
+<dialog class="picker" data-people aria-labelledby="people-title">
+  <div class="picker-panel">
+    <h2 class="picker-title" id="people-title">Кого пов'язати?</h2>
+
+    <div class="picker-search">
+      <svg class="picker-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="10.5" cy="10.5" r="6.5"/>
+        <path d="m15.5 15.5 4 4"/>
+      </svg>
+      <input class="picker-input" type="search" data-people-search
+             placeholder="Ім'я або прізвище" aria-label="Пошук серед клієнтів"
+             autocomplete="off" spellcheck="false">
+    </div>
+
+    <div class="picker-list" data-people-list></div>
+
+    <div class="picker-actions">
+      <button class="picker-cancel" type="button" data-people-cancel>Скасувати</button>
+    </div>
+  </div>
+</dialog>
+
 <dialog class="confirm" data-confirm aria-labelledby="confirm-title">
   <div class="confirm-panel">
     <h2 class="confirm-title" id="confirm-title" data-confirm-title></h2>
     <p class="confirm-message" data-confirm-message hidden></p>
     <p class="confirm-note" data-confirm-note hidden></p>
+
+    <!-- Filled when the question has more than two answers, as when
+         Mirra needs to know what one client is to another. -->
+    <div class="confirm-options" data-confirm-options hidden></div>
+
     <div class="confirm-actions">
       <button class="confirm-cancel" type="button" data-confirm-no>Скасувати</button>
       <button class="confirm-yes" type="button" data-confirm-yes>Так</button>

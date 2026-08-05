@@ -76,6 +76,24 @@
         <div class="cd-fold-inner" data-messengers></div>
       </div>
 
+      <!-- Below the ways of reaching somebody, and folded like them:
+           one relationship is rare and several are common, and a row
+           that grows into a list changes the shape of the card every
+           time it is opened. -->
+      <div class="cd-line" data-links-line hidden></div>
+
+      <button class="cd-row" type="button" aria-expanded="false"
+              data-fold="fold-links" data-links-row hidden>
+        <span class="cd-row-text">
+          <span class="cd-label">Пов'язані люди</span>
+          <span class="cd-value" data-links-summary>—</span>
+        </span>
+        <span class="cd-chev" aria-hidden="true"></span>
+      </button>
+      <div class="cd-fold" id="fold-links" style="height:0">
+        <div class="cd-fold-inner cd-links" data-links></div>
+      </div>
+
       <div class="cd-line"></div>
 
       <!-- Sits with the content it opens rather than in the footer: a

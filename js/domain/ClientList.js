@@ -149,6 +149,47 @@ export class ClientList {
     return this.clients.find(client => client.rowNumber === rowNumber);
   }
 
+  /**
+   * @param {string} id
+   * @returns {Client|undefined}
+   */
+  findById(id) {
+    if (!id) return undefined;
+    return this.clients.find(client => client.id === id);
+  }
+
+  /**
+   * The client a link points at.
+   *
+   * By id first, because that is what survives a rename. By name only
+   * when the id finds nobody — a link written before ids existed, or one
+   * whose id was lost to a hand edit. Worse, but a link that resolves
+   * imperfectly beats a broken one.
+   *
+   * @param {import("./ClientLinks.js").Link} link
+   * @returns {Client|undefined}
+   */
+  resolve(link) {
+    const byId = this.findById(link.id);
+    if (byId) return byId;
+
+    if (!link.name) return undefined;
+
+    const wanted = link.name.trim().toLocaleLowerCase("uk");
+    return this.clients.find(
+      client => client.displayName.toLocaleLowerCase("uk") === wanted
+    );
+  }
+
+  /**
+   * Everyone who could be linked to this client: everybody else.
+   * @param {Client} client
+   * @returns {Client[]}
+   */
+  others(client) {
+    return this.clients.filter(other => other.rowNumber !== client.rowNumber);
+  }
+
   /* ---------------- private ---------------- */
 
   #build() {

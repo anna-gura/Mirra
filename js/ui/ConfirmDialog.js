@@ -18,6 +18,7 @@ export class ConfirmDialog {
   #note;
   #confirm;
   #cancel;
+  #options;
   #resolve = null;
 
   /**
@@ -36,6 +37,7 @@ export class ConfirmDialog {
     this.#note    = this.#element.querySelector("[data-confirm-note]");
     this.#confirm = this.#element.querySelector("[data-confirm-yes]");
     this.#cancel  = this.#element.querySelector("[data-confirm-no]");
+    this.#options = this.#element.querySelector("[data-confirm-options]");
 
     this.#bind();
   }
@@ -70,6 +72,12 @@ export class ConfirmDialog {
     this.#cancel.textContent = cancelLabel;
     this.#confirm.classList.toggle("is-danger", danger);
 
+    if (this.#options) {
+      this.#options.hidden = true;
+      this.#options.replaceChildren();
+    }
+    this.#confirm.hidden = false;
+
     this.#element.showModal();
 
     /* Focus starts on Cancel, not on the destructive button. Enter is
@@ -80,16 +88,80 @@ export class ConfirmDialog {
     return new Promise(resolve => { this.#resolve = resolve; });
   }
 
+  /**
+   * A question with more than two answers.
+   *
+   * Separate from ask() rather than a mode of it, because the two
+   * differ in what they return: a yes-or-no gives a boolean, this gives
+   * the option chosen or null. Folded together, every caller would have
+   * to check which kind of answer it got.
+   *
+   * @param {object} params
+   * @param {string} params.title
+   * @param {string} [params.message]
+   * @param {Array<{id: string, label: string}>} params.options
+   * @param {string} [params.cancelLabel]
+   * @returns {Promise<string|null>} the chosen id, or null
+   */
+  choose({ title, message = "", note = "", options, cancelLabel = "Скасувати" }) {
+    if (!this.#element || !this.#options) {
+      /* Loud, because the caller cannot tell this apart from somebody
+         pressing cancel — and a question that silently answers itself
+         "no" stops whatever was about to happen for no visible reason. */
+      console.error(
+        "ConfirmDialog: [data-confirm-options] missing from index.html — " +
+        "the question could not be asked"
+      );
+      return Promise.resolve(undefined);
+    }
+
+    this.#title.textContent = title;
+    this.#message.textContent = message;
+    this.#message.hidden = !message;
+    this.#note.textContent = note;
+    this.#note.hidden = !note;
+
+    /* The confirm button has nothing to confirm: the options are the
+       answers, and a stray "Так" beside them would be a third meaning
+       nobody asked for. */
+    this.#confirm.hidden = true;
+    this.#cancel.textContent = cancelLabel;
+
+    this.#options.hidden = false;
+    this.#options.replaceChildren(...options.map(option => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "confirm-option";
+      button.dataset.option = option.id;
+      button.textContent = option.label;
+      return button;
+    }));
+
+    this.#element.showModal();
+    this.#cancel.focus();
+
+    return new Promise(resolve => { this.#resolve = resolve; });
+  }
+
   /* ---------------- private ---------------- */
 
   #bind() {
     this.#confirm.addEventListener("click", () => this.#close(true));
+
+    this.#options?.addEventListener("click", event => {
+      const option = event.target.closest("[data-option]");
+      if (option) this.#close(option.dataset.option);
+    });
     this.#cancel.addEventListener("click", () => this.#close(false));
 
     /* Escape fires close without going through either button, so the
        promise is settled here rather than in the handlers alone —
        otherwise it would hang and the caller would wait forever. */
-    this.#element.addEventListener("close", () => this.#settle(false));
+    /* Escape and the backdrop both mean "no". For a yes-or-no that is
+       false; for a choice it is null, which is what choose() callers
+       check for — false would read as an answer. */
+    this.#element.addEventListener("close", () =>
+      this.#settle(this.#options?.hidden === false ? null : false));
 
     /* The backdrop is part of the dialog element, so a click that lands
        outside the panel still has the dialog as its target. */

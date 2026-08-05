@@ -26,7 +26,7 @@
       <!-- Sticks to the top of the scrolling area. Searching is what
            this screen is for, and a search field that scrolls away is
            one you have to scroll back for. -->
-      <div class="cl-tools" data-sticky>
+      <div class="cl-tools">
         <button class="cl-add" type="button" data-add-client>
           <span aria-hidden="true">+</span> Додати
         </button>

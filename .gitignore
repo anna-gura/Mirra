@@ -2,6 +2,9 @@
 # Copy js/credentials.example.js to js/credentials.js and fill it in.
 js/credentials.js
 
+# Written by build.sh from the latest git tag.
+js/version.js
+
 # Editor and OS noise
 .DS_Store
 Thumbs.db

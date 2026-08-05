@@ -145,3 +145,34 @@
 }
 .quiet-danger:hover,
 .quiet-danger:focus-visible{ opacity:1; }
+
+/* ---------------- a question with several answers ---------------- */
+
+/* Stacked and full width: the options are the answers, and a row of
+   them would make the shortest look like the least important. */
+.confirm-options{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  margin-bottom:18px;
+}
+
+.confirm-option{
+  min-height:48px;
+  padding:0 18px;
+  font-family:Karla,sans-serif;
+  font-weight:400;
+  font-size:15.5px;
+  color:var(--ink);
+  background:var(--bg);
+  border:1px solid var(--line);
+  border-radius:11px;
+  cursor:pointer;
+  transition:border-color .2s, background .2s;
+}
+.confirm-option:hover,
+.confirm-option:focus-visible{
+  border-color:var(--soft);
+  background:var(--surface);
+  outline:none;
+}

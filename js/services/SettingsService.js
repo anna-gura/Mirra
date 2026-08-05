@@ -94,6 +94,32 @@ export class SettingsService {
     return this;
   }
 
+  /**
+   * The version of Mirra that last worked with these settings.
+   *
+   * Recorded for whoever opens mirra.json and wonders what wrote it.
+   * Nothing depends on it: whether a sheet needs upgrading is answered
+   * by looking at its columns, which stays true even after somebody
+   * edits the file by hand.
+   *
+   * @returns {string}
+   */
+  get version() {
+    return this.#data?.version ?? "";
+  }
+
+  /**
+   * @param {string} version
+   */
+  setVersion(version) {
+    if (!this.#data || this.#data.version === version) return this;
+
+    this.#data.version = version;
+    this.#data.updatedAt = new Date().toISOString();
+    this.save();
+    return this;
+  }
+
   /** @returns {string|null} id of the Mirra folder */
   get folderId() {
     return this.#folder?.id ?? null;
@@ -149,7 +175,10 @@ export class SettingsService {
 
   #defaults() {
     return {
-      version: SettingsService.VERSION,
+      /* The shape of this file, not the app. They are separate numbers
+         because the file changes far less often than Mirra does. */
+      schema: SettingsService.VERSION,
+      version: "",
       dateFormat: config.DEFAULT_DATE_FORMAT,
       sections: Object.fromEntries(SettingsService.SECTIONS.map(name => [name, null])),
       updatedAt: new Date().toISOString(),
@@ -178,6 +207,8 @@ export class SettingsService {
     if (typeof raw.dateFormat === "string" && DateValue.FORMATS[raw.dateFormat]) {
       safe.dateFormat = raw.dateFormat;
     }
+
+    if (typeof raw.version === "string") safe.version = raw.version;
 
     for (const name of SettingsService.SECTIONS) {
       const value = raw.sections?.[name];

@@ -1,5 +1,6 @@
 import { SocialCatalog } from "./SocialCatalog.js";
 import { DateValue } from "./DateValue.js";
+import { ClientLinks } from "./ClientLinks.js";
 
 /**
  * ClientDraft — a client being edited.
@@ -33,6 +34,12 @@ export class ClientDraft {
 
   /** @type {Array<{index: number, label: string, value: string}>} */
   extras = [];
+
+  /** @type {import("./ClientLinks.js").Link[]} */
+  links = [];
+
+  /** The client's own id, kept so links can point back at it. */
+  id = "";
 
   /** Text Mirra could not interpret, preserved verbatim. */
   #unknownSocials = [];
@@ -84,6 +91,7 @@ export class ClientDraft {
    */
   get unwritableFields() {
     const filled = {
+      links: this.links.length ? "1" : "",
       firstName: this.firstName.trim(),
       lastName: this.lastName.trim(),
       phone: this.phone.trim(),
@@ -114,6 +122,8 @@ export class ClientDraft {
     this.#write(row, "lastName", this.lastName.trim());
     this.#write(row, "phone", this.phone.trim());
     this.#write(row, "notes", this.notes.trim());
+    this.#write(row, "id", this.id);
+    this.#write(row, "links", ClientLinks.stringify(this.links));
 
     this.#write(row, "socials", this.#stringify(this.socials, this.#unknownSocials));
     this.#write(row, "messengers", this.#stringify(this.messengers, this.#unknownMessengers));
@@ -136,6 +146,9 @@ export class ClientDraft {
       this.extras = this.#schema.extraColumns.map(column => ({ ...column, value: "" }));
       return;
     }
+
+    this.id = this.#schema.read(this.#original, "id");
+    this.links = ClientLinks.parse(this.#schema.read(this.#original, "links"));
 
     this.firstName = this.#schema.read(this.#original, "firstName");
     this.lastName  = this.#schema.read(this.#original, "lastName");

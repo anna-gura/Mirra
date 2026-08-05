@@ -2,6 +2,7 @@ import { SocialCatalog } from "./SocialCatalog.js";
 import { PhoneNumber } from "./PhoneNumber.js";
 import { NoteTags } from "./NoteTags.js";
 import { Birthday } from "./Birthday.js";
+import { ClientLinks } from "./ClientLinks.js";
 
 /**
  * Client — one person, read out of one row.
@@ -27,6 +28,7 @@ export class Client {
   #searchText = null;
   #tags = null;
   #birthday = null;
+  #links = null;
   #searchDigits = null;
 
   /**
@@ -75,6 +77,23 @@ export class Client {
   get phoneNumber() {
     this.#phone ??= new PhoneNumber(this.phone);
     return this.#phone;
+  }
+
+  /**
+   * The identifier links point at.
+   * @returns {string} empty in a sheet that has no id column
+   */
+  get id() {
+    return this.#schema.read(this.#values, "id");
+  }
+
+  /**
+   * People connected to this one.
+   * @returns {import("./ClientLinks.js").Link[]}
+   */
+  get links() {
+    this.#links ??= ClientLinks.parse(this.#schema.read(this.#values, "links"));
+    return this.#links;
   }
 
   /** @returns {string} */

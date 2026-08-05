@@ -485,177 +485,6 @@
 .cal-action:hover{ color:var(--ink); background:var(--bg); }
 
 /* ============================================================
-   DATE PICKER
-   The browser has a calendar of its own, and it is set aside for
-   the same reason the native select was: its panel cannot be
-   styled, so half the control follows Mirra and half follows the
-   operating system.
-   ============================================================ */
-.dp{
-  position:relative;
-}
-
-.dp-trigger{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  width:100%;
-  min-height:50px;
-  padding:0 14px 0 16px;
-  font-family:Karla,sans-serif;
-  font-weight:400;
-  font-size:16px;
-  color:var(--ink);
-  background:var(--surface);
-  border:1px solid var(--line);
-  border-radius:11px;
-  cursor:pointer;
-  transition:border-color .2s;
-}
-.dp-trigger:hover{ border-color:var(--soft); }
-.dp.is-open .dp-trigger{ border-color:var(--ink); }
-
-.dp-label{
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-}
-.dp-label.is-empty{ color:var(--faint); }
-
-.dp-icon{
-  width:17px;
-  height:17px;
-  flex:none;
-  fill:none;
-  stroke:var(--soft);
-  stroke-width:1.4;
-  stroke-linecap:round;
-  stroke-linejoin:round;
-}
-
-.dp-panel{
-  position:absolute;
-  top:calc(100% + 6px);
-  left:0;
-  z-index:25;
-  width:min(320px,calc(100vw - 44px));
-  padding:14px;
-  background:var(--surface);
-  border:1px solid var(--line);
-  border-radius:15px;
-  box-shadow:0 16px 40px -18px rgba(0,0,0,.5);
-}
-
-.dp-head{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:8px;
-  margin-bottom:10px;
-}
-
-.dp-caption{
-  font-family:Marcellus,serif;
-  font-size:16px;
-  letter-spacing:.01em;
-  text-align:center;
-  flex:1;
-}
-
-.dp-nav{
-  width:36px;
-  height:36px;
-  flex:none;
-  font-size:20px;
-  line-height:1;
-  color:var(--soft);
-  background:none;
-  border:none;
-  border-radius:50%;
-  cursor:pointer;
-  transition:color .18s, background .18s;
-}
-.dp-nav:hover{ color:var(--ink); background:var(--bg); }
-
-.dp-week,
-.dp-grid{
-  display:grid;
-  grid-template-columns:repeat(7,1fr);
-  gap:2px;
-}
-
-.dp-week{
-  margin-bottom:4px;
-}
-.dp-week span{
-  font-family:Karla,sans-serif;
-  font-weight:300;
-  font-size:11px;
-  letter-spacing:.06em;
-  text-transform:uppercase;
-  color:var(--faint);
-  text-align:center;
-  padding:4px 0;
-}
-
-.dp-day{
-  aspect-ratio:1;
-  min-height:38px;
-  font-family:Karla,sans-serif;
-  font-weight:400;
-  font-size:14.5px;
-  color:var(--ink);
-  background:none;
-  border:none;
-  border-radius:9px;
-  cursor:pointer;
-  transition:background .15s, color .15s;
-}
-.dp-day:hover{ background:var(--bg); }
-
-/* Days from the neighbouring months are kept rather than blanked:
-   an empty corner makes the grid look broken, and being able to
-   reach the 1st from the previous month saves a tap. */
-.dp-day.is-outside{ color:var(--faint); }
-
-.dp-day.is-today{
-  box-shadow:inset 0 0 0 1px var(--line);
-  font-weight:500;
-}
-
-.dp-day.is-selected{
-  background:var(--ink);
-  color:var(--surface);
-  font-weight:500;
-}
-.dp-day.is-selected:hover{ background:var(--ink); }
-
-.dp-foot{
-  display:flex;
-  justify-content:space-between;
-  gap:8px;
-  margin-top:10px;
-  padding-top:10px;
-  border-top:1px solid var(--line);
-}
-
-.dp-action{
-  min-height:38px;
-  padding:0 12px;
-  font-family:Karla,sans-serif;
-  font-weight:300;
-  font-size:13.5px;
-  color:var(--soft);
-  background:none;
-  border:none;
-  border-radius:8px;
-  cursor:pointer;
-  transition:color .18s, background .18s;
-}
-.dp-action:hover{ color:var(--ink); background:var(--bg); }
-
-/* ============================================================
    PHONE FIELD
    The grey remainder cannot live inside the input, which paints all
    its text one colour. It sits on a layer beneath instead: a hidden
@@ -714,4 +543,57 @@
   text-transform:uppercase;
   color:var(--faint);
   margin-left:8px;
+}
+
+/* ---------------- links ---------------- */
+
+/* Who, then what they are. Both chosen from lists: a relationship to
+   somebody already in the sheet is a choice between things that exist,
+   and typing a name that has to match one exactly is a way of asking
+   for a spelling mistake. */
+.fm-link{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:8px;
+}
+
+/* The chosen person, and a way back to choosing. Styled like the
+   dropdown beside it so the pair reads as one control, though one
+   opens a menu and the other a dialog. */
+.fm-person{
+  flex:1 1 55%;
+  min-width:0;
+  min-height:50px;
+  padding:0 15px;
+  text-align:left;
+  font-family:Karla,sans-serif;
+  font-weight:400;
+  font-size:15px;
+  color:var(--ink);
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:11px;
+  cursor:pointer;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  transition:border-color .2s;
+}
+.fm-person:hover{ border-color:var(--soft); }
+.fm-person.is-empty{ color:var(--faint); }
+
+.fm-link .sel{ flex:1 1 45%; }
+
+@media(max-width:430px){
+  /* Two dropdowns and a remove button do not fit a narrow screen, and
+     squeezing them makes both unreadable. Stacked, the row is taller
+     but every part of it can be read and hit. */
+  .fm-link{
+    flex-wrap:wrap;
+    padding-bottom:10px;
+    border-bottom:1px solid var(--line);
+  }
+  .fm-person{ flex:1 1 100%; }
+  .fm-link .sel{ flex:1 1 calc(100% - 46px); }
 }

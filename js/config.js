@@ -17,6 +17,17 @@
    with a module resolution error nobody can read. */
 let credentials = { CLIENT_ID: "", API_KEY: "", APP_ID: "" };
 
+/* Written by build.sh from the latest git tag, so the app knows what it
+   is without asking anybody. Falls back to a development marker when
+   the file is absent, which is the normal state of a working copy. */
+let version = "0.0.0-dev";
+
+try {
+  ({ VERSION: version } = await import("./version.js"));
+} catch {
+  /* Running from a checkout rather than a deployment. */
+}
+
 try {
   ({ credentials } = await import("./credentials.js"));
 } catch {
@@ -28,6 +39,9 @@ try {
 }
 
 export const config = Object.freeze({
+  /** This build, from the most recent git tag. */
+  VERSION: version,
+
   CLIENT_ID: credentials.CLIENT_ID,
   API_KEY:   credentials.API_KEY,
   APP_ID:    credentials.APP_ID,
@@ -86,10 +100,24 @@ export const config = Object.freeze({
        and greeting someone by first name straightforward.
        Order matters: a sheet Mirra did not create is read by position,
        so name, phone and notes lead. */
+    /* Grouped by what each answers: who this is, how to reach them,
+       what is true about them, what happened.
+
+       Ways of reaching somebody are kept together and put first among
+       them, because for a small business that is most of the point —
+       plenty of clients are only ever spoken to through a messenger.
+
+       The order matters only to a person reading the file — Mirra finds
+       columns by name — so it is arranged for them rather than for the
+       code. */
     headers: Object.freeze([
-      "Ім'я", "Прізвище", "Телефон", "Соцмережі", "Месенджери",
-      "День народження", "Останній візит", "Нотатки",
+      "ID", "Ім'я", "Прізвище",
+      "Телефон", "Соцмережі", "Месенджери",
+      "День народження", "Зв'язки", "Останній візит", "Нотатки",
     ]),
+
+    /** Written by Mirra and not meant to be edited by hand. */
+    protectedColumn: "ID",
 
     /** Columns holding dates, so Sheets offers a date picker in them. */
     dateColumns: Object.freeze(["День народження", "Останній візит"]),

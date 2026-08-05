@@ -108,6 +108,7 @@ export class SheetsRepository {
     });
 
     await this.#applyDateValidation(created, headers);
+    await this.#protectIdColumn(created, headers);
 
     if (folderId) {
       await this.#drive.moveToFolder(created.spreadsheetId, folderId);
@@ -219,6 +220,69 @@ export class SheetsRepository {
   }
 
   /**
+   * Writes values into one column, at the rows given.
+   *
+   * Sent as a batch rather than a request per row: filling in ids for
+   * two hundred clients is one call, and two hundred calls would be
+   * slow enough that somebody would close the tab halfway through and
+   * leave the sheet half-repaired.
+   *
+   * @param {object} snapshot
+   * @param {number} column zero-based
+   * @param {Map<number, string>} values row index → value
+   */
+  async writeColumn(snapshot, column, values) {
+    if (column < 0 || !values.size) return;
+
+    const letter = SheetsRepository.columnLetter(column + 1);
+
+    const data = [...values.entries()].map(([index, value]) => ({
+      /* +2: one for the header row, one because sheets count from 1. */
+      range: `${snapshot.sheetTitle}!${letter}${index + 2}`,
+      values: [[value]],
+    }));
+
+    await this.#api.post(
+      `${config.SHEETS_API}/${snapshot.spreadsheetId}/values:batchUpdate`,
+      { valueInputOption: "RAW", data }
+    );
+  }
+
+  /**
+   * Marks a column as not to be edited by hand.
+   *
+   * Sheets shows a warning when somebody types into it, which they can
+   * dismiss — the point is not to forbid but to interrupt. The id
+   * column looks like noise to anybody who did not put it there, and
+   * clearing it would quietly break every link pointing at that row.
+   *
+   * warningOnly rather than a locked range: locking would keep the
+   * owner out of their own file, which is not Mirra's decision to make.
+   *
+   * @param {object} snapshot
+   * @param {number} column zero-based
+   */
+  async protectColumn(snapshot, column) {
+    if (column < 0) return;
+
+    await this.#api.post(`${config.SHEETS_API}/${snapshot.spreadsheetId}:batchUpdate`, {
+      requests: [{
+        addProtectedRange: {
+          protectedRange: {
+            range: {
+              sheetId: snapshot.sheetId,
+              startColumnIndex: column,
+              endColumnIndex: column + 1,
+            },
+            description: "Службовий стовпець Mirra — не редагуйте вручну",
+            warningOnly: true,
+          },
+        },
+      }],
+    });
+  }
+
+  /**
    * Adds columns to the right-hand end of a sheet.
    *
    * Always to the right, and never anywhere else. Columns a user added
@@ -309,6 +373,36 @@ export class SheetsRepository {
     }
 
     return letters;
+  }
+
+  /**
+   * Guards the id column of a freshly made sheet.
+   *
+   * Failure is logged rather than raised: a sheet without the warning
+   * still works, and refusing to create one over a missing guard rail
+   * would be the wrong trade.
+   */
+  async #protectIdColumn(created, headers) {
+    const column = headers.indexOf(config.NEW_SHEET.protectedColumn);
+    const sheetId = created.sheets?.[0]?.properties?.sheetId;
+
+    if (column < 0 || sheetId === undefined) return;
+
+    try {
+      await this.#api.post(`${config.SHEETS_API}/${created.spreadsheetId}:batchUpdate`, {
+        requests: [{
+          addProtectedRange: {
+            protectedRange: {
+              range: { sheetId, startColumnIndex: column, endColumnIndex: column + 1 },
+              description: "Службовий стовпець Mirra — не редагуйте вручну",
+              warningOnly: true,
+            },
+          },
+        }],
+      });
+    } catch (error) {
+      console.warn("Could not protect the id column", error);
+    }
   }
 
   /* ---------------- private ---------------- */

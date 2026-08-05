@@ -3,6 +3,7 @@ import { SelectMenu } from "./SelectMenu.js";
 import { DatePicker } from "./DatePicker.js";
 import { PhoneInput } from "./PhoneInput.js";
 import { NameInput } from "./NameInput.js";
+import { ClientLinks } from "../domain/ClientLinks.js";
 
 /**
  * ClientFormView — the screen where a client is written.
@@ -27,6 +28,8 @@ export class ClientFormView extends EventTarget {
   #fields = new Map();
   #menus = [];
   #datePickers = new Map();
+  #linkRows;
+  #linkMenus = [];
   #phoneInput = null;
   #nameInputs = [];
   #draft = null;
@@ -55,6 +58,7 @@ export class ClientFormView extends EventTarget {
       this.#fields.set(input.dataset.field, input);
     });
 
+    this.#linkRows = this.#root.querySelector("[data-link-rows]");
     this.#mountPhoneInput();
     this.#mountNameInputs();
 
@@ -131,6 +135,7 @@ export class ClientFormView extends EventTarget {
 
     this.#renderEntries(this.#socialRows, draft.socials, "social");
     this.#renderEntries(this.#messengerRows, draft.messengers, "messenger");
+    this.#renderLinks();
     this.#renderExtras(draft.extras);
 
     if (this.#scroller) this.#scroller.scrollTop = 0;
@@ -157,6 +162,14 @@ export class ClientFormView extends EventTarget {
   /* ---------------- events ---------------- */
 
   #handleClick(event) {
+    const removeLink = event.target.closest("[data-remove-link]");
+    if (removeLink) return this.#removeLink(Number(removeLink.dataset.index));
+
+    const changeLink = event.target.closest("[data-change-link]");
+    if (changeLink) return this.#changeLink(Number(changeLink.dataset.index));
+
+    if (event.target.closest("[data-add-link]")) return this.#addLink();
+
     const remove = event.target.closest("[data-remove-entry]");
     if (remove) return this.#removeEntry(remove);
 
@@ -320,6 +333,124 @@ export class ClientFormView extends EventTarget {
       label.append(caption, input);
       return label;
     }));
+  }
+
+  /* ---------------- links ---------------- */
+
+  /**
+   * Draws one row per link: who, and what they are to this client.
+   *
+   * Both are chosen from lists. Nothing is typed, because a
+   * relationship to somebody who is already in the sheet is a choice
+   * between things that exist — and typing a name that has to match
+   * one exactly is a way of asking for a spelling mistake.
+   */
+  #renderLinks() {
+    if (!this.#linkRows) return;
+
+    this.#linkMenus.forEach(menu => menu.destroy());
+    this.#linkMenus = [];
+
+    const links = this.#draft?.links ?? [];
+    this.#linkRows.replaceChildren(...links.map((link, index) =>
+      this.#buildLinkRow(link, index)));
+  }
+
+  #buildLinkRow(link, index) {
+    const row = document.createElement("div");
+    row.className = "fm-link";
+
+    /* A button rather than a dropdown: the list of people can be long
+       and needs searching, and that belongs in a dialog with room for
+       it. What sits here is the answer, and a way back to the question. */
+    const person = document.createElement("button");
+    person.type = "button";
+    person.className = "fm-person";
+    person.dataset.changeLink = "";
+    person.dataset.index = String(index);
+    person.textContent = link.name || "Вибрати людину";
+    person.classList.toggle("is-empty", !link.name);
+
+    const role = new SelectMenu({
+      options: Object.entries(ClientLinks.ROLES).map(([id, value]) => ({
+        value: id,
+        label: value.label,
+      })),
+      value: link.roleId || "other",
+      ariaLabel: "Ким доводиться",
+    });
+
+    role.addEventListener("change", event => { link.roleId = event.detail.value; });
+
+    this.#linkMenus.push(role);
+
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "fm-remove";
+    remove.dataset.removeLink = "";
+    remove.dataset.index = String(index);
+    remove.setAttribute("aria-label", "Прибрати зв'язок");
+    remove.textContent = "×";
+
+    row.append(person, role.element, remove);
+    return row;
+  }
+
+  /**
+   * Asks who, then adds the row.
+   *
+   * The dialog comes first rather than after an empty row appears:
+   * a row saying "Вибрати людину" that somebody then abandons leaves
+   * a link to nobody, and a link to nobody is a thing to explain.
+   */
+  #addLink() {
+    if (!this.#draft) return;
+    this.dispatchEvent(new CustomEvent("pick-person", { detail: { index: -1 } }));
+  }
+
+  /** @param {number} index -1 to append, otherwise the row to change */
+  #changeLink(index) {
+    this.dispatchEvent(new CustomEvent("pick-person", { detail: { index } }));
+  }
+
+  /**
+   * Records the answer the dialog came back with.
+   *
+   * @param {number} index -1 to append
+   * @param {{id: string, name: string}} person
+   */
+  applyPerson(index, person) {
+    if (!this.#draft || !person) return this;
+
+    const links = this.#draft.links;
+
+    /* Changing a row to somebody who is already on another row would
+       leave two entries for one person, which is one relationship too
+       many. The older row goes. */
+    const duplicate = links.findIndex((link, at) => link.id === person.id && at !== index);
+    if (duplicate >= 0) links.splice(duplicate, 1);
+
+    if (index < 0) {
+      links.push({ roleId: "other", id: person.id, name: person.name, raw: "" });
+    } else {
+      const link = links[index];
+      if (link) Object.assign(link, { id: person.id, name: person.name });
+    }
+
+    this.#renderLinks();
+    return this;
+  }
+
+  /** @returns {string[]} ids already linked, so the dialog can skip them */
+  get linkedIds() {
+    return (this.#draft?.links ?? []).map(link => link.id).filter(Boolean);
+  }
+
+  #removeLink(index) {
+    if (!this.#draft) return;
+
+    this.#draft.links.splice(index, 1);
+    this.#renderLinks();
   }
 
   /* ---------------- entries ---------------- */
