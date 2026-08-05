@@ -1,6 +1,7 @@
 import { SocialCatalog } from "../domain/SocialCatalog.js";
 import { DateValue } from "../domain/DateValue.js";
 import { NoteTags } from "../domain/NoteTags.js";
+import { ClientLinks } from "../domain/ClientLinks.js";
 
 /**
  * ClientCardView — renders one person.
@@ -20,6 +21,10 @@ export class ClientCardView extends EventTarget {
   #name;
   #phone;
   #birthdayLine;
+  #linksHost;
+  #linksRow;
+  #linksLine;
+  #linksSummary;
   #socials;
   #socialsSummary;
   #messengers;
@@ -47,6 +52,10 @@ export class ClientCardView extends EventTarget {
     this.#name              = this.#find("[data-client-name]");
     this.#phone             = this.#find("[data-client-phone]");
     this.#birthdayLine      = this.#root.querySelector("[data-client-birthday]");
+    this.#linksHost         = this.#root.querySelector("[data-links]");
+    this.#linksRow          = this.#root.querySelector("[data-links-row]");
+    this.#linksLine         = this.#root.querySelector("[data-links-line]");
+    this.#linksSummary      = this.#root.querySelector("[data-links-summary]");
     this.#socials           = this.#find("[data-socials]");
     this.#socialsSummary    = this.#find("[data-socials-summary]");
     this.#messengers        = this.#find("[data-messengers]");
@@ -58,6 +67,14 @@ export class ClientCardView extends EventTarget {
     this.#scroller          = this.#root.querySelector("[data-scroll]");
 
     this.#onFoldClick = event => {
+      const link = event.target.closest("[data-link-id]");
+      if (link) {
+        this.dispatchEvent(new CustomEvent("open-link", {
+          detail: { id: link.dataset.linkId, name: link.dataset.linkName },
+        }));
+        return;
+      }
+
       const tag = event.target.closest("[data-tag]");
       if (tag) {
         this.dispatchEvent(new CustomEvent("tag", { detail: { tag: tag.dataset.tag } }));
@@ -119,6 +136,7 @@ export class ClientCardView extends EventTarget {
 
     this.#setText(this.#name, client.displayName);
     this.#showBirthday(client);
+    this.#showLinks(client);
     this.#setText(this.#phone, phone.isValid ? phone.display : "Телефон не вказано");
     this.#setAction(this.#call, phone.isValid ? phone.dialUri : null);
     this.#setAction(this.#sms, phone.isValid ? phone.smsUri : null);
@@ -137,6 +155,7 @@ export class ClientCardView extends EventTarget {
     this.#client = null;
     this.#setText(this.#name, "—");
     if (this.#birthdayLine) this.#birthdayLine.hidden = true;
+    if (this.#linksHost) this.#linksHost.hidden = true;
     this.#setText(this.#phone, "");
     this.#setAction(this.#call, null);
     this.#setAction(this.#sms, null);
@@ -371,6 +390,73 @@ export class ClientCardView extends EventTarget {
     this.#birthdayLine.textContent = status.message;
     this.#birthdayLine.hidden = !status.message;
     this.#birthdayLine.classList.toggle("is-today", status.isToday);
+  }
+
+  /**
+   * People connected to this one.
+   *
+   * Shown as names with the relationship underneath, not as a field
+   * called "Зв'язки" with a string in it. The row is a person, so it
+   * looks like one and behaves like one: tapping it opens their card.
+   */
+  #showLinks(client) {
+    if (!this.#linksHost) return;
+
+    const links = client.links;
+    const has = links.length > 0;
+
+    /* The whole block disappears when there is nothing in it, heading
+       and all. A row labelled "Пов'язані люди" with a dash beside it
+       says the feature exists and this person has none of it, which is
+       a sentence nobody needs on every card. */
+    if (this.#linksRow) this.#linksRow.hidden = !has;
+    if (this.#linksLine) this.#linksLine.hidden = !has;
+    if (!has) {
+      this.#linksHost.replaceChildren();
+      return;
+    }
+
+    /* Names rather than a count. "Ігор Романюк, Петро Марчук" answers
+       the question without opening anything, which for two or three
+       people is the whole answer. */
+    if (this.#linksSummary) {
+      this.#linksSummary.textContent = links
+        .map(link => link.name || link.raw)
+        .filter(Boolean)
+        .join(", ");
+    }
+
+    this.#linksHost.replaceChildren(...links.map(link => this.#buildLinkRow(link)));
+  }
+
+  #buildLinkRow(link) {
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "cd-link";
+    row.dataset.linkId = link.id;
+    row.dataset.linkName = link.name;
+
+    const text = document.createElement("span");
+
+    const name = document.createElement("span");
+    name.className = "cd-link-name";
+    name.textContent = link.name || link.raw;
+
+    const role = document.createElement("span");
+    role.className = "cd-link-role";
+    role.textContent = ClientLinks.labelFor(link.roleId) || "зв'язок";
+
+    text.append(role, name);
+    row.append(text, this.#buildChevron());
+
+    return row;
+  }
+
+  #buildChevron() {
+    const chevron = document.createElement("span");
+    chevron.className = "cd-link-chev";
+    chevron.setAttribute("aria-hidden", "true");
+    return chevron;
   }
 
   /**

@@ -12,7 +12,7 @@
  * replayed from one would fail in a way nobody could diagnose.
  */
 
-const VERSION = "mirra-v24";
+const VERSION = "mirra-v27";
 
 /**
  * Files the app is made of. Listed rather than discovered, because a
@@ -40,6 +40,8 @@ const SHELL = [
   "./css/client.css",
   "./css/form.css",
   "./css/dialog.css",
+  "./css/picker.css",
+  "./css/install.css",
   "./css/page.css",
 
   "./views/loading.tpl",
@@ -57,6 +59,7 @@ const SHELL = [
   "./js/App.js",
   "./js/config.js",
   "./js/credentials.js",
+  "./js/version.js",
   "./js/core/ScreenManager.js",
   "./js/core/ScriptLoader.js",
   "./js/core/ViewLoader.js",
@@ -68,6 +71,10 @@ const SHELL = [
   "./js/domain/DateValue.js",
   "./js/domain/PhoneNumber.js",
   "./js/domain/NoteTags.js",
+  "./js/domain/LinkCandidates.js",
+  "./js/domain/LinkSync.js",
+  "./js/domain/ClientLinks.js",
+  "./js/domain/ClientId.js",
   "./js/domain/Birthday.js",
   "./js/domain/SocialCatalog.js",
   "./js/errors.js",
@@ -81,6 +88,7 @@ const SHELL = [
   "./js/services/PickerService.js",
   "./js/services/RedirectAuthService.js",
   "./js/services/SettingsService.js",
+  "./js/services/SchemaUpgrade.js",
   "./js/services/SheetsRepository.js",
   "./js/ui/ChooserView.js",
   "./js/ui/ClientCardView.js",
@@ -89,8 +97,10 @@ const SHELL = [
   "./js/ui/ConfirmDialog.js",
   "./js/ui/DatePicker.js",
   "./js/ui/InstallPrompt.js",
+  "./js/ui/PeoplePicker.js",
   "./js/ui/Notice.js",
   "./js/ui/PhoneInput.js",
+  "./js/ui/NameInput.js",
   "./js/ui/RevealController.js",
   "./js/ui/SelectMenu.js",
   "./js/ui/ThemeManager.js",

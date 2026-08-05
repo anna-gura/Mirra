@@ -17,10 +17,15 @@ import { ClientFormView }       from "./ui/ClientFormView.js";
 import { ClientDraft }          from "./domain/ClientDraft.js";
 import { ClientSchema }         from "./domain/ClientSchema.js";
 import { ClientList }           from "./domain/ClientList.js";
+import { ClientLinks }          from "./domain/ClientLinks.js";
+import { LinkSync }             from "./domain/LinkSync.js";
+import { SchemaUpgrade }        from "./services/SchemaUpgrade.js";
+import { ClientId }             from "./domain/ClientId.js";
 import { Notice }               from "./ui/Notice.js";
 import { ConfirmDialog }        from "./ui/ConfirmDialog.js";
 import { InstallPrompt }        from "./ui/InstallPrompt.js";
-import { findMissingConfig }    from "./config.js";
+import { PeoplePicker }         from "./ui/PeoplePicker.js";
+import { config, findMissingConfig } from "./config.js";
 import { AppError, ConfigError } from "./errors.js";
 
 /**
@@ -41,6 +46,9 @@ import { AppError, ConfigError } from "./errors.js";
  */
 class MirraApp {
   static CLIENTS_SECTION = "clients";
+
+  /** Long enough for the save notice to be read first. */
+  static LINK_NOTICE_DELAY = 2200;
   static VIEWS = ["loading", "hub", "chooser", "clients", "client", "client-form"];
 
   #theme;
@@ -62,6 +70,7 @@ class MirraApp {
   #verifying = false;
   #notice;
   #confirm;
+  #people;
   #install;
   #installPrompt;
 
@@ -91,6 +100,7 @@ class MirraApp {
 
     this.#notice  = new Notice();
     this.#confirm = new ConfirmDialog();
+    this.#people  = new PeoplePicker();
     this.#theme  = new ThemeManager().init();
 
     const stage = document.querySelector("[data-stage]");
@@ -127,6 +137,8 @@ class MirraApp {
        and the category should be one tap away rather than a search you
        have to retype. */
     this.#card.addEventListener("tag", event => this.#showTag(event.detail.tag));
+    this.#card.addEventListener("open-link", event => this.#openLink(event.detail));
+    this.#form.addEventListener("pick-person", event => this.#pickPerson(event.detail.index));
 
     this.#bind();
     this.#checkConfig();
@@ -349,21 +361,64 @@ class MirraApp {
    * @returns {Promise<object>} the snapshot, re-read if columns were added
    */
   async #catchUp(saved, snapshot) {
-    if (!saved.managed) return snapshot;
+    const upgrade = new SchemaUpgrade(snapshot);
+    if (!upgrade.isNeeded) return this.#rememberVersion(snapshot);
 
-    const missing = new ClientSchema(snapshot.headers).missing();
-    if (!missing.length) return snapshot;
+    /* A sheet Mirra made is brought up to date without asking: the
+       columns are Mirra's own, and stopping to ask about them every
+       release would be a toll on people who never chose to pay it.
+
+       A sheet the user brought is asked about, every time, because its
+       shape is theirs. */
+    /* Adding columns to a sheet Mirra made needs no permission — they
+       are its own. Repairing ids does: something happened to that file
+       outside Mirra, and whoever did it deserves to hear about it
+       before anything is written back over the top. */
+    const mustAsk = !saved.managed || upgrade.needsRepair;
+    if (mustAsk && !await this.#askToUpgrade(upgrade)) return snapshot;
 
     try {
-      await this.#sheets.addColumns(snapshot, missing.map(ClientSchema.labelFor));
-      return await this.#sheets.load(saved.spreadsheetId, saved.sheetTitle);
+      const updated = await upgrade.apply(this.#sheets, saved);
+
+      if (upgrade.needsRepair) this.#notice.done("Технічні позначки відновлено.");
+      else if (!saved.managed) this.#notice.done("Таблицю оновлено.");
+
+      return this.#rememberVersion(updated);
     } catch (error) {
       /* A sheet one column short still works — every field Mirra cannot
          write simply does not appear. Failing to widen it is not a
          reason to refuse to open it. */
-      console.warn("Could not add the missing columns", error);
+      console.warn("Could not bring the sheet up to date", error);
       return snapshot;
     }
+  }
+
+  /**
+   * Asks before touching a sheet somebody else laid out.
+   *
+   * The version is named and linked, so that "оновити" is not a leap of
+   * faith: whoever wants to know what changed can read it before
+   * agreeing.
+   *
+   * @param {SchemaUpgrade} upgrade
+   * @returns {Promise<boolean>}
+   */
+  #askToUpgrade(upgrade) {
+    return this.#confirm.ask(upgrade.question(config.VERSION));
+  }
+
+  /**
+   * Notes which version last worked with this sheet.
+   *
+   * Kept for the person reading mirra.json rather than for the code:
+   * whether an upgrade is needed is decided by looking at the columns,
+   * which stays true even when somebody edits the sheet by hand.
+   */
+  #rememberVersion(snapshot) {
+    if (this.#settings.version !== config.VERSION) {
+      this.#settings.setVersion(config.VERSION);
+    }
+    return snapshot;
   }
 
   /**
@@ -493,10 +548,17 @@ class MirraApp {
     if (!this.#snapshot) return;
 
     this.#clients.saveScroll();
-    this.#openForm(new ClientDraft({
+
+    const draft = new ClientDraft({
       schema: this.#clients.list.schema,
       dateFormat: this.#settings.dateFormat,
-    }), "clients");
+    });
+
+    /* Given now rather than on save, so that a link made in this very
+       form has something to point at. */
+    draft.id = ClientId.create();
+
+    this.#openForm(draft, "clients");
   }
 
   /**
@@ -537,12 +599,18 @@ class MirraApp {
       return;
     }
 
-    this.#openForm(new ClientDraft({
+    const draft = new ClientDraft({
       schema: this.#clients.list.schema,
       values: client.values,
       rowNumber: client.rowNumber,
       dateFormat: this.#settings.dateFormat,
-    }), "client");
+    });
+
+    /* An existing client from a sheet that predates ids has none, and
+       cannot be linked to until they do. */
+    if (!draft.id) draft.id = ClientId.create();
+
+    this.#openForm(draft, "client");
   }
 
   /**
@@ -612,10 +680,20 @@ class MirraApp {
   async #saveClient(button) {
     const draft = this.#form.draft;
     const saved = this.#settings.section(MirraApp.CLIENTS_SECTION);
-    if (!draft || !saved) return;
+
+    if (!draft) {
+      console.error("MirraApp: save requested with no draft");
+      this.#notice.alert("Форма не готова. Спробуйте оновити сторінку.");
+      return;
+    }
 
     if (!draft.isValid) {
       this.#notice.alert("Впишіть ім'я або прізвище, щоб зберегти.");
+      return;
+    }
+
+    if (!saved) {
+      this.#notice.alert("Таблиця не відкрита. Спробуйте оновити сторінку.");
       return;
     }
 
@@ -623,17 +701,31 @@ class MirraApp {
        dropped on the way out, so the offer to add one comes before the
        write rather than after the loss. */
     const widened = await this.#offerColumns(draft, saved);
-    if (widened === null) return;
+    if (widened === null) {
+      /* Either they declined the column, or adding it failed and was
+         already reported. Either way the save stops here, and saying so
+         is the difference between a decision and a broken button. */
+      return;
+    }
+
+    const target = widened ?? draft;
+
+    /* Asked before anything is written. "дитина" tells us the other
+       person is a parent but not which one, and guessing from a name is
+       exactly the sort of inference this app has no business making. */
+    if (!await this.#askInverseRoles(target)) return;
 
     await this.#run(button, async () => {
-      const values = (widened ?? draft).toRow(this.#settings.dateFormat);
-      const isNew = (widened ?? draft).isNew;
+      const values = target.toRow(this.#settings.dateFormat);
+      const isNew = target.isNew;
 
       const rowNumber = isNew
         ? await this.#sheets.appendRow(saved.spreadsheetId, saved.sheetTitle, values)
         : (await this.#sheets.updateRow(
-            saved.spreadsheetId, saved.sheetTitle, (widened ?? draft).rowNumber, values
-          ), (widened ?? draft).rowNumber);
+            saved.spreadsheetId, saved.sheetTitle, target.rowNumber, values
+          ), target.rowNumber);
+
+      await this.#syncLinks(target, rowNumber, saved);
 
       /* Redrawn from the widened snapshot when columns were added, so
          the list and the card agree about how many there are. */
@@ -678,7 +770,10 @@ class MirraApp {
        the fields. A partial save is the worst of the three outcomes: it
        reports success, changes the sheet, and quietly drops whatever had
        nowhere to go. */
-    if (!add) return null;
+    if (!add) {
+      this.#notice.show("Нічого не збережено.");
+      return null;
+    }
 
     try {
       await this.#sheets.addColumns(this.#snapshot, labels);
@@ -711,6 +806,160 @@ class MirraApp {
       this.#report(error);
       return null;
     }
+  }
+
+  /**
+   * Asks what the other person is, where it cannot be worked out.
+   *
+   * @param {ClientDraft} draft
+   * @returns {Promise<boolean>} false when the save should stop
+   */
+  async #askInverseRoles(draft) {
+    const list = this.#clients.list;
+    if (!list) return true;
+
+    const before = draft.isNew
+      ? []
+      : list.findByRow(draft.rowNumber)?.links ?? [];
+
+    for (const link of LinkSync.needingInverse(draft.links, before, list, draft.id)) {
+      const role = await this.#askRole(draft, link, list);
+
+      /* null is a deliberate cancel and stops the save. undefined means
+         the question could not be asked at all — a missing dialog — and
+         that is Mirra's problem, not the user's: the link is recorded
+         with a role of "інше" and the save goes on. Losing what somebody
+         typed because a piece of markup is out of date would be the
+         worse of the two failures by far. */
+      if (role === null) {
+        this.#notice.show("Збереження скасовано.");
+        return false;
+      }
+
+      if (role === undefined) {
+        console.warn("Inverse role could not be asked; defaulting to «інше»");
+        continue;
+      }
+
+      link.inverseRole = role;
+    }
+
+    return true;
+  }
+
+
+  /**
+   * One question: who is this client to the person they just linked?
+   *
+   * Phrased with both names in it. "Ким Олена доводиться Ігорю?" is
+   * answerable without thinking; "виберіть зворотну роль" is not.
+   */
+  /**
+   * One question, even when a role is being replaced.
+   *
+   * An earlier version asked twice: once for the new role, then again
+   * for permission to overwrite the old one on the other card. Both
+   * questions have the same answer, and the second only made it
+   * possible to give two contradictory ones.
+   *
+   * What was worth keeping from the second is the fact it carried — the
+   * other person currently says something else — so that goes into the
+   * note here.
+   */
+  async #askRole(draft, link, list) {
+    const name = [draft.firstName, draft.lastName].filter(Boolean).join(" ") || "цей клієнт";
+
+    /* Only the answers that make sense. A child's counterpart is a
+       parent of some kind, and offering all eight roles asks somebody
+       to find three among five they will never choose. */
+    const options = ClientLinks.inverseChoicesFor(link.roleId)
+      .map(id => ({ id, label: ClientLinks.labelFor(id) }));
+
+    const back = list?.findById(link.id)?.links.find(entry => entry.id === draft.id);
+    const current = back?.roleId && back.roleId !== "other"
+      ? `Зараз у картці «${link.name}» записано «${ClientLinks.labelFor(back.roleId)}». `
+      + "Відповідь замінить її."
+      : "";
+
+    return this.#confirm.choose({
+      title: `Ким ${name} доводиться цій людині?`,
+      message: link.name,
+      note: current,
+      options,
+      cancelLabel: "Скасувати",
+    });
+  }
+
+  /**
+   * Writes the other half of every relationship that changed.
+   *
+   * Done after the client's own row, and separately: if this fails, the
+   * client is still saved. A half-written link is a nuisance; a lost
+   * client is not.
+   */
+  async #syncLinks(draft, rowNumber, saved) {
+    const list = this.#clients.list;
+    if (!list || !draft.id) return;
+
+    const previous = list.findByRow(draft.rowNumber);
+    const name = [draft.firstName, draft.lastName].filter(Boolean).join(" ");
+
+    const plan = LinkSync.plan({
+      id: draft.id,
+      name,
+      previousName: previous?.displayName ?? name,
+      links: draft.links,
+      before: previous?.links ?? [],
+      list,
+    });
+
+    if (!plan.length) return;
+
+    const column = list.schema.indexOf("links");
+    if (column < 0) return;
+
+    try {
+      const edits = new Map(plan.map(edit =>
+        [edit.rowNumber - 2, ClientLinks.stringify(edit.links)]));
+
+      await this.#sheets.writeColumn(this.#snapshot, column, edits);
+
+      /* The snapshot in memory is edited to match, so the list and the
+         cards agree without another read. */
+      for (const [index, value] of edits) {
+        if (this.#snapshot.rows[index]) this.#snapshot.rows[index][column] = value;
+      }
+
+      this.#reportLinkChanges(plan);
+    } catch (error) {
+      console.warn("Could not update the other side of the links", error);
+      this.#notice.alert("Клієнта збережено, але пов'язані картки оновити не вдалося.");
+    }
+  }
+
+  /**
+   * Says what changed on the other people's cards.
+   *
+   * Those edits are correct and invisible: somebody's role is rewritten
+   * on a card nobody is looking at, and without this they would never
+   * find out. A quiet line after the fact keeps the change honest
+   * without turning it into another question to answer.
+   *
+   * Renames are left out — the name following its owner is bookkeeping,
+   * not news, and mentioning it would bury the line worth reading.
+   */
+  #reportLinkChanges(plan) {
+    const changed = plan.filter(edit => edit.changes);
+    if (!changed.length) return;
+
+    const message = changed.length === 1
+      ? `У картці «${changed[0].name}»: ${changed[0].changes}.`
+      : `Оновлено пов'язані картки: ${changed.map(edit => edit.name).join(", ")}.`;
+
+    /* Delayed so it follows "Зміни збережено" rather than replacing it:
+       one notice at a time, and the save is the more important of the
+       two. */
+    setTimeout(() => this.#notice.done(message), MirraApp.LINK_NOTICE_DELAY);
   }
 
   /**
@@ -770,6 +1019,52 @@ class MirraApp {
   #showTag(tag) {
     this.#screens.show("clients");
     this.#clients.setQuery(tag).resetScroll();
+  }
+
+  /**
+   * A related person, opened from a card.
+   *
+   * By id, falling back to the name written beside it. The fallback
+   * matters: a link made before ids existed, or one whose id was lost
+   * to a hand edit, still leads somewhere.
+   *
+   * @param {{id: string, name: string}} link
+   */
+  #openLink(link) {
+    const list = this.#clients.list;
+    if (!list) return;
+
+    const target = list.resolve(link);
+
+    if (!target) {
+      this.#notice.alert(`${link.name || "Цього клієнта"} не знайдено в таблиці.`);
+      return;
+    }
+
+    this.#card.render(target);
+  }
+
+  /**
+   * Opens the dialog for choosing who to link to.
+   * @param {number} index -1 to append a link, otherwise the row to change
+   */
+  async #pickPerson(index) {
+    const list = this.#clients.list;
+    const draft = this.#form.draft;
+    if (!list || !draft) return;
+
+    /* The client being edited may not be in the list yet — a new one
+       has no row — so a stand-in carries the fields the ordering needs. */
+    const client = draft.isNew
+      ? { id: draft.id, lastName: draft.lastName, links: draft.links }
+      : list.findByRow(draft.rowNumber) ?? { id: draft.id, lastName: draft.lastName, links: [] };
+
+    const taken = index < 0
+      ? this.#form.linkedIds
+      : this.#form.linkedIds.filter(id => id !== draft.links[index]?.id);
+
+    const chosen = await this.#people.open({ list, client, taken });
+    if (chosen) this.#form.applyPerson(index, chosen);
   }
 
   #backToList() {
