@@ -39,18 +39,24 @@ EOF
 
 echo "js/credentials.js written"
 
-# The version, taken from the most recent git tag.
+# The version, read from version.json.
 #
-# Read at build time rather than fetched from GitHub when the app runs.
-# Asking GitHub on every visit would mean a request to a third party
-# that reveals who is using Mirra and when — precisely what this app
-# exists not to do. Taken from the commit being deployed, it costs
-# nothing, works offline, and cannot disagree with what is published.
-VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
-VERSION=${VERSION#v}
+# It was taken from the latest git tag once, which was tidier and did
+# not work: hosts clone without tags to save time, so `git describe`
+# found nothing and every deployment called itself 0.0.0.
+#
+# A file in the repository is duller and cannot fail. It is one line to
+# change at release time, next to the tag you are already creating, and
+# what it says is what ships.
+VERSION=$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' version.json)
+
+if [ -z "$VERSION" ]; then
+  echo "Build failed: could not read the version from version.json" >&2
+  exit 1
+fi
 
 cat > js/version.js <<EOF
-/* Written during the build from the latest git tag. Do not edit. */
+/* Written during the build from version.json. Do not edit. */
 export const VERSION = "${VERSION}";
 EOF
 

@@ -60,6 +60,7 @@ const SHELL = [
   "./js/config.js",
   "./js/credentials.js",
   "./js/version.js",
+  "./version.json",
   "./js/core/ScreenManager.js",
   "./js/core/ScriptLoader.js",
   "./js/core/ViewLoader.js",

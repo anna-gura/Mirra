@@ -17,9 +17,12 @@
    with a module resolution error nobody can read. */
 let credentials = { CLIENT_ID: "", API_KEY: "", APP_ID: "" };
 
-/* Written by build.sh from the latest git tag, so the app knows what it
-   is without asking anybody. Falls back to a development marker when
-   the file is absent, which is the normal state of a working copy. */
+/* Written by build.sh from version.json, so the app knows what it is
+   without asking anybody — no request to GitHub, no third party told
+   who opened Mirra and when.
+
+   Falls back to a development marker when the file is absent, which is
+   the normal state of a working copy. */
 let version = "0.0.0-dev";
 
 try {

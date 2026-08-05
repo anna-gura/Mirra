@@ -239,6 +239,22 @@ anything private enters the tree.
 the deployment. Anything added to the project that should not be public
 belongs in that list as well as in `.gitignore`.
 
+## Releasing
+
+`version.json` holds the version the app reports. Change it in the same
+commit as the tag:
+
+```json
+{ "version": "2.1.0" }
+```
+
+`build.sh` reads it and writes `js/version.js` at deploy time.
+
+It used to read the latest git tag instead, which was tidier and did not
+work: hosts clone without tags to save time, so `git describe` found
+nothing and every deployment called itself 0.0.0. A line in a file
+cannot fail that way.
+
 ## Deploy checklist
 
 After moving to a new domain, four places need it:
