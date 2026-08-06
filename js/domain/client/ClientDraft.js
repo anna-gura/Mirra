@@ -1,6 +1,6 @@
-import { SocialCatalog } from "./SocialCatalog.js";
-import { DateValue } from "./DateValue.js";
-import { ClientLinks } from "./ClientLinks.js";
+import { SocialCatalog } from "../values/SocialCatalog.js";
+import { DateValue } from "../values/DateValue.js";
+import { ClientLinks } from "../links/ClientLinks.js";
 
 /**
  * ClientDraft — a client being edited.
@@ -35,7 +35,7 @@ export class ClientDraft {
   /** @type {Array<{index: number, label: string, value: string}>} */
   extras = [];
 
-  /** @type {import("./ClientLinks.js").Link[]} */
+  /** @type {import("../links/ClientLinks.js").Link[]} */
   links = [];
 
   /** The client's own id, kept so links can point back at it. */

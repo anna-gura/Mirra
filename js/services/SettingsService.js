@@ -1,6 +1,6 @@
 import { DriveRepository } from "./DriveRepository.js";
 import { config } from "../config.js";
-import { DateValue } from "../domain/DateValue.js";
+import { DateValue } from "../domain/values/DateValue.js";
 
 /**
  * @typedef {object} SectionConfig

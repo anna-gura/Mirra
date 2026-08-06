@@ -29,8 +29,8 @@ export class LinkCandidates {
   #client;
 
   /**
-   * @param {import("./ClientList.js").ClientList} list
-   * @param {import("./Client.js").Client} client the one being edited
+   * @param {import("../client/ClientList.js").ClientList} list
+   * @param {import("../client/Client.js").Client} client the one being edited
    */
   constructor(list, client) {
     this.#list = list;

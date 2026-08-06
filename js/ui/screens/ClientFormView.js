@@ -1,9 +1,9 @@
-import { SocialCatalog } from "../domain/SocialCatalog.js";
-import { SelectMenu } from "./SelectMenu.js";
-import { DatePicker } from "./DatePicker.js";
-import { PhoneInput } from "./PhoneInput.js";
-import { NameInput } from "./NameInput.js";
-import { ClientLinks } from "../domain/ClientLinks.js";
+import { SocialCatalog } from "../../domain/values/SocialCatalog.js";
+import { SelectMenu } from "../controls/SelectMenu.js";
+import { DatePicker } from "../controls/DatePicker.js";
+import { PhoneInput } from "../controls/PhoneInput.js";
+import { NameInput } from "../controls/NameInput.js";
+import { ClientLinks } from "../../domain/links/ClientLinks.js";
 
 /**
  * ClientFormView — the screen where a client is written.
@@ -109,13 +109,13 @@ export class ClientFormView extends EventTarget {
     return this;
   }
 
-  /** @returns {import("../domain/ClientDraft.js").ClientDraft|null} */
+  /** @returns {import("../../domain/client/ClientDraft.js").ClientDraft|null} */
   get draft() {
     return this.#draft;
   }
 
   /**
-   * @param {import("../domain/ClientDraft.js").ClientDraft} draft
+   * @param {import("../../domain/client/ClientDraft.js").ClientDraft} draft
    */
   render(draft) {
     if (!this.#root) return this;

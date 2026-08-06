@@ -1,12 +1,12 @@
-import { ScriptLoader } from "../core/ScriptLoader.js";
-import { config } from "../config.js";
+import { ScriptLoader } from "../../core/ScriptLoader.js";
+import { config } from "../../config.js";
 import { TokenStore } from "./TokenStore.js";
 import {
   AccessDeniedError,
   AuthError,
   PopupBlockedError,
   SignInAbandonedError,
-} from "../errors.js";
+} from "../../errors.js";
 
 /**
  * AuthService — owns the Google access token and nothing else.
