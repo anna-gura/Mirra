@@ -19,7 +19,7 @@ export class GoogleApiClient {
 
   /**
    * @param {object} deps
-   * @param {import("./AuthService.js").AuthService} deps.auth
+   * @param {import("./auth/AuthService.js").AuthService} deps.auth
    */
   constructor({ auth }) {
     this.#auth = auth;

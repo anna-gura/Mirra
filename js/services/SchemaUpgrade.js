@@ -1,5 +1,5 @@
-import { ClientSchema } from "../domain/ClientSchema.js";
-import { ClientId } from "../domain/ClientId.js";
+import { ClientSchema } from "../domain/client/ClientSchema.js";
+import { ClientId } from "../domain/client/ClientId.js";
 import { config } from "../config.js";
 
 /**

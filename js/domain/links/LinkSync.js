@@ -23,7 +23,7 @@ export class LinkSync {
    * @param {string} params.previousName what it was before
    * @param {import("./ClientLinks.js").Link[]} params.links their links now
    * @param {import("./ClientLinks.js").Link[]} params.before their links as saved
-   * @param {import("./ClientList.js").ClientList} params.list everyone else
+   * @param {import("../client/ClientList.js").ClientList} params.list everyone else
    * @returns {Array<{rowNumber: number, links: import("./ClientLinks.js").Link[]}>}
    */
   static plan({ id, name, previousName, links, before, list }) {
@@ -136,7 +136,7 @@ export class LinkSync {
    * as though Анна had become a child — so both people are named and
    * the sentence says which of them the role belongs to.
    *
-   * @param {import("./Client.js").Client} client whose card changed
+   * @param {import("../client/Client.js").Client} client whose card changed
    * @param {import("./ClientLinks.js").Link[]} updated their links now
    * @param {string} id the client being saved
    * @param {string} name their name
@@ -214,7 +214,7 @@ export class LinkSync {
    * find out, and treating it as an answer would make the question
    * unaskable exactly where it matters.
    *
-   * @param {import("./Client.js").Client|undefined} other
+   * @param {import("../client/Client.js").Client|undefined} other
    * @param {string} clientId who the link should point back at
    */
   static #hasAnswer(other, clientId) {

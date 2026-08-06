@@ -291,60 +291,63 @@ normally.
 index.html              the cover; every other screen is fetched
 manifest.webmanifest    installability
 sw.js                   service worker, shell cache
+version.json            the version the app reports
 about · privacy · terms · roadmap.html
 
 css/
   tokens.css        colours and tuning numbers; edit the palette here
-  base.css          reset and document behaviour
-  layout.css        views, rail, screen grids
-  components.css    wordmark, buttons, aurora, craft paper, notices
-  hub · chooser · clients · client · form · dialog · install · page.css
+  base · layout · components.css
+  hub · chooser · clients · client · form · dialog · picker ·
+  install · page.css
 
 views/
   loading · hub · chooser · clients · client · client-form.tpl
 
 js/
   credentials.js          git-ignored; copy from credentials.example.js
+  version.js              git-ignored; written by build.sh
   config.js               scope, endpoints, new-sheet template
   errors.js               typed errors carrying user-safe messages
   App.js                  composition root; owns the flow
-  core/
-    ScriptLoader.js       loads Google libraries once, on demand
-    ScreenManager.js      decides which view is on screen
-    ViewLoader.js         fetches the templates
+
+  core/                   how the application itself works
+    ScriptLoader · ScreenManager · ViewLoader · SiteMeta.js
+
   domain/                 pure logic, no DOM, testable in node
-    ClientSchema.js       works out what each column holds
-    Client.js             one person, read from one row
-    ClientList.js         sorting, alphabet grouping, search
-    ClientDraft.js        a client being edited
-    SocialCatalog.js      networks, parsing, link building
-    PhoneNumber.js        formatting, dialling, live masking
-    DateValue.js          reading and writing dates
-  services/
-    AuthService.js        popup token flow
-    RedirectAuthService.js redirect token flow
-    AuthServiceFactory.js  picks between them
+    client/               a spreadsheet read as people
+      ClientSchema · Client · ClientList · ClientDraft · ClientId.js
+    links/                people connected to people
+      ClientLinks · LinkSync · LinkCandidates.js
+    values/               things that know nothing about clients
+      PhoneNumber · DateValue · Birthday · NoteTags · SocialCatalog.js
+
+  services/               everything that talks to the outside
+    auth/                 two token strategies behind one interface
+      AuthService · RedirectAuthService · AuthServiceFactory · TokenStore.js
     GoogleApiClient.js    one place that speaks HTTP to Google
-    DriveRepository.js    the Mirra folder, settings file, trash
-    SheetsRepository.js   reading and writing spreadsheets
-    SettingsService.js    what Mirra remembers between visits
-    PickerService.js      the file chooser
-    InstallService.js     whether the app can be installed
-  ui/
-    ThemeManager.js       light/dark, remembered
-    RevealController.js   the sliding explanation panel
-    ChooserView.js        open an existing sheet or create one
-    ClientListView.js     the list, search, scroll position
-    ClientCardView.js     one client
-    ClientFormView.js     adding and editing
-    SelectMenu.js         dropdown matching the app
-    DatePicker.js         calendar matching the app
-    PhoneInput.js         live phone masking
-    NameInput.js          capitalisation as you type
-    ConfirmDialog.js      asks before anything irreversible
-    Notice.js             transient messages
-    InstallPrompt.js      the offer to install
+    DriveRepository · SheetsRepository · SettingsService ·
+    SchemaUpgrade · PickerService · InstallService.js
+
+  ui/                     everything that shows
+    screens/              one per view
+      ChooserView · ClientListView · ClientCardView · ClientFormView.js
+    controls/             inputs that replace a native one
+      SelectMenu · DatePicker · PhoneInput · NameInput.js
+    dialogs/              things that take over the screen
+      ConfirmDialog · PeoplePicker.js
+    shell/                present on every screen
+      ThemeManager · Notice · RevealController · InstallPrompt.js
 ```
+
+The grouping is by role rather than by page. A page-shaped layout looks
+tidier and stops working at the first shared file: the client card uses
+five things from `values/`, and a calendar will want the same ones —
+folders named after screens would mean either duplicating them or
+inventing a shared folder, which is where this already is.
+
+`domain/` holds no DOM references at all, which is what makes the
+awkward parts — how Ukrainian sorts, which column is a name, what
+`03/04` means — testable by running node against them directly.
 
 The `domain/` layer holds no DOM references at all, which is what makes
 the awkward parts — how Ukrainian sorts, which column is a name, what

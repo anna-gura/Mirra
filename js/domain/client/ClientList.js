@@ -21,7 +21,7 @@ export class ClientList {
   #clients = null;
 
   /**
-   * @param {import("../services/SheetsRepository.js").SheetSnapshot} snapshot
+   * @param {import("../../services/SheetsRepository.js").SheetSnapshot} snapshot
    */
   constructor(snapshot) {
     this.#snapshot = snapshot;
@@ -166,7 +166,7 @@ export class ClientList {
    * whose id was lost to a hand edit. Worse, but a link that resolves
    * imperfectly beats a broken one.
    *
-   * @param {import("./ClientLinks.js").Link} link
+   * @param {import("../links/ClientLinks.js").Link} link
    * @returns {Client|undefined}
    */
   resolve(link) {

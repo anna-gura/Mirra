@@ -1,7 +1,7 @@
-import { SocialCatalog } from "../domain/SocialCatalog.js";
-import { DateValue } from "../domain/DateValue.js";
-import { NoteTags } from "../domain/NoteTags.js";
-import { ClientLinks } from "../domain/ClientLinks.js";
+import { SocialCatalog } from "../../domain/values/SocialCatalog.js";
+import { DateValue } from "../../domain/values/DateValue.js";
+import { NoteTags } from "../../domain/values/NoteTags.js";
+import { ClientLinks } from "../../domain/links/ClientLinks.js";
 
 /**
  * ClientCardView — renders one person.
@@ -108,7 +108,7 @@ export class ClientCardView extends EventTarget {
     return this;
   }
 
-  /** @returns {import("../domain/Client.js").Client|null} */
+  /** @returns {import("../../domain/client/Client.js").Client|null} */
   get client() {
     return this.#client;
   }
@@ -121,7 +121,7 @@ export class ClientCardView extends EventTarget {
   dateFormat = DateValue.DEFAULT_FORMAT;
 
   /**
-   * @param {import("../domain/Client.js").Client} client
+   * @param {import("../../domain/client/Client.js").Client} client
    */
   render(client) {
     if (!this.#root) return this;
@@ -199,7 +199,7 @@ export class ClientCardView extends EventTarget {
   /**
    * @param {HTMLElement} host
    * @param {HTMLElement} summary
-   * @param {import("../domain/SocialCatalog.js").Profile[]} profiles
+   * @param {import("../../domain/values/SocialCatalog.js").Profile[]} profiles
    * @param {string} emptyText
    */
   #fill(host, summary, profiles, emptyText) {
@@ -280,7 +280,7 @@ export class ClientCardView extends EventTarget {
   }
 
   /**
-   * @param {import("../domain/Client.js").Client} client
+   * @param {import("../../domain/client/Client.js").Client} client
    * @param {string} [dateFormat] how ambiguous dates should be read
    */
   #fillExtras(client, dateFormat) {

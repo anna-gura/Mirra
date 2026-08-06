@@ -1,4 +1,4 @@
-import { ClientList } from "../domain/ClientList.js";
+import { ClientList } from "../../domain/client/ClientList.js";
 
 /**
  * ClientListView — renders people as a browsable list.
@@ -101,7 +101,7 @@ export class ClientListView extends EventTarget {
   }
 
   /**
-   * @param {import("../services/SheetsRepository.js").SheetSnapshot} snapshot
+   * @param {import("../../services/SheetsRepository.js").SheetSnapshot} snapshot
    */
   render(snapshot) {
     if (!this.#root) return this;

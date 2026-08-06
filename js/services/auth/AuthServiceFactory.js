@@ -1,4 +1,4 @@
-import { config } from "../config.js";
+import { config } from "../../config.js";
 import { AuthService } from "./AuthService.js";
 import { RedirectAuthService } from "./RedirectAuthService.js";
 

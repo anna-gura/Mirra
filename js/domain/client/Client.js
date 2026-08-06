@@ -1,8 +1,8 @@
-import { SocialCatalog } from "./SocialCatalog.js";
-import { PhoneNumber } from "./PhoneNumber.js";
-import { NoteTags } from "./NoteTags.js";
-import { Birthday } from "./Birthday.js";
-import { ClientLinks } from "./ClientLinks.js";
+import { SocialCatalog } from "../values/SocialCatalog.js";
+import { PhoneNumber } from "../values/PhoneNumber.js";
+import { NoteTags } from "../values/NoteTags.js";
+import { Birthday } from "../values/Birthday.js";
+import { ClientLinks } from "../links/ClientLinks.js";
 
 /**
  * Client — one person, read out of one row.
@@ -89,7 +89,7 @@ export class Client {
 
   /**
    * People connected to this one.
-   * @returns {import("./ClientLinks.js").Link[]}
+   * @returns {import("../links/ClientLinks.js").Link[]}
    */
   get links() {
     this.#links ??= ClientLinks.parse(this.#schema.read(this.#values, "links"));
@@ -125,13 +125,13 @@ export class Client {
     return this.#schema.read(this.#values, "notes");
   }
 
-  /** @returns {import("./SocialCatalog.js").Profile[]} */
+  /** @returns {import("../values/SocialCatalog.js").Profile[]} */
   get socials() {
     this.#socials ??= SocialCatalog.parse(this.#schema.read(this.#values, "socials"));
     return this.#socials;
   }
 
-  /** @returns {import("./SocialCatalog.js").Profile[]} */
+  /** @returns {import("../values/SocialCatalog.js").Profile[]} */
   get messengers() {
     this.#messengers ??= SocialCatalog.parse(this.#schema.read(this.#values, "messengers"));
     return this.#messengers;

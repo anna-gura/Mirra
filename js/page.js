@@ -1,4 +1,4 @@
-import { ThemeManager } from "./ui/ThemeManager.js";
+import { ThemeManager } from "./ui/shell/ThemeManager.js";
 import { SiteMeta } from "./core/SiteMeta.js";
 
 /**

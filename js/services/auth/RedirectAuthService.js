@@ -1,5 +1,5 @@
-import { config } from "../config.js";
-import { AccessDeniedError, AuthError } from "../errors.js";
+import { config } from "../../config.js";
+import { AccessDeniedError, AuthError } from "../../errors.js";
 
 /**
  * RedirectAuthService — the same job as AuthService, without a popup.
