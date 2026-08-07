@@ -9,13 +9,16 @@
          the app should not require signing out of it, but it is also
          not something anyone does twice — so it sits at the edge with
          the other quiet controls rather than among the sections. -->
-    <a class="hub-icon" href="about.html" aria-label="Про Mirra" title="Про Mirra">
+    <a class="hub-icon" href="about.html" data-page-link="about.html" aria-label="Про Mirra" title="Про Mirra">
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <circle cx="12" cy="12" r="9"/>
         <path d="M12 11v5.5"/>
         <path d="M12 7.6v.6"/>
       </svg>
     </a>
+    <button class="theme lang" type="button" data-lang-toggle aria-label="Змінити мову">
+      <span data-lang-label>UA</span>
+    </button>
     <button class="theme" type="button" data-theme-toggle aria-label="Змінити тему">
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path class="moon" d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/>

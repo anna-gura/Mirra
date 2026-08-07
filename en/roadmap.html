@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Roadmap — Mirra</title>
+  <meta name="description" content="What already works in Mirra and what is planned: calendar, income tracking, routes, analytics, message templates.">
+  <meta name="google-site-verification" content="uH2J-4VKAcDiEE0kQZOL1gIQak6KUfDMboTMo9XYfxI">
+  <link rel="icon" href="../favicon.ico" sizes="any">
+  <link rel="icon" href="../assets/logo-120.png" type="image/png">
+  <!-- Written out rather than generated at runtime. Google's search
+       crawler executes JavaScript, but the one that reviews an OAuth
+       consent screen appears not to — and a verifier that cannot see
+       the app's own name reports that the name does not match. -->
+  <link rel="alternate" hreflang="uk" href="https://mirra.day/roadmap.html">
+  <link rel="alternate" hreflang="en" href="https://mirra.day/en/roadmap.html">
+  <link rel="alternate" hreflang="x-default" href="https://mirra.day/roadmap.html">
+  <link rel="canonical" href="https://mirra.day/en/roadmap.html">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Mirra">
+  <meta property="og:locale" content="en_GB">
+  <meta property="og:title" content="Roadmap — Mirra">
+  <meta property="og:description" content="What already works in Mirra and what is planned: calendar, income tracking, routes, analytics, message templates.">
+  <meta property="og:url" content="https://mirra.day/en/roadmap.html">
+  <meta property="og:image" content="https://mirra.day/assets/social-preview.png">
+  <meta property="og:image:width" content="1280">
+  <meta property="og:image:height" content="640">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Roadmap — Mirra">
+  <meta name="twitter:description" content="What already works in Mirra and what is planned: calendar, income tracking, routes, analytics, message templates.">
+  <meta name="twitter:image" content="https://mirra.day/assets/social-preview.png">
+
+  <meta name="application-name" content="Mirra">
+  <meta name="author" content="Anna Gura">
+
+
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem("mirra:theme");
+        if (!t) t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        document.documentElement.dataset.theme = t;
+      } catch (e) {
+        document.documentElement.dataset.theme = "light";
+      }
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Karla:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/page.css">
+</head>
+<body class="doc">
+<div class="wrap">
+
+  <header>
+    <a class="back" href="../index.html">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5 8 12l6.5 7"/></svg>
+      Home
+    </a>
+    <a class="theme lang" href="../roadmap.html" aria-label="Українська" title="Українська">
+      <span>UA</span>
+    </a>
+    <button class="theme" type="button" data-theme-toggle aria-label="Change theme">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path class="moon" d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/>
+        <g class="sun">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/>
+        </g>
+      </svg>
+    </button>
+  </header>
+
+  <div class="doc-title">
+    <h1>Roadmap</h1>
+  <p class="meta">What works today, and what is planned</p>
+
+  <p>Mirra is under active development. This page lists what is planned and roughly in what order — so you can see where it is heading and whether it is heading somewhere useful to you.</p>
+
+  <div class="note">
+    <p><strong>Numbers are an order, not a schedule.</strong> Timing may change, and some features may never arrive at all if nobody turns out to want them.</p>
+  </div>
+
+  <h2>Where things stand</h2>
+
+  <ul class="rows">
+    <li>
+      <b>1.0 — Client records</b>
+      <span>Done. A searchable list, client cards, calling and messaging, socials and messengers.</span>
+    </li>
+    <li>
+      <b>1.1 — Staying signed in</b>
+      <span>Done. The session resumes on its own instead of asking every time.</span>
+    </li>
+    <li>
+      <b>1.2 — Tags and birthdays</b>
+      <span>Done. Tags written inside notes, birthdays with ages.</span>
+    </li>
+    <li>
+      <b>1.3 — Birthday reminders</b>
+      <span>Done. A note on the card and a marker in the list on the day.</span>
+    </li>
+    <li>
+      <b>2.0 — Linked clients</b>
+      <span>Done. A parent to a child, one partner to another, a guardian to the person they care for.</span>
+    </li>
+    <li>
+      <b>Next — Appointments</b>
+      <span>Booking clients into a calendar, with a view of the week ahead.</span>
+    </li>
+    <li>
+      <b>Later — Income</b>
+      <span>What was earned, from whom and when, without a separate spreadsheet.</span>
+    </li>
+    <li>
+      <b>Later — Routes</b>
+      <span>For those who travel to clients: where and in what order.</span>
+    </li>
+    <li>
+      <b>Later — Message templates</b>
+      <span>Reminders and confirmations that do not have to be typed out each time.</span>
+    </li>
+    <li>
+      <b>Later — Analytics</b>
+      <span>Who comes back, who has not been seen in a while, when the busy weeks are.</span>
+    </li>
+  </ul>
+
+  <h2>An honest caveat</h2>
+
+  <p><strong>Mirra stores none of your data.</strong> It works accountless: no accounts, no user database, and no place in the middle between you and Google. The site serves your browser the app's code — everything else goes straight from your browser into your own account.</p>
+
+  <p>That is done for safety: what does not exist cannot be breached or lost. But it has a consequence worth stating plainly: <strong>what Mirra can do, and how reliably, depends on Google's infrastructure</strong>. If Google changes the rules for a service, Mirra changes with them.</p>
+
+  <p>Each new feature will ask for the narrowest permission that does the job, separately, and you can withdraw any of them at any time. Details are in the <a href="privacy.html">privacy policy</a>.</p>
+
+  <h2>Suggestions</h2>
+
+  <p>Mirra grows with the people using it. If something you need is missing, or something here looks wrong, say so — that is how this list gets its order.</p>
+
+  <p><a href="mailto:paintedfox.studio@gmail.com">paintedfox.studio@gmail.com</a></p>
+
+  <footer>
+    <a href="about.html">About Mirra</a> ·
+    <a href="privacy.html">Privacy policy</a> ·
+    <a href="terms.html">Terms of use</a>
+    <br>
+    Mirra · Anna Gura · <a href="mailto:paintedfox.studio@gmail.com">paintedfox.studio@gmail.com</a>
+  </footer>
+
+</div>
+
+<script type="module" src="../js/page.js"></script>
+</body>
+</html>

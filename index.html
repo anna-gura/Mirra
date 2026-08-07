@@ -12,6 +12,18 @@
        page in the dark theme, that gap is a flash of white. -->
   <script>
     (function () {
+      /* The language is set on <html> before the first paint, the same
+         way the theme is. Only the attribute: the Ukrainian in the
+         markup stays as it is, and another language replaces it a frame
+         later — which is why Ukrainian never flashes anything. */
+      try {
+        var l = localStorage.getItem("mirra:lang")
+             || (navigator.language || "uk").slice(0, 2).toLowerCase();
+        document.documentElement.lang = ["uk", "en"].indexOf(l) >= 0 ? l : "uk";
+      } catch (e) {
+        document.documentElement.lang = "uk";
+      }
+
       try {
         var t = localStorage.getItem("mirra:theme");
         if (!t) t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
@@ -159,6 +171,9 @@
     <section class="screen main" data-screen="main" aria-label="Головна">
 
       <div class="top">
+        <button class="theme lang" type="button" data-lang-toggle aria-label="Змінити мову">
+          <span data-lang-label>UA</span>
+        </button>
         <button class="theme" type="button" data-theme-toggle aria-label="Змінити тему">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path class="moon" d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/>
@@ -226,7 +241,7 @@
 
             <p class="pitch">Mirra показує їх зручно — з якого б пристрою ви не зайшли. Записи при цьому залишаються у вашій Google Таблиці.</p>
 
-            <a class="paper-cta" href="about.html">Навіщо вам Mirra</a>
+            <a class="paper-cta" href="about.html" data-page-link="about.html">Навіщо вам Mirra</a>
           </div>
         </div>
 

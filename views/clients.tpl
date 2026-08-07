@@ -7,6 +7,9 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5 8 12l6.5 7"/></svg>
       Назад
     </button>
+    <button class="theme lang" type="button" data-lang-toggle aria-label="Змінити мову">
+      <span data-lang-label>UA</span>
+    </button>
     <button class="theme" type="button" data-theme-toggle aria-label="Змінити тему">
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path class="moon" d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/>

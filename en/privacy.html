@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Privacy policy — Mirra</title>
+  <link rel="icon" href="../favicon.ico" sizes="any">
+  <link rel="icon" href="../assets/logo-120.png" type="image/png">
+  <!-- Written out rather than generated at runtime. Google's search
+       crawler executes JavaScript, but the one that reviews an OAuth
+       consent screen appears not to — and a verifier that cannot see
+       the app's own name reports that the name does not match. -->
+  <link rel="alternate" hreflang="uk" href="https://mirra.day/privacy.html">
+  <link rel="alternate" hreflang="en" href="https://mirra.day/en/privacy.html">
+  <link rel="alternate" hreflang="x-default" href="https://mirra.day/privacy.html">
+  <link rel="canonical" href="https://mirra.day/en/privacy.html">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Mirra">
+  <meta property="og:locale" content="en_GB">
+  <meta property="og:title" content="Privacy policy — Mirra">
+  <meta property="og:description" content="Mirra collects no data, keeps no accounts and is not an intermediary between you and Google.">
+  <meta property="og:url" content="https://mirra.day/en/privacy.html">
+  <meta property="og:image" content="https://mirra.day/assets/social-preview.png">
+  <meta property="og:image:width" content="1280">
+  <meta property="og:image:height" content="640">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Privacy policy — Mirra">
+  <meta name="twitter:description" content="Mirra collects no data, keeps no accounts and is not an intermediary between you and Google.">
+  <meta name="twitter:image" content="https://mirra.day/assets/social-preview.png">
+
+  <meta name="application-name" content="Mirra">
+  <meta name="author" content="Anna Gura">
+
+
+  <script>
+    /* Applied before first paint; otherwise the wrong theme shows for a frame. */
+    (function () {
+      try {
+        var t = localStorage.getItem("mirra:theme");
+        if (!t) t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        document.documentElement.dataset.theme = t;
+      } catch (e) {
+        document.documentElement.dataset.theme = "light";
+      }
+    })();
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Karla:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/page.css">
+</head>
+<body class="doc">
+<div class="wrap">
+
+  <header>
+    <a class="back" href="../index.html">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5 8 12l6.5 7"/></svg>
+      Home
+    </a>
+    <a class="theme lang" href="../privacy.html" aria-label="Українська" title="Українська">
+      <span>UA</span>
+    </a>
+    <button class="theme" type="button" data-theme-toggle aria-label="Change theme">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path class="moon" d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/>
+        <g class="sun">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/>
+        </g>
+      </svg>
+    </button>
+  </header>
+
+  <div class="doc-title">
+    <h1>Privacy policy</h1>
+  <p class="meta">Last updated: 6 August 2026</p>
+
+  <p>Mirra is a workspace for keeping client records. This page explains what happens to your data — and, more to the point, what does not.</p>
+
+  <h2>The short version</h2>
+
+  <div class="note">
+    <p><strong>Your records do not pass through us.</strong> The app runs entirely in your browser: data travels between your device and Google directly, with nothing in between.</p>
+    <p>Mirra is accountless: it creates no accounts, keeps no user database, and does not know who is using it.</p>
+  </div>
+
+  <h2>What Mirra stores about you</h2>
+
+  <p>Nothing on any server of ours, because there is no such server. In your browser it keeps only what it needs to work:</p>
+
+  <ul>
+    <li><strong>Your access key from Google</strong> — so you are not asked to sign in every time. Google voids it after about an hour, after which Mirra quietly obtains a new one. The key stays in your browser and is sent nowhere.</li>
+    <li><strong>Which spreadsheet you chose</strong> — its identifier, so the app knows where to look next time.</li>
+    <li><strong>Your settings</strong> — theme, language, date format.</li>
+  </ul>
+
+  <p>The first is held in your browser. The others live in a small file called <code>mirra.json</code> in a folder named Mirra on your own Google Drive — where you can open it, read it, or delete it.</p>
+
+  <h2>What Mirra can reach on your Drive</h2>
+
+  <p>Only the files you hand it yourself, through Google's own file picker, plus files it created for you. Everything else on your Drive is invisible to it — not as a matter of policy, but because the permission it holds does not extend that far.</p>
+
+  <p>The technical name for that permission is <code>drive.file</code>. It is the narrowest one Google offers for this purpose.</p>
+
+  <h2>What the site you visit does</h2>
+
+  <p>Mirra is hosted on ordinary web hosting, and its role is limited: it serves your browser the pages, styles and code of the app — the same for every visitor. Everything after that happens in your browser.</p>
+
+  <p><strong>Neither your records nor your access key pass through that server.</strong> It does not see them and could not store them even if we wanted it to.</p>
+
+  <p>Like any web server, the host technically sees that a page was requested — an IP address and a browser type. We do not collect, analyse or use that.</p>
+
+  <p>If you would rather not depend even on that, Mirra's code is open and the app can be run on your own computer or server. Instructions are <a href="https://github.com/anna-gura/Mirra#readme" target="_blank" rel="noopener">on GitHub</a>.</p>
+
+  <h2>What Mirra does not do</h2>
+
+  <ul>
+    <li>No analytics, counters, advertising cookies or tracking of any kind</li>
+    <li>No selling of data — there is nothing to sell</li>
+    <li>No passing data to third parties — there is nothing to pass</li>
+  </ul>
+
+  <h2>When new features arrive</h2>
+
+  <p>In time Mirra will work with other Google services — calendar, mail, maps. The rule will not change: <strong>the narrowest permission that does the job, and nothing beyond it</strong>. Each new access is requested separately, and you can withdraw it whenever you like at <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">your Google account settings</a>.</p>
+
+  <h2>Children</h2>
+
+  <p>Mirra is not intended for children and collects no data about them — nor about anybody else.</p>
+
+  <p>Some people use Mirra to keep records that mention minors, such as a client's child. Those records are yours, they live on your Drive, and it is for you to obtain whatever consent your work requires.</p>
+
+  <h2>Deleting your data</h2>
+
+  <p>Delete the spreadsheet and the Mirra folder from your Google Drive, and withdraw the app's access at <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">your account permissions</a>. Nothing remains anywhere else, because it never was anywhere else.</p>
+
+  <h2>Changes to this policy</h2>
+
+  <p>If it changes, the date at the top changes with it. Anything that affects what Mirra may reach will be asked about separately, in the app.</p>
+
+  <h2>Getting in touch</h2>
+
+  <p>Questions about this policy: <a href="mailto:paintedfox.studio@gmail.com">paintedfox.studio@gmail.com</a></p>
+
+  <p class="aside">Mirra is not a Google product. It uses Google's interfaces to work with files in your own account, and it is governed by <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google's own privacy policy</a> where their services are concerned.</p>
+
+  <footer>
+    <a href="about.html">About Mirra</a> ·
+    <a href="terms.html">Terms of use</a>
+    <br>
+    Mirra · Anna Gura · <a href="mailto:paintedfox.studio@gmail.com">paintedfox.studio@gmail.com</a>
+  </footer>
+
+</div>
+
+<script type="module" src="../js/page.js"></script>
+</body>
+</html>

@@ -1,3 +1,4 @@
+import { t } from "../../locales/t.js";
 import { SocialCatalog } from "../../domain/values/SocialCatalog.js";
 import { SelectMenu } from "../controls/SelectMenu.js";
 import { DatePicker } from "../controls/DatePicker.js";
@@ -121,7 +122,7 @@ export class ClientFormView extends EventTarget {
     if (!this.#root) return this;
 
     this.#draft = draft;
-    this.#title.textContent = draft.isNew ? "Новий клієнт" : "Редагувати";
+    this.#title.textContent = t(draft.isNew ? "Новий клієнт" : "Редагувати");
 
     this.#setValue("firstName", draft.firstName);
     this.#setValue("lastName", draft.lastName);
@@ -266,7 +267,7 @@ export class ClientFormView extends EventTarget {
     /* The placeholder follows the chosen network, so it asks for a
        number where a number is meant and a name where a name is. */
     const network = SocialCatalog.find(entry.id);
-    handle.placeholder = network?.input === "phone" ? "+380 67 123 45 67" : "@нік";
+    handle.placeholder = network?.input === "phone" ? "+380 67 123 45 67" : t("@нік");
 
     const remove = document.createElement("button");
     remove.type = "button";
@@ -368,7 +369,7 @@ export class ClientFormView extends EventTarget {
     person.className = "fm-person";
     person.dataset.changeLink = "";
     person.dataset.index = String(index);
-    person.textContent = link.name || "Вибрати людину";
+    person.textContent = link.name || t("Вибрати людину");
     person.classList.toggle("is-empty", !link.name);
 
     const role = new SelectMenu({

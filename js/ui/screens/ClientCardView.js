@@ -1,3 +1,4 @@
+import { t } from "../../locales/t.js";
 import { SocialCatalog } from "../../domain/values/SocialCatalog.js";
 import { DateValue } from "../../domain/values/DateValue.js";
 import { NoteTags } from "../../domain/values/NoteTags.js";
@@ -444,7 +445,7 @@ export class ClientCardView extends EventTarget {
 
     const role = document.createElement("span");
     role.className = "cd-link-role";
-    role.textContent = ClientLinks.labelFor(link.roleId) || "зв'язок";
+    role.textContent = t(ClientLinks.labelFor(link.roleId)) || t("зв'язок");
 
     text.append(role, name);
     row.append(text, this.#buildChevron());
@@ -595,7 +596,7 @@ export class ClientCardView extends EventTarget {
     panel.style.height = isOpen ? "0px" : `${panel.scrollHeight}px`;
 
     if (trigger.dataset.fold === "fold-extra" && this.#moreLabel) {
-      this.#moreLabel.textContent = isOpen ? "Додатково" : "Згорнути";
+      this.#moreLabel.textContent = t(isOpen ? "Додатково" : "Згорнути");
     }
 
     /* Додатково sits in the footer while its panel is at the bottom of
