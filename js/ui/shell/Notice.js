@@ -1,3 +1,5 @@
+import { t } from "../../locales/t.js";
+
 /**
  * Notice — one transient message pinned to the top of the screen.
  *
@@ -36,7 +38,11 @@ export class Notice {
     if (!this.#element || !message) return this;
 
     clearTimeout(this.#timer);
-    this.#element.textContent = message;
+
+    /* Translated here rather than at every call site. Sixteen places
+       raise a notice, and asking each of them to remember would mean
+       fifteen that do and one that does not. */
+    this.#element.textContent = t(message);
     this.#element.dataset.tone = tone;
     this.#element.hidden = false;
 

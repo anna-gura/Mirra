@@ -1,3 +1,5 @@
+import { t } from "../../locales/t.js";
+
 /**
  * DatePicker — a calendar in Mirra's own language.
  *
@@ -46,7 +48,7 @@ export class DatePicker extends EventTarget {
    * @param {string} [params.locale]
    * @param {string} [params.placeholder]
    */
-  constructor({ value = "", locale = "uk-UA", placeholder = "Не вказано", allowNoYear = false } = {}) {
+  constructor({ value = "", locale = "uk-UA", placeholder = t("Не вказано"), allowNoYear = false } = {}) {
     super();
     this.#locale = locale;
     this.#allowNoYear = allowNoYear;
@@ -176,13 +178,13 @@ export class DatePicker extends EventTarget {
     const today = document.createElement("button");
     today.type = "button";
     today.className = "cal-action";
-    today.textContent = "Сьогодні";
+    today.textContent = t("Сьогодні");
     today.addEventListener("click", () => this.#choose(this.#iso(this.#today())));
 
     const clear = document.createElement("button");
     clear.type = "button";
     clear.className = "cal-action";
-    clear.textContent = "Очистити";
+    clear.textContent = t("Очистити");
     clear.addEventListener("click", () => this.#choose(""));
 
     foot.append(today);
@@ -194,7 +196,7 @@ export class DatePicker extends EventTarget {
       const noYear = document.createElement("button");
       noYear.type = "button";
       noYear.className = "cal-action";
-      noYear.textContent = "Без року";
+      noYear.textContent = t("Без року");
       noYear.addEventListener("click", () => this.#dropYear());
       foot.append(noYear);
     }

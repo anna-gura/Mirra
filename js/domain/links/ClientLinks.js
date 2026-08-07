@@ -47,6 +47,26 @@ export class ClientLinks {
   });
 
   /**
+   * What each role is called in each language.
+   *
+   * Roles are written into the sheet, so they follow the same rule as
+   * column headings: understood in every language Mirra speaks, written
+   * in whichever one the sheet is already using.
+   */
+  static LABELS = Object.freeze({
+    uk: {
+      mother: "мама", father: "батько", child: "дитина", spouse: "подружжя",
+      partner: "партнер", sibling: "брат/сестра", guardian: "опікун", other: "інше",
+    },
+    en: {
+      mother: "mother", father: "father", child: "child", spouse: "spouse",
+      partner: "partner", sibling: "sibling", guardian: "guardian", other: "other",
+    },
+  });
+
+  static DEFAULT_LANGUAGE = "uk";
+
+  /**
    * When the inverse cannot be worked out, these are the answers worth
    * offering.
    *
@@ -73,8 +93,14 @@ export class ClientLinks {
    * @param {string} roleId
    * @returns {string}
    */
-  static labelFor(roleId) {
-    return ClientLinks.ROLES[roleId]?.label ?? roleId;
+  /**
+   * @param {string} roleId
+   * @param {string} [language]
+   * @returns {string}
+   */
+  static labelFor(roleId, language = ClientLinks.DEFAULT_LANGUAGE) {
+    const labels = ClientLinks.LABELS[language] ?? ClientLinks.LABELS[ClientLinks.DEFAULT_LANGUAGE];
+    return labels[roleId] ?? ClientLinks.ROLES[roleId]?.label ?? roleId;
   }
 
   /**
@@ -89,10 +115,16 @@ export class ClientLinks {
   static roleFrom(label) {
     const wanted = ClientLinks.#normalise(label);
 
-    const found = Object.entries(ClientLinks.ROLES)
-      .find(([, role]) => ClientLinks.#normalise(role.label) === wanted);
+    /* Every language, so a sheet written in one is understood by an
+       interface running in another. */
+    for (const labels of Object.values(ClientLinks.LABELS)) {
+      const found = Object.entries(labels).find(
+        ([, word]) => ClientLinks.#normalise(word) === wanted
+      );
+      if (found) return found[0];
+    }
 
-    return found ? found[0] : "";
+    return "";
   }
 
   /**
@@ -118,10 +150,15 @@ export class ClientLinks {
    * @param {Link[]} links
    * @returns {string}
    */
-  static stringify(links) {
+  /**
+   * @param {Link[]} links
+   * @param {string} [language] which language to write the roles in
+   * @returns {string}
+   */
+  static stringify(links, language = ClientLinks.DEFAULT_LANGUAGE) {
     return ClientLinks.dedupe(links)
       .map(link => link.id
-        ? `${ClientLinks.labelFor(link.roleId)}:${link.id}:${link.name}`
+        ? `${ClientLinks.labelFor(link.roleId, language)}:${link.id}:${link.name}`
         : link.raw)
       .filter(Boolean)
       .join(ClientLinks.SEPARATOR);

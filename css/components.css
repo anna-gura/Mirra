@@ -380,3 +380,17 @@
   background:var(--alert-bg);
   border-color:var(--alert-line);
 }
+
+/* ============================================================
+   LANGUAGE
+   Beside the theme toggle and weighted exactly the same. Changing
+   language is not something anybody does more often than changing
+   theme, and a control that shouts about it would be lying about how
+   much it matters.
+   ============================================================ */
+.lang{
+  font-family:Karla,sans-serif;
+  font-weight:500;
+  font-size:11.5px;
+  letter-spacing:.08em;
+}

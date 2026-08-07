@@ -120,6 +120,31 @@ export class SettingsService {
     return this;
   }
 
+  /**
+   * The interface language, as chosen on any device.
+   *
+   * Kept here as well as in localStorage, and the two do different
+   * jobs: the local copy makes the first screen correct before anything
+   * is fetched, and this one carries the choice onto a new phone.
+   *
+   * @returns {string}
+   */
+  get language() {
+    return this.#data?.language ?? "";
+  }
+
+  /**
+   * @param {string} language
+   */
+  setLanguage(language) {
+    if (!this.#data || this.#data.language === language) return this;
+
+    this.#data.language = language;
+    this.#data.updatedAt = new Date().toISOString();
+    this.save();
+    return this;
+  }
+
   /** @returns {string|null} id of the Mirra folder */
   get folderId() {
     return this.#folder?.id ?? null;
@@ -179,6 +204,7 @@ export class SettingsService {
          because the file changes far less often than Mirra does. */
       schema: SettingsService.VERSION,
       version: "",
+      language: "",
       dateFormat: config.DEFAULT_DATE_FORMAT,
       sections: Object.fromEntries(SettingsService.SECTIONS.map(name => [name, null])),
       updatedAt: new Date().toISOString(),
@@ -209,6 +235,7 @@ export class SettingsService {
     }
 
     if (typeof raw.version === "string") safe.version = raw.version;
+    if (typeof raw.language === "string") safe.language = raw.language;
 
     for (const name of SettingsService.SECTIONS) {
       const value = raw.sections?.[name];

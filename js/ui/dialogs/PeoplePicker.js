@@ -1,3 +1,4 @@
+import { t } from "../../locales/t.js";
 import { LinkCandidates } from "../../domain/links/LinkCandidates.js";
 
 /**
@@ -137,13 +138,13 @@ export class PeoplePicker {
     message.className = "picker-empty";
 
     if (query.trim()) {
-      message.textContent = "Нікого не знайдено.";
+      message.textContent = t("Нікого не знайдено.");
       return message;
     }
 
-    message.textContent = this.#taken.length
+    message.textContent = t(this.#taken.length
       ? "Усі інші клієнти вже пов'язані з цим."
-      : "Поки що немає інших клієнтів, з ким можна пов'язати.";
+      : "Поки що немає інших клієнтів, з ким можна пов'язати.");
 
     return message;
   }

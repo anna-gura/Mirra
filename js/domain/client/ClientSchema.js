@@ -14,19 +14,48 @@
  */
 export class ClientSchema {
   /** Recognised headings, lowercase, by field. */
+  /**
+   * Column headings Mirra recognises, in every language it speaks.
+   *
+   * Reading and writing are deliberately asymmetric. A sheet is
+   * understood whatever language its headings are in — somebody may
+   * have made it in Ukrainian and now be using Mirra in English, or
+   * received the file from a colleague — while writing follows the
+   * sheet, or the interface when the sheet has nothing to follow.
+   *
+   * The alternative is a tool that stops recognising a file the moment
+   * its owner changes a setting, which would be an absurd thing for a
+   * setting to do.
+   */
   static HEADINGS = Object.freeze({
     id:         ["id", "ідентифікатор"],
     firstName:  ["ім'я", "имя", "name", "first name", "firstname"],
     lastName:   ["прізвище", "фамилия", "surname", "last name", "lastname"],
     phone:      ["телефон", "номер", "номер телефону", "phone", "mobile", "тел"],
     birthday:   ["день народження", "днь народження", "день рождения", "birthday",
-                 "дата народження", "др"],
-    links:      ["зв'язки", "связи", "родина", "links", "relations", "пов'язані"],
-    socials:    ["соцмережі", "соцсети", "socials", "social"],
+                 "дата народження", "др", "date of birth", "dob"],
+    links:      ["зв'язки", "связи", "родина", "links", "relations", "пов'язані",
+                 "related", "relationships"],
+    socials:    ["соцмережі", "соцсети", "socials", "social", "social media"],
     messengers: ["месенджери", "мессенджеры", "messengers", "messenger"],
     lastVisit:  ["останній візит", "последний визит", "дата візиту",
-                 "last visit", "дата"],
-    notes:      ["нотатки", "заметки", "примітки", "коментар", "notes", "note", "comment"],
+                 "last visit", "дата", "date"],
+    notes:      ["нотатки", "заметки", "примітки", "коментар", "notes", "note",
+                 "comment", "comments"],
+  });
+
+  /**
+   * Which language a heading belongs to, for the ones that differ.
+   *
+   * Only the words Mirra itself writes are listed. Anything else a
+   * person invented is nobody's language in particular and counts for
+   * neither side.
+   */
+  static LANGUAGE_OF = Object.freeze({
+    uk: ["ім'я", "прізвище", "телефон", "день народження", "зв'язки",
+         "соцмережі", "месенджери", "останній візит", "нотатки"],
+    en: ["name", "surname", "phone", "birthday", "links",
+         "socials", "messengers", "last visit", "notes"],
   });
 
   /**
@@ -75,18 +104,43 @@ export class ClientSchema {
    * calls it "ДР" is understood, and a column Mirra adds is spelled out
    * in full.
    */
+  /**
+   * What a column is called when Mirra creates one, per language.
+   *
+   * Only ever used for writing. Reading goes through HEADINGS above,
+   * which accepts every spelling people actually use — so a sheet that
+   * calls it "ДР" is understood, and a column Mirra adds is spelled out
+   * in full.
+   */
   static LABELS = Object.freeze({
-    id:         "ID",
-    firstName:  "Ім'я",
-    lastName:   "Прізвище",
-    phone:      "Телефон",
-    birthday:   "День народження",
-    links:      "Зв'язки",
-    socials:    "Соцмережі",
-    messengers: "Месенджери",
-    lastVisit:  "Останній візит",
-    notes:      "Нотатки",
+    uk: {
+      id:         "ID",
+      firstName:  "Ім'я",
+      lastName:   "Прізвище",
+      phone:      "Телефон",
+      birthday:   "День народження",
+      links:      "Зв'язки",
+      socials:    "Соцмережі",
+      messengers: "Месенджери",
+      lastVisit:  "Останній візит",
+      notes:      "Нотатки",
+    },
+    en: {
+      id:         "ID",
+      firstName:  "Name",
+      lastName:   "Surname",
+      phone:      "Phone",
+      birthday:   "Birthday",
+      links:      "Links",
+      socials:    "Socials",
+      messengers: "Messengers",
+      lastVisit:  "Last visit",
+      notes:      "Notes",
+    },
   });
+
+  /** Used when a sheet says nothing about which language it is in. */
+  static DEFAULT_LANGUAGE = "uk";
 
   /** @type {Record<string, number>} field → column index, -1 when absent */
   #columns = {};
@@ -142,8 +196,51 @@ export class ClientSchema {
    * @param {string} field
    * @returns {string} the heading Mirra would write for it
    */
-  static labelFor(field) {
-    return ClientSchema.LABELS[field] ?? field;
+  /**
+   * @param {string} field
+   * @param {string} [language]
+   * @returns {string} the heading Mirra would write for it
+   */
+  static labelFor(field, language = ClientSchema.DEFAULT_LANGUAGE) {
+    const labels = ClientSchema.LABELS[language] ?? ClientSchema.LABELS[ClientSchema.DEFAULT_LANGUAGE];
+    return labels[field] ?? field;
+  }
+
+  /**
+   * The language a sheet is written in, judged by its headings.
+   *
+   * A clear majority wins. Anything closer than that is a sheet with no
+   * opinion of its own — half in each language, or a couple of columns
+   * nobody recognises — and then the interface language decides, since
+   * whoever is adding a column now is the one who will read it.
+   *
+   * One stray English heading among nine Ukrainian ones is not a mixed
+   * sheet; it is a Ukrainian sheet with a stray heading.
+   *
+   * @param {string} fallback the interface language
+   * @returns {string}
+   */
+  languageOf(fallback = ClientSchema.DEFAULT_LANGUAGE) {
+    const counts = {};
+
+    for (const header of this.#headers) {
+      const normalised = ClientSchema.normalise(header);
+
+      for (const [language, words] of Object.entries(ClientSchema.LANGUAGE_OF)) {
+        if (words.some(word => ClientSchema.normalise(word) === normalised)) {
+          counts[language] = (counts[language] ?? 0) + 1;
+        }
+      }
+    }
+
+    const ranked = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    if (!ranked.length) return fallback;
+
+    const [[winner, top]] = ranked;
+    const runnerUp = ranked[1]?.[1] ?? 0;
+
+    /* Twice as many, or it is not a majority worth acting on. */
+    return top >= runnerUp * 2 ? winner : fallback;
   }
 
   /**
@@ -152,7 +249,7 @@ export class ClientSchema {
    * @param {string[]} [fields] which to check; defaults to all of them
    * @returns {string[]}
    */
-  missing(fields = Object.keys(ClientSchema.LABELS)) {
+  missing(fields = Object.keys(ClientSchema.LABELS[ClientSchema.DEFAULT_LANGUAGE])) {
     return fields.filter(field => !this.has(field));
   }
 

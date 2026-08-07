@@ -1,6 +1,10 @@
 import { ScreenManager }        from "./core/ScreenManager.js";
 import { ViewLoader }           from "./core/ViewLoader.js";
 import { SiteMeta }             from "./core/SiteMeta.js";
+import { Translator }           from "./locales/Translator.js";
+import { translator }           from "./locales/t.js";
+import { PageLink }             from "./locales/pageLink.js";
+import { DomTranslator }        from "./locales/DomTranslator.js";
 import { AuthServiceFactory }   from "./services/auth/AuthServiceFactory.js";
 import { GoogleApiClient }      from "./services/GoogleApiClient.js";
 import { DriveRepository }      from "./services/DriveRepository.js";
@@ -52,6 +56,8 @@ class MirraApp {
   static VIEWS = ["loading", "hub", "chooser", "clients", "client", "client-form"];
 
   #theme;
+  #translator;
+  #dom;
   #reveal;
   #screens;
   #views;
@@ -98,6 +104,14 @@ class MirraApp {
   async start() {
     SiteMeta.apply();
 
+    /* Loaded before the templates, so the screens arriving from views/
+       are translated on their way in rather than visibly afterwards. */
+    this.#translator = translator;
+    await this.#translator.load(Translator.preferred());
+    this.#dom = new DomTranslator(this.#translator);
+    this.#dom.apply();
+    PageLink.apply();
+
     this.#notice  = new Notice();
     this.#confirm = new ConfirmDialog();
     this.#people  = new PeoplePicker();
@@ -108,6 +122,8 @@ class MirraApp {
 
     this.#views = new ViewLoader();
     await this.#views.load(MirraApp.VIEWS);
+    this.#dom.apply();
+    PageLink.apply();
 
     /* Everything below needs the markup to exist, so it waits. */
     this.#screens = new ScreenManager().init();
@@ -140,6 +156,7 @@ class MirraApp {
     this.#card.addEventListener("open-link", event => this.#openLink(event.detail));
     this.#form.addEventListener("pick-person", event => this.#pickPerson(event.detail.index));
 
+    this.#syncLanguageLabel();
     this.#bind();
     this.#checkConfig();
 
@@ -174,6 +191,74 @@ class MirraApp {
     window.addEventListener("load", () => {
       navigator.serviceWorker.register("sw.js")
         .catch(error => console.warn("Service worker did not register", error));
+    });
+  }
+
+  /**
+   * Applies the language recorded on Drive, when it differs.
+   *
+   * The local copy decides what the first screen looks like; this
+   * decides what happens on a device that has never seen this account.
+   * Written back when there is nothing there yet, so the first choice
+   * anybody makes starts travelling with them.
+   */
+  async #adoptSavedLanguage() {
+    const saved = this.#settings.language;
+
+    if (!saved) {
+      this.#settings.setLanguage(this.#translator.code);
+      return;
+    }
+
+    if (saved === this.#translator.code) return;
+
+    await this.#translator.load(saved);
+    this.#translator.remember();
+    this.#retranslate();
+  }
+
+  /** Moves to the next available language. */
+  async #toggleLanguage() {
+    const codes = Translator.AVAILABLE.map(language => language.code);
+    const next = codes[(codes.indexOf(this.#translator.code) + 1) % codes.length];
+
+    await this.#translator.load(next);
+    this.#translator.remember();
+    this.#settings.setLanguage(next);
+
+    this.#retranslate();
+  }
+
+  /**
+   * Rebuilds every screen in the new language.
+   *
+   * The templates are fetched again rather than translated in place:
+   * translation replaces the Ukrainian, and once replaced there is
+   * nothing left to translate from. Reloading is one request from cache
+   * and leaves no room for that to go wrong.
+   */
+  #retranslate() {
+    this.#syncLanguageLabel();
+
+    /* Screens hold rendered data, so they are redrawn from the snapshot
+       rather than restored from markup. */
+    this.#dom.reset();
+    this.#dom.apply(document.body, { force: true });
+
+    /* The document pages are separate files per language, so the links
+       to them move rather than translate. */
+    PageLink.apply();
+
+    if (this.#snapshot) this.#clients.render(this.#snapshot);
+    if (this.#card.client) this.#card.render(this.#card.client);
+  }
+
+  /** Shows which language is current, in two letters. */
+  #syncLanguageLabel() {
+    const label = this.#translator.code === "uk" ? "UA" : this.#translator.code.toUpperCase();
+
+    document.querySelectorAll("[data-lang-label]").forEach(element => {
+      element.textContent = label;
     });
   }
 
@@ -224,6 +309,7 @@ class MirraApp {
       .set("data-form-cancel",   () => this.#cancelForm())
       .set("data-open-hub",      () => this.#toHub())
       .set("data-pick-other",    () => this.#toChooser())
+      .set("data-lang-toggle",   () => this.#toggleLanguage())
       .set("data-signout",       () => this.#signOut());
 
     document.addEventListener("click", this.#onClick);
@@ -282,6 +368,7 @@ class MirraApp {
     this.#screens.show("loading");
     try {
       await this.#settings.load();
+      await this.#adoptSavedLanguage();
       this.#card.dateFormat = this.#settings.dateFormat;
       this.#clients.dateFormat = this.#settings.dateFormat;
       this.#screens.show("hub");
@@ -574,6 +661,7 @@ class MirraApp {
     this.#clients.saveScroll();
     this.#card.render(client);
     this.#screens.show("client");
+    this.#dom.apply();
   }
 
   /**
@@ -669,6 +757,11 @@ class MirraApp {
     this.#formOrigin = origin;
     this.#form.render(draft);
     this.#screens.show("form");
+
+    /* Rows built while rendering carry Ukrainian labels from the code;
+       the pass picks them up. Anything already done is skipped, so this
+       costs a walk and no work. */
+    this.#dom.apply();
   }
 
   /**
@@ -1107,6 +1200,7 @@ class MirraApp {
     this.#snapshot = snapshot;
     this.#clients.render(snapshot).resetScroll();
     this.#screens.show("clients");
+    this.#dom.apply();
   }
 
   /** Records the spreadsheet so the next visit skips this step. */
