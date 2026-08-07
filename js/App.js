@@ -2,7 +2,7 @@ import { ScreenManager }        from "./core/ScreenManager.js";
 import { ViewLoader }           from "./core/ViewLoader.js";
 import { SiteMeta }             from "./core/SiteMeta.js";
 import { Translator }           from "./locales/Translator.js";
-import { translator }           from "./locales/t.js";
+import { translator, t }        from "./locales/t.js";
 import { PageLink }             from "./locales/pageLink.js";
 import { DomTranslator }        from "./locales/DomTranslator.js";
 import { AuthServiceFactory }   from "./services/auth/AuthServiceFactory.js";
@@ -980,12 +980,12 @@ class MirraApp {
 
     const back = list?.findById(link.id)?.links.find(entry => entry.id === draft.id);
     const current = back?.roleId && back.roleId !== "other"
-      ? `Зараз у картці «${link.name}» записано «${ClientLinks.labelFor(back.roleId)}». `
-      + "Відповідь замінить її."
+      ? t("Зараз у картці «{}» записано «{}». Відповідь замінить її.",
+            link.name, t(ClientLinks.labelFor(back.roleId)))
       : "";
 
     return this.#confirm.choose({
-      title: `Ким ${name} доводиться цій людині?`,
+      title: t("Ким {} доводиться цій людині?", name),
       message: link.name,
       note: current,
       options,
@@ -1060,8 +1060,8 @@ class MirraApp {
     if (!changed.length) return;
 
     const message = changed.length === 1
-      ? `У картці «${changed[0].name}»: ${changed[0].changes}.`
-      : `Оновлено пов'язані картки: ${changed.map(edit => edit.name).join(", ")}.`;
+      ? t("У картці «{}»: {}.", changed[0].name, changed[0].changes)
+      : t("Оновлено пов'язані картки: {}.", changed.map(edit => edit.name).join(", "));
 
     /* Delayed so it follows "Зміни збережено" rather than replacing it:
        one notice at a time, and the save is the more important of the
@@ -1144,7 +1144,7 @@ class MirraApp {
     const target = list.resolve(link);
 
     if (!target) {
-      this.#notice.alert(`${link.name || "Цього клієнта"} не знайдено в таблиці.`);
+      this.#notice.alert(t("{} не знайдено в таблиці.", link.name || t("Цього клієнта")));
       return;
     }
 

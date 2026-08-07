@@ -1,3 +1,4 @@
+import { t } from "../../locales/t.js";
 import { ClientLinks } from "./ClientLinks.js";
 
 /**
@@ -146,14 +147,14 @@ export class LinkSync {
     const was = client.links.find(link => link.id === id);
     const now = updated.find(link => link.id === id);
 
-    if (!now) return was ? `зв'язок з «${name}» прибрано` : "";
+    if (!now) return was ? t("зв'язок з «{}» прибрано", name) : "";
 
     const role = ClientLinks.labelFor(now.roleId);
 
-    if (!was) return `додано зв'язок: «${name}» — ${role}`;
+    if (!was) return t("додано зв'язок: «{}» — {}", name, t(role));
     if (was.roleId === now.roleId) return "";
 
-    return `«${name}» тепер ${role}`;
+    return t("«{}» тепер {}", name, t(role));
   }
 
   static needingInverse(links, before, list = null, clientId = "") {

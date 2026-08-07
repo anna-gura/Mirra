@@ -15,6 +15,19 @@
  * code, so a sentence that reads awkwardly in English has to be
  * rephrased around them rather than reordered.
  */
+/**
+ * How English counts, keyed by the Ukrainian singular.
+ *
+ * Ukrainian has three forms and English two, so the rule cannot be
+ * shared — each language answers for itself.
+ */
+export const plurals = {
+  "клієнт": n => (n === 1 ? "client" : "clients"),
+  "рік":    n => (n === 1 ? "year" : "years"),
+  "запис":  n => (n === 1 ? "record" : "records"),
+  "день":   n => (n === 1 ? "day" : "days"),
+};
+
 export const dictionary = {
   /* ---------------- cover ---------------- */
   "Увійти через Google": "Sign in with Google",
@@ -70,6 +83,7 @@ export const dictionary = {
   "клієнтів": "clients",
   "з": "of",
   "{} з {}": "{} of {}",
+  "{} {}": "{} {}",
   "Тут поки що порожньо. Додайте першого клієнта.": "Nothing here yet. Add your first client.",
   "Нікого не знайдено. Спробуйте інше ім'я або номер.": "Nobody found. Try another name or number.",
   "… ще {}": "… {} more",
@@ -107,7 +121,7 @@ export const dictionary = {
   "🎂 Сьогодні день народження 🎂": "🎂 Birthday today 🎂",
   "🎂 День народження завтра": "🎂 Birthday tomorrow",
   "🎂 День народження післязавтра": "🎂 Birthday the day after tomorrow",
-  "🎂 День народження за {} дні": "🎂 Birthday in {} days",
+  "🎂 День народження за {} {}": "🎂 Birthday in {} {}",
 
   /* ---------------- client form ---------------- */
   "Редагування клієнта": "Editing a client",
