@@ -38,16 +38,23 @@ export class Birthday {
   }
 
   /**
-   * What to put on a client card.
+   * What to put on a client card, and what to fill it with.
    *
-   * Spelled out rather than left as an emoji alone. A cake read on its
+   * Returned as a template and its values rather than a finished
+   * sentence, because a finished sentence cannot be translated: "за 3
+   * дні" matches no dictionary entry, since the 3 is in the middle of
+   * it. The caller translates the template and the numbers drop in
+   * wherever that language puts them.
+   *
+   * Spelled out rather than left as an emoji alone: a cake read on its
    * own means nothing to somebody who opens a card once a month, and
    * the point of the line is to be understood immediately.
    *
-   * @returns {string} empty when there is nothing worth saying
+   * @returns {{text: string, values: Array<string|number>,
+   *            plural: [number, [string, string, string]]|null}|null}
    */
   get message() {
-    if (!this.isNear) return "";
+    if (!this.isNear) return null;
 
     /* The day itself is framed on both sides; the warnings are not.
        Symmetry reads as celebration, and a notice three days early is a
@@ -55,10 +62,18 @@ export class Birthday {
        would promise more than is happening, and would flatten the one
        distinction the line exists to make. */
     switch (this.days) {
-      case 0: return "🎂 Сьогодні день народження 🎂";
-      case 1: return "🎂 День народження завтра";
-      case 2: return "🎂 День народження післязавтра";
-      default: return `🎂 День народження за ${this.days} дні`;
+      case 0:
+        return { text: "🎂 Сьогодні день народження 🎂", values: [], plural: null };
+      case 1:
+        return { text: "🎂 День народження завтра", values: [], plural: null };
+      case 2:
+        return { text: "🎂 День народження післязавтра", values: [], plural: null };
+      default:
+        return {
+          text: "🎂 День народження за {} {}",
+          values: [this.days],
+          plural: [this.days, ["день", "дні", "днів"]],
+        };
     }
   }
 }

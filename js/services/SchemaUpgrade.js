@@ -1,3 +1,4 @@
+import { t, plural } from "../locales/t.js";
 import { ClientSchema } from "../domain/client/ClientSchema.js";
 import { ClientId } from "../domain/client/ClientId.js";
 import { config } from "../config.js";
@@ -95,8 +96,8 @@ export class SchemaUpgrade {
         .map(field => ClientSchema.labelFor(field, this.#schema.languageOf(language)));
 
       return {
-        title: `Оновити таблицю до версії ${version}?`,
-        message: `Нові стовпці: ${names.join(", ")}`,
+        title: t("Оновити таблицю до версії {}?", version),
+        message: t("Нові стовпці: {}", names.join(", ")),
         note: "Наявні стовпці й дані залишаться на місці — нове додається "
             + "в кінець таблиці. Без цього нові можливості не працюватимуть.",
         confirmLabel: "Оновити",
@@ -108,7 +109,8 @@ export class SchemaUpgrade {
 
     return {
       title: "Технічні позначки пошкоджено",
-      message: `${count} ${SchemaUpgrade.pluraliseRows(count)} без правильної позначки`,
+      message: t("{} {} без правильної позначки", count,
+                  plural(count, ["запис", "записи", "записів"])),
       note: "Стовпець ID містить службові позначки, за якими Mirra впізнає клієнтів "
           + "у зв'язках між ними. Схоже, їх змінили або видалили поза Mirra. "
           + "Відновити? Інші дані не зміняться, але зв'язки на пошкоджені записи "

@@ -1,4 +1,4 @@
-import { t } from "../../locales/t.js";
+import { t, plural } from "../../locales/t.js";
 import { SocialCatalog } from "../../domain/values/SocialCatalog.js";
 import { DateValue } from "../../domain/values/DateValue.js";
 import { NoteTags } from "../../domain/values/NoteTags.js";
@@ -302,7 +302,7 @@ export class ClientCardView extends EventTarget {
         /* Only when a year was written. A birthday recorded as 15.03 is
            perfectly useful for remembering to send a message; it simply
            cannot say how old anyone is. */
-        age: age === null ? "" : `${age} ${DateValue.pluraliseYears(age)}`,
+        age: age === null ? "" : t("{} {}", age, plural(age, ["рік", "роки", "років"])),
       });
     }
 
@@ -387,9 +387,22 @@ export class ClientCardView extends EventTarget {
     if (!this.#birthdayLine) return;
 
     const status = client.birthdayStatus(this.dateFormat);
+    const message = status.message;
 
-    this.#birthdayLine.textContent = status.message;
-    this.#birthdayLine.hidden = !status.message;
+    if (!message) {
+      this.#birthdayLine.hidden = true;
+      return;
+    }
+
+    /* Translated here rather than left to the DOM pass: the line is
+       rewritten every time a card opens, and the pass skips elements it
+       has already visited. Text that changes has to translate itself. */
+    const values = message.plural
+      ? [...message.values, plural(...message.plural)]
+      : message.values;
+
+    this.#birthdayLine.textContent = t(message.text, ...values);
+    this.#birthdayLine.hidden = false;
     this.#birthdayLine.classList.toggle("is-today", status.isToday);
   }
 

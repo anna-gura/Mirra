@@ -1,3 +1,4 @@
+import { t, plural } from "../../locales/t.js";
 import { ClientList } from "../../domain/client/ClientList.js";
 
 /**
@@ -307,8 +308,8 @@ export class ClientListView extends EventTarget {
     button.type = "button";
     button.className = "cl-tag cl-tag-more";
     button.dataset.tagsMore = "";
-    button.setAttribute("aria-label", `Показати решту теґів: ще ${hidden}`);
-    button.textContent = `… ще ${hidden}`;
+    button.setAttribute("aria-label", t("Показати решту теґів: ще {}", hidden));
+    button.textContent = t("… ще {}", hidden);
     return button;
   }
 
@@ -320,8 +321,15 @@ export class ClientListView extends EventTarget {
   #countText(found) {
     const total = this.#list.count;
     if (!total) return "";
-    if (!this.#query) return `${total} ${ClientListView.pluralise(total)}`;
-    return `${found} з ${total}`;
+
+    /* Translated at the point of building, not by the DOM pass: this
+       line is rewritten on every keystroke, and the pass skips what it
+       has already visited. */
+    if (!this.#query) {
+      return t("{} {}", total, plural(total, ["клієнт", "клієнти", "клієнтів"]));
+    }
+
+    return t("{} з {}", found, total);
   }
 
   #buildGroups(groups) {
@@ -365,7 +373,7 @@ export class ClientListView extends EventTarget {
       const cake = document.createElement("span");
       cake.className = "cl-cake";
       cake.textContent = "🎂";
-      cake.title = "Сьогодні день народження";
+      cake.title = t("Сьогодні день народження");
       button.append(cake);
     }
 
@@ -376,9 +384,9 @@ export class ClientListView extends EventTarget {
   #buildEmpty() {
     const message = document.createElement("p");
     message.className = "cl-empty";
-    message.textContent = this.#query
+    message.textContent = t(this.#query
       ? "Нікого не знайдено. Спробуйте інше ім'я або номер."
-      : "Тут поки що порожньо. Додайте першого клієнта.";
+      : "Тут поки що порожньо. Додайте першого клієнта.");
     return message;
   }
 }

@@ -16,8 +16,18 @@ export const translator = new Translator();
 
 /**
  * @param {string} text the Ukrainian original
+ * @param {...(string|number)} values substituted for {} in order
  * @returns {string}
  */
-export function t(text) {
-  return translator.t(text);
+export function t(text, ...values) {
+  return translator.t(text, ...values);
+}
+
+/**
+ * @param {number} count
+ * @param {[string, string, string]} forms Ukrainian one · few · many
+ * @returns {string}
+ */
+export function plural(count, forms) {
+  return translator.plural(count, forms);
 }

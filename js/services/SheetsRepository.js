@@ -430,7 +430,7 @@ export class SheetsRepository {
 
     const headers = Array.from({ length: width }, (_, index) => {
       const label = (values[0]?.[index] ?? "").trim();
-      return label || `Стовпець ${index + 1}`;
+      return label || t("Стовпець {}", index + 1);
     });
 
     const rows = values.slice(1).map(row =>
