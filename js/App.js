@@ -465,7 +465,7 @@ class MirraApp {
     if (mustAsk && !await this.#askToUpgrade(upgrade)) return snapshot;
 
     try {
-      const updated = await upgrade.apply(this.#sheets, saved);
+      const updated = await upgrade.apply(this.#sheets, saved, this.#translator.code);
 
       if (upgrade.needsRepair) this.#notice.done("Технічні позначки відновлено.");
       else if (!saved.managed) this.#notice.done("Таблицю оновлено.");
@@ -491,7 +491,7 @@ class MirraApp {
    * @returns {Promise<boolean>}
    */
   #askToUpgrade(upgrade) {
-    return this.#confirm.ask(upgrade.question(config.VERSION));
+    return this.#confirm.ask(upgrade.question(config.VERSION, this.#translator.code));
   }
 
   /**
@@ -608,6 +608,10 @@ class MirraApp {
       const snapshot = await this.#sheets.create({
         folderId: this.#settings.folderId,
         title: this.#chooser.title,
+        /* A sheet made while the interface is in English should open in
+           Google Sheets reading in English. A file whose columns its
+           owner cannot read is not much of a possession. */
+        language: this.#translator.code,
       });
       await this.#remember(snapshot, true);
       this.#showClients(snapshot);
@@ -847,7 +851,13 @@ class MirraApp {
     const missing = draft.unwritableFields;
     if (!missing.length) return undefined;
 
-    const labels = missing.map(ClientSchema.labelFor);
+    const list = this.#clients.list;
+
+    /* In the sheet's own language rather than the interface's: a column
+       added to a Ukrainian sheet should match the ones beside it, even
+       if the person adding it is reading English today. */
+    const language = list.schema.languageOf(this.#translator.code);
+    const labels = missing.map(field => ClientSchema.labelFor(field, language));
 
     const add = await this.#confirm.ask({
       title: labels.length === 1 ? "Немає потрібного стовпця" : "Немає потрібних стовпців",
@@ -1011,9 +1021,13 @@ class MirraApp {
     const column = list.schema.indexOf("links");
     if (column < 0) return;
 
+    /* Roles go into the sheet, so they follow it rather than the
+       interface — the same rule as column headings. */
+    const language = list.schema.languageOf(this.#translator.code);
+
     try {
       const edits = new Map(plan.map(edit =>
-        [edit.rowNumber - 2, ClientLinks.stringify(edit.links)]));
+        [edit.rowNumber - 2, ClientLinks.stringify(edit.links, language)]));
 
       await this.#sheets.writeColumn(this.#snapshot, column, edits);
 

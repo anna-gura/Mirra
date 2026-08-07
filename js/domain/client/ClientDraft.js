@@ -123,7 +123,7 @@ export class ClientDraft {
     this.#write(row, "phone", this.phone.trim());
     this.#write(row, "notes", this.notes.trim());
     this.#write(row, "id", this.id);
-    this.#write(row, "links", ClientLinks.stringify(this.links));
+    this.#write(row, "links", ClientLinks.stringify(this.links, this.#schema.languageOf()));
 
     this.#write(row, "socials", this.#stringify(this.socials, this.#unknownSocials));
     this.#write(row, "messengers", this.#stringify(this.messengers, this.#unknownMessengers));
