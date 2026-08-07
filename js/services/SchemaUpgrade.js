@@ -89,11 +89,14 @@ export class SchemaUpgrade {
    * @returns {{title: string, message: string, note: string,
    *            confirmLabel: string, cancelLabel: string}}
    */
-  question(version) {
+  question(version, language = ClientSchema.DEFAULT_LANGUAGE) {
     if (this.needsColumns) {
+      const names = this.missingColumns
+        .map(field => ClientSchema.labelFor(field, this.#schema.languageOf(language)));
+
       return {
         title: `Оновити таблицю до версії ${version}?`,
-        message: `Нові стовпці: ${this.missingColumns.map(ClientSchema.labelFor).join(", ")}`,
+        message: `Нові стовпці: ${names.join(", ")}`,
         note: "Наявні стовпці й дані залишаться на місці — нове додається "
             + "в кінець таблиці. Без цього нові можливості не працюватимуть.",
         confirmLabel: "Оновити",
@@ -141,12 +144,19 @@ export class SchemaUpgrade {
    * @param {object} saved the section as recorded in settings
    * @returns {Promise<object>} the sheet as it now stands
    */
-  async apply(sheets, saved) {
+  async apply(sheets, saved, interfaceLanguage = ClientSchema.DEFAULT_LANGUAGE) {
     let snapshot = this.#snapshot;
+
+    /* The sheet's own language, so a column added to a Ukrainian sheet
+       matches the ones beside it whatever the interface is showing. */
+    const language = this.#schema.languageOf(interfaceLanguage);
 
     const missing = this.missingColumns;
     if (missing.length) {
-      await sheets.addColumns(snapshot, missing.map(ClientSchema.labelFor));
+      await sheets.addColumns(
+        snapshot,
+        missing.map(field => ClientSchema.labelFor(field, language))
+      );
       snapshot = await sheets.load(saved.spreadsheetId, saved.sheetTitle);
 
       /* Newly added, so nobody has had a chance to type in it yet — the

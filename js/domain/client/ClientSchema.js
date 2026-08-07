@@ -142,6 +142,33 @@ export class ClientSchema {
   /** Used when a sheet says nothing about which language it is in. */
   static DEFAULT_LANGUAGE = "uk";
 
+  /**
+   * The headings for a new sheet, in the given language.
+   *
+   * A sheet created while the interface is in English should open in
+   * Google Sheets reading in English. Anything else quietly contradicts
+   * the promise that the file is theirs: a spreadsheet whose columns
+   * they cannot read is not much of a possession.
+   *
+   * @param {string[]} fields
+   * @param {string} language
+   * @returns {string[]}
+   */
+  static headingsFor(fields, language = ClientSchema.DEFAULT_LANGUAGE) {
+    return fields.map(field => ClientSchema.labelFor(field, language));
+  }
+
+  /** What a new sheet is called, before anybody renames it. */
+  static SHEET_TITLE = Object.freeze({ uk: "Клієнти", en: "Clients" });
+
+  /**
+   * @param {string} language
+   * @returns {string}
+   */
+  static titleFor(language = ClientSchema.DEFAULT_LANGUAGE) {
+    return ClientSchema.SHEET_TITLE[language] ?? ClientSchema.SHEET_TITLE[ClientSchema.DEFAULT_LANGUAGE];
+  }
+
   /** @type {Record<string, number>} field → column index, -1 when absent */
   #columns = {};
   #headers;

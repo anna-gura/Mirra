@@ -95,35 +95,29 @@ export const config = Object.freeze({
 
   /** Starting point for a spreadsheet created from inside the app. */
   NEW_SHEET: Object.freeze({
-    title: "Клієнти",
-    tabTitle: "Клієнти",
-    /* Given name and surname are separate columns even though the list
-       shows them joined. Splitting later means rewriting everyone's
-       data; splitting now costs nothing and makes sorting, searching
-       and greeting someone by first name straightforward.
-       Order matters: a sheet Mirra did not create is read by position,
-       so name, phone and notes lead. */
-    /* Grouped by what each answers: who this is, how to reach them,
-       what is true about them, what happened.
+    /* The column order matters only to a person reading the file —
+       Mirra finds columns by name — so it is arranged for them rather
+       than for the code. Grouped by what each answers: who this is, how
+       to reach them, what is true about them, what happened.
 
        Ways of reaching somebody are kept together and put first among
-       them, because for a small business that is most of the point —
+       them, because for a small business that is most of the point:
        plenty of clients are only ever spoken to through a messenger.
 
-       The order matters only to a person reading the file — Mirra finds
-       columns by name — so it is arranged for them rather than for the
-       code. */
-    headers: Object.freeze([
-      "ID", "Ім'я", "Прізвище",
-      "Телефон", "Соцмережі", "Месенджери",
-      "День народження", "Зв'язки", "Останній візит", "Нотатки",
+       The fields are listed here, not the headings. What each is called
+       depends on the language the sheet is being made in, which is
+       ClientSchema's business — see NEW_SHEET.headingsFor below. */
+    fields: Object.freeze([
+      "id", "firstName", "lastName",
+      "phone", "socials", "messengers",
+      "birthday", "links", "lastVisit", "notes",
     ]),
 
-    /** Written by Mirra and not meant to be edited by hand. */
-    protectedColumn: "ID",
+    /** Fields holding dates, so Sheets offers a date picker in them. */
+    dateFields: Object.freeze(["birthday", "lastVisit"]),
 
-    /** Columns holding dates, so Sheets offers a date picker in them. */
-    dateColumns: Object.freeze(["День народження", "Останній візит"]),
+    /** Written by Mirra and not meant to be edited by hand. */
+    protectedField: "id",
   }),
 });
 

@@ -1,4 +1,6 @@
 import { config } from "../config.js";
+import { t } from "../locales/t.js";
+import { ClientSchema } from "../domain/client/ClientSchema.js";
 import { SheetsError } from "../errors.js";
 
 /**
@@ -83,9 +85,10 @@ export class SheetsRepository {
    */
   async create({
     folderId,
-    title    = config.NEW_SHEET.title,
-    tabTitle = config.NEW_SHEET.tabTitle,
-    headers  = config.NEW_SHEET.headers,
+    language = ClientSchema.DEFAULT_LANGUAGE,
+    title    = ClientSchema.titleFor(language),
+    tabTitle = ClientSchema.titleFor(language),
+    headers  = ClientSchema.headingsFor(config.NEW_SHEET.fields, language),
   }) {
     const created = await this.#api.post(config.SHEETS_API, {
       properties: { title },
@@ -107,8 +110,8 @@ export class SheetsRepository {
       }],
     });
 
-    await this.#applyDateValidation(created, headers);
-    await this.#protectIdColumn(created, headers);
+    await this.#applyDateValidation(created, headers, language);
+    await this.#protectIdColumn(created, headers, language);
 
     if (folderId) {
       await this.#drive.moveToFolder(created.spreadsheetId, folderId);
@@ -137,12 +140,17 @@ export class SheetsRepository {
    * still a working spreadsheet, so a refusal is logged and stepped
    * over rather than losing the file that was just created.
    */
-  async #applyDateValidation(created, headers) {
+  async #applyDateValidation(created, headers, language) {
     const sheetId = created.sheets?.[0]?.properties?.sheetId;
     if (sheetId === undefined) return;
 
-    const requests = config.NEW_SHEET.dateColumns
-      .map(name => ({ name, column: headers.indexOf(name) }))
+    /* Matched by field rather than by heading, so this keeps working
+       whatever language the sheet was made in. */
+    const requests = config.NEW_SHEET.dateFields
+      .map(field => {
+        const name = ClientSchema.labelFor(field, language);
+        return { name, column: headers.indexOf(name) };
+      })
       .filter(({ column }) => column >= 0)
       .map(({ name, column }) => ({
         setDataValidation: {
@@ -274,7 +282,7 @@ export class SheetsRepository {
               startColumnIndex: column,
               endColumnIndex: column + 1,
             },
-            description: "Службовий стовпець Mirra — не редагуйте вручну",
+            description: t("Службовий стовпець Mirra — не редагуйте вручну"),
             warningOnly: true,
           },
         },
@@ -382,8 +390,10 @@ export class SheetsRepository {
    * still works, and refusing to create one over a missing guard rail
    * would be the wrong trade.
    */
-  async #protectIdColumn(created, headers) {
-    const column = headers.indexOf(config.NEW_SHEET.protectedColumn);
+  async #protectIdColumn(created, headers, language) {
+    const column = headers.indexOf(
+      ClientSchema.labelFor(config.NEW_SHEET.protectedField, language)
+    );
     const sheetId = created.sheets?.[0]?.properties?.sheetId;
 
     if (column < 0 || sheetId === undefined) return;
@@ -394,7 +404,7 @@ export class SheetsRepository {
           addProtectedRange: {
             protectedRange: {
               range: { sheetId, startColumnIndex: column, endColumnIndex: column + 1 },
-              description: "Службовий стовпець Mirra — не редагуйте вручну",
+              description: t("Службовий стовпець Mirra — не редагуйте вручну"),
               warningOnly: true,
             },
           },
