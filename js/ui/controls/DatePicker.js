@@ -140,7 +140,7 @@ export class DatePicker extends EventTarget {
     this.#panel = document.createElement("div");
     this.#panel.className = "cal-panel";
     this.#panel.setAttribute("role", "dialog");
-    this.#panel.setAttribute("aria-label", "Вибір дати");
+    this.#panel.setAttribute("aria-label", t("Вибір дати"));
     this.#panel.hidden = true;
 
     const head = document.createElement("div");
@@ -258,7 +258,7 @@ export class DatePicker extends EventTarget {
   #buildMonthSelect() {
     const select = document.createElement("select");
     select.className = "cal-select";
-    select.setAttribute("aria-label", "Місяць");
+    select.setAttribute("aria-label", t("Місяць"));
 
     const format = new Intl.DateTimeFormat(this.#locale, { month: "long", timeZone: "UTC" });
 
@@ -287,7 +287,7 @@ export class DatePicker extends EventTarget {
   #buildYearSelect() {
     const select = document.createElement("select");
     select.className = "cal-select cal-select-year";
-    select.setAttribute("aria-label", "Рік");
+    select.setAttribute("aria-label", t("Рік"));
 
     const now = new Date().getUTCFullYear();
 

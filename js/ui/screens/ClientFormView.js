@@ -274,7 +274,7 @@ export class ClientFormView extends EventTarget {
     remove.className = "fm-remove";
     remove.dataset.removeEntry = kind;
     remove.dataset.entryIndex = String(index);
-    remove.setAttribute("aria-label", "Прибрати");
+    remove.setAttribute("aria-label", t("Прибрати"));
     remove.textContent = "×";
 
     row.append(menu.element, handle, remove);
@@ -390,7 +390,7 @@ export class ClientFormView extends EventTarget {
     remove.className = "fm-remove";
     remove.dataset.removeLink = "";
     remove.dataset.index = String(index);
-    remove.setAttribute("aria-label", "Прибрати зв'язок");
+    remove.setAttribute("aria-label", t("Прибрати зв'язок"));
     remove.textContent = "×";
 
     row.append(person, role.element, remove);

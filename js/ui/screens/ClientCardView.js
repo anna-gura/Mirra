@@ -138,7 +138,7 @@ export class ClientCardView extends EventTarget {
     this.#setText(this.#name, client.displayName);
     this.#showBirthday(client);
     this.#showLinks(client);
-    this.#setText(this.#phone, phone.isValid ? phone.display : "Телефон не вказано");
+    this.#setText(this.#phone, phone.isValid ? phone.display : t("Телефон не вказано"));
     this.#setAction(this.#call, phone.isValid ? phone.dialUri : null);
     this.#setAction(this.#sms, phone.isValid ? phone.smsUri : null);
 
@@ -168,6 +168,14 @@ export class ClientCardView extends EventTarget {
   }
 
   /** @param {HTMLElement|null} element @param {string} text */
+  /**
+   * Writes text as given.
+   *
+   * Deliberately does not translate: client names come through here,
+   * and a client called Мама must not become "mother" when somebody
+   * switches language. Labels translate at their own call sites, where
+   * it is visible that they are labels.
+   */
   #setText(element, text) {
     if (element) element.textContent = text;
   }
@@ -632,6 +640,6 @@ export class ClientCardView extends EventTarget {
       const panel = document.getElementById(trigger.dataset.fold);
       if (panel) panel.style.height = "0px";
     });
-    this.#setText(this.#moreLabel, "Додатково");
+    this.#setText(this.#moreLabel, t("Додатково"));
   }
 }
