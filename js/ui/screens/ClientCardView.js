@@ -159,7 +159,13 @@ export class ClientCardView extends EventTarget {
     this.#client = null;
     this.#setText(this.#name, "—");
     if (this.#birthdayLine) this.#birthdayLine.hidden = true;
-    if (this.#linksHost) this.#linksHost.hidden = true;
+    /* The row and its separator are what hide; the panel's contents are
+       only emptied. Hiding the contents themselves — as an earlier
+       version did — left them hidden for good, since nothing unhid
+       them, and the fold then opened onto nothing. */
+    if (this.#linksRow) this.#linksRow.hidden = true;
+    if (this.#linksLine) this.#linksLine.hidden = true;
+    this.#linksHost?.replaceChildren();
     this.#setText(this.#phone, "");
     this.#setAction(this.#call, null);
     this.#setAction(this.#sms, null);
@@ -426,6 +432,10 @@ export class ClientCardView extends EventTarget {
    */
   #showLinks(client) {
     if (!this.#linksHost) return;
+
+    /* Belt and braces: a sheet opened by an older build may have left
+       the contents hidden, and the fold is useless if they are. */
+    this.#linksHost.hidden = false;
 
     const links = client.links;
     const has = links.length > 0;

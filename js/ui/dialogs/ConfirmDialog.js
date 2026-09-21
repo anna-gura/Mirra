@@ -1,3 +1,4 @@
+import { t } from "../../locales/t.js";
 /**
  * ConfirmDialog — asks before something irreversible happens.
  *
@@ -62,14 +63,22 @@ export class ConfirmDialog {
   }) {
     if (!this.#element) return Promise.resolve(false);
 
-    this.#title.textContent = title;
+    /* Everything but the message is translated here. The message is
+       usually data — a client's name, a list of columns — and a client
+       called Мама must not become "mother" in the English interface.
+       Callers that put words in the message translate them themselves.
+
+       The dialog lives in index.html and is marked as done by the first
+       DOM pass, so text set afterwards is never revisited: it has to be
+       translated as it goes in, or it stays Ukrainian for good. */
+    this.#title.textContent = t(title);
     this.#message.textContent = message;
     this.#message.hidden = !message;
-    this.#note.textContent = note;
+    this.#note.textContent = t(note);
     this.#note.hidden = !note;
 
-    this.#confirm.textContent = confirmLabel;
-    this.#cancel.textContent = cancelLabel;
+    this.#confirm.textContent = t(confirmLabel);
+    this.#cancel.textContent = t(cancelLabel);
     this.#confirm.classList.toggle("is-danger", danger);
 
     if (this.#options) {

@@ -157,6 +157,39 @@ export class LinkSync {
     return t("«{}» тепер {}", name, t(role));
   }
 
+  /**
+   * What has to change elsewhere when a client is deleted.
+   *
+   * Every link pointing at them goes, on every card that has one. Left
+   * behind, a link to nobody is worse than no link: it reads as a
+   * relationship, and tapping it announces that the person cannot be
+   * found — which is true, and alarming, and nothing the user did.
+   *
+   * Links are matched through the list's own resolver, so an old link
+   * written before ids existed — found by name alone — is cleared as
+   * reliably as one that carries an id.
+   *
+   * @param {import("../client/Client.js").Client} removed
+   * @param {import("../client/ClientList.js").ClientList} list
+   * @returns {Array<{rowNumber: number, name: string, links: import("./ClientLinks.js").Link[]}>}
+   */
+  static planRemoval(removed, list) {
+    const edits = [];
+
+    for (const client of list.clients) {
+      if (client.rowNumber === removed.rowNumber) continue;
+
+      const kept = client.links.filter(link =>
+        list.resolve(link)?.rowNumber !== removed.rowNumber);
+
+      if (kept.length !== client.links.length) {
+        edits.push({ rowNumber: client.rowNumber, name: client.displayName, links: kept });
+      }
+    }
+
+    return edits;
+  }
+
   static needingInverse(links, before, list = null, clientId = "") {
     return links.filter(link => {
       const skip = LinkSync.#whySkip(link, before, list, clientId);
