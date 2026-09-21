@@ -138,7 +138,10 @@ export class ClientCardView extends EventTarget {
     this.#setText(this.#name, client.displayName);
     this.#showBirthday(client);
     this.#showLinks(client);
-    this.#setText(this.#phone, phone.isValid ? phone.display : t("Телефон не вказано"));
+    this.#setText(this.#phone,
+        phone.isBroken ? t("Номер пошкоджено в таблиці — впишіть його знову")
+      : phone.isValid  ? phone.display
+      : t("Телефон не вказано"));
     this.#setAction(this.#call, phone.isValid ? phone.dialUri : null);
     this.#setAction(this.#sms, phone.isValid ? phone.smsUri : null);
 

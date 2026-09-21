@@ -21,6 +21,7 @@ import { ClientFormView }       from "./ui/screens/ClientFormView.js";
 import { ClientDraft }          from "./domain/client/ClientDraft.js";
 import { ClientSchema }         from "./domain/client/ClientSchema.js";
 import { ClientList }           from "./domain/client/ClientList.js";
+import { DuplicateFinder }      from "./domain/client/DuplicateFinder.js";
 import { ClientLinks }          from "./domain/links/ClientLinks.js";
 import { LinkSync }             from "./domain/links/LinkSync.js";
 import { SchemaUpgrade }        from "./services/SchemaUpgrade.js";
@@ -775,7 +776,7 @@ class MirraApp {
    * would only add a pause.
    */
   async #saveClient(button) {
-    const draft = this.#form.draft;
+    let draft = this.#form.draft;
     const saved = this.#settings.section(MirraApp.CLIENTS_SECTION);
 
     if (!draft) {
@@ -792,6 +793,16 @@ class MirraApp {
     if (!saved) {
       this.#notice.alert("Таблиця не відкрита. Спробуйте оновити сторінку.");
       return;
+    }
+
+    /* Who is being saved is settled before where: a duplicate caught
+       here becomes an edit of the existing row, and everything after
+       this point — columns, relationships, the write itself — then
+       works on that instead. */
+    if (draft.isNew) {
+      const resolved = await this.#checkDuplicate(draft);
+      if (resolved === null) return;
+      draft = resolved;
     }
 
     /* Anything typed into a field the sheet has no column for would be
@@ -831,6 +842,85 @@ class MirraApp {
       this.#applyLocally(rowNumber, values);
       this.#notice.done(isNew ? "Клієнта додано." : "Зміни збережено.");
     });
+  }
+
+  /**
+   * Notices when a "new" client is somebody already in the sheet.
+   *
+   * Two rows for one person mean half the history in each and neither
+   * card right, so the question comes before anything is written. Only
+   * what the new entry would add is listed — a birthday the old card
+   * never had, an Instagram it did not know — never the differences,
+   * because a different spelling or phone may be a correction or a
+   * mistake, and choosing between two facts is not Mirra's call.
+   *
+   * @param {ClientDraft} draft
+   * @returns {Promise<ClientDraft|null>} what to save, or null to stop
+   */
+  async #checkDuplicate(draft) {
+    const list = this.#clients.list;
+    if (!list) return draft;
+
+    const match = DuplicateFinder.find(draft, list);
+    if (!match) return draft;
+
+    const info = DuplicateFinder.newInfo(draft, match.client, this.#settings.dateFormat);
+
+    const reasons = match.reasons.map(reason => t(reason.text, ...reason.values)).join(", ");
+
+    /* The old value is shown beside anything that would be replaced, so
+       one tap is enough and nobody is surprised afterwards. */
+    const changes = info.map(item => {
+      const line = `${t(item.name)}: ${item.value}`;
+      return item.was ? `${line} (${t("було {}", item.was)})` : line;
+    }).join(" · ");
+
+    const note = t("Збігається: {}.", reasons) + " " + (info.length
+      ? t("Буде записано: {}.", changes)
+      : t("Нічого нового — усе це вже є в картці."));
+
+    /* "Оновити" when something is being replaced, "Додати" when it is
+       only filling gaps — the button says what it is about to do. With
+       nothing to write at all, merging would be a save that changes
+       nothing, so the useful offer becomes opening the card. */
+    const replaces = info.some(item => item.was);
+    const options = info.length
+      ? [{ id: "merge", label: t(replaces ? "Оновити наявного" : "Додати до наявного") },
+         { id: "create", label: t("Все одно створити нового") }]
+      : [{ id: "open", label: t("Відкрити наявного") },
+         { id: "create", label: t("Все одно створити нового") }];
+
+    const choice = await this.#confirm.choose({
+      title: t("Схоже, такий клієнт уже є"),
+      message: match.client.displayName,
+      note,
+      options,
+      cancelLabel: t("Скасувати"),
+    });
+
+    /* undefined means the dialog could not be shown at all. Saving as
+       new is what would have happened before this feature existed, so
+       it is the safe fallback — losing what was typed is not. */
+    if (choice === "create" || choice === undefined) return draft;
+
+    if (choice === "open") {
+      this.#openClient(match.client.rowNumber);
+      return null;
+    }
+
+    if (choice !== "merge") return null;
+
+    const merged = new ClientDraft({
+      schema: list.schema,
+      values: match.client.values,
+      rowNumber: match.client.rowNumber,
+      dateFormat: this.#settings.dateFormat,
+    });
+
+    if (!merged.id) merged.id = ClientId.create();
+    for (const item of info) item.apply(merged);
+
+    return merged;
   }
 
   /**

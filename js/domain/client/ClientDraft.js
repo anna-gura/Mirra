@@ -108,6 +108,37 @@ export class ClientDraft {
   }
 
   /**
+   * Keeps Google Sheets from reading text as something else.
+   *
+   * Rows are sent with USER_ENTERED so that dates arrive as real dates,
+   * and the same setting makes Sheets "helpful" everywhere else:
+   *
+   *   +380671234567      → the number 380671234567, plus sign gone
+   *   +380 67 123 45 67  → a formula with spaces in it: #ERROR!
+   *   067 123 45 67      → 671234567, leading zero gone
+   *   - comes with a friend → a formula again
+   *
+   * A leading apostrophe is the spreadsheet's own way of saying "this
+   * is text". It is not stored and not displayed; the cell reads
+   * exactly as typed.
+   *
+   * Phones are always marked. Everything else only when it starts with
+   * a character Sheets would act on — marking every name would be
+   * harmless but would make the rule look arbitrary to the next person
+   * reading this.
+   *
+   * @param {string} value
+   * @param {object} [options]
+   * @param {boolean} [options.always]
+   * @returns {string}
+   */
+  static asText(value, { always = false } = {}) {
+    if (!value) return value;
+    if (always || /^[=+\-@]/.test(value)) return `'${value}`;
+    return value;
+  }
+
+  /**
    * Builds the row to send to the sheet.
    * @param {string} [dateFormat]
    * @returns {string[]}
@@ -118,15 +149,18 @@ export class ClientDraft {
     const width = Math.max(this.#original.length, this.#schema.width);
     const row = Array.from({ length: width }, (_, index) => this.#original[index] ?? "");
 
-    this.#write(row, "firstName", this.firstName.trim());
-    this.#write(row, "lastName", this.lastName.trim());
-    this.#write(row, "phone", this.phone.trim());
-    this.#write(row, "notes", this.notes.trim());
+    this.#write(row, "firstName", ClientDraft.asText(this.firstName.trim()));
+    this.#write(row, "lastName", ClientDraft.asText(this.lastName.trim()));
+
+    /* Always text, never left to Sheets to interpret. See asText. */
+    this.#write(row, "phone", ClientDraft.asText(this.phone.trim(), { always: true }));
+
+    this.#write(row, "notes", ClientDraft.asText(this.notes.trim()));
     this.#write(row, "id", this.id);
     this.#write(row, "links", ClientLinks.stringify(this.links, this.#schema.languageOf()));
 
-    this.#write(row, "socials", this.#stringify(this.socials, this.#unknownSocials));
-    this.#write(row, "messengers", this.#stringify(this.messengers, this.#unknownMessengers));
+    this.#write(row, "socials", ClientDraft.asText(this.#stringify(this.socials, this.#unknownSocials)));
+    this.#write(row, "messengers", ClientDraft.asText(this.#stringify(this.messengers, this.#unknownMessengers)));
 
     for (const field of ["birthday", "lastVisit"]) {
       this.#write(row, field, this.#formatDate(this[field], dateFormat));
@@ -152,7 +186,12 @@ export class ClientDraft {
 
     this.firstName = this.#schema.read(this.#original, "firstName");
     this.lastName  = this.#schema.read(this.#original, "lastName");
-    this.phone     = this.#schema.read(this.#original, "phone");
+    /* A cell that Sheets already turned into an error cannot be
+       recovered from its value — the digits are gone. It is left empty
+       here rather than shown as "#ERROR!" in the field, and the card
+       says the number needs writing in again. */
+    const phone = this.#schema.read(this.#original, "phone");
+    this.phone = phone.startsWith("#") ? "" : phone;
     this.notes     = this.#schema.read(this.#original, "notes");
 
     for (const field of ["birthday", "lastVisit"]) {
