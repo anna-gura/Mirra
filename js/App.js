@@ -729,10 +729,23 @@ class MirraApp {
     const saved = this.#settings.section(MirraApp.CLIENTS_SECTION);
     if (!client || !saved || !this.#snapshot) return;
 
+    /* Worked out before anything is deleted, while the rows still sit
+       where the list thinks they do. */
+    const list = this.#clients.list;
+    const cleanup = list ? LinkSync.planRemoval(client, list) : [];
+
+    /* Said up front: deleting one card also edits others, and people
+       should know which before agreeing rather than discover it after. */
+    const note = t("Запис буде видалено з таблиці. Цю дію не можна скасувати.")
+      + (cleanup.length
+        ? " " + t("Зв'язки з цим клієнтом також буде прибрано з карток: {}.",
+                  cleanup.map(edit => edit.name).join(", "))
+        : "");
+
     const agreed = await this.#confirm.ask({
       title: "Видалити клієнта?",
       message: client.displayName,
-      note: "Запис буде видалено з таблиці. Цю дію не можна скасувати.",
+      note,
       confirmLabel: "Видалити",
       danger: true,
     });
@@ -745,11 +758,54 @@ class MirraApp {
       );
 
       this.#snapshot.rows.splice(client.rowNumber - 2, 1);
+
+      /* After the delete rather than before. If clearing the links then
+         fails, what is left is a link to nobody — the state this fixes,
+         and harmless. The other order could fail the other way: links
+         already gone from other cards while the client they pointed at
+         is still there. */
+      await this.#removeLinksTo(client, cleanup, list);
+
       this.#card.clear();
       this.#clients.render(this.#snapshot);
       this.#backToList();
       this.#notice.done("Клієнта видалено.");
     });
+  }
+
+  /**
+   * Clears every link that pointed at a client who has just been deleted.
+   *
+   * @param {import("./domain/client/Client.js").Client} removed
+   * @param {Array<{rowNumber: number, links: object[]}>} cleanup
+   * @param {ClientList} list the list as it was before the delete
+   */
+  async #removeLinksTo(removed, cleanup, list) {
+    if (!cleanup.length) return;
+
+    const column = list.schema.indexOf("links");
+    if (column < 0) return;
+
+    const language = list.schema.languageOf(this.#translator.code);
+
+    /* Rows below the deleted one have each moved up by one. The plan was
+       made before the delete, so its row numbers are shifted here to
+       match the sheet as it now stands. */
+    const edits = new Map(cleanup.map(edit => {
+      const row = edit.rowNumber > removed.rowNumber ? edit.rowNumber - 1 : edit.rowNumber;
+      return [row - 2, ClientLinks.stringify(edit.links, language)];
+    }));
+
+    try {
+      await this.#sheets.writeColumn(this.#snapshot, column, edits);
+
+      for (const [index, value] of edits) {
+        if (this.#snapshot.rows[index]) this.#snapshot.rows[index][column] = value;
+      }
+    } catch (error) {
+      console.warn("Could not clear links to the deleted client", error);
+      this.#notice.alert("Клієнта видалено, але зв'язки з ним в інших картках прибрати не вдалося.");
+    }
   }
 
   #openForm(draft, origin) {

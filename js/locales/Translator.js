@@ -207,7 +207,12 @@ export class Translator {
     /* Loud in development, invisible in use: the Ukrainian shows, which
        is wrong but readable, and the console names what is missing so it
        can be added. */
-    console.debug(`[i18n] ${this.#code}: не перекладено — ${JSON.stringify(key)}`);
+    /* Only reported when there was Ukrainian to translate. Text that
+       arrives already translated — or is not words at all — passing
+       through here a second time is not a gap in the dictionary. */
+    if (/[\u0400-\u04FF]/.test(key)) {
+      console.debug(`[i18n] ${this.#code}: не перекладено — ${JSON.stringify(key)}`);
+    }
     return Translator.#fill(text, values);
   }
 

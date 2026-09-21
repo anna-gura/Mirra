@@ -204,6 +204,10 @@ export const dictionary = {
   "Видалити клієнта?": "Delete this client?",
   "Запис буде видалено з таблиці. Цю дію не можна скасувати.":
     "The record will be removed from the sheet. This cannot be undone.",
+  "Зв'язки з цим клієнтом також буде прибрано з карток: {}.":
+    "Links to this client will also be removed from: {}.",
+  "Клієнта видалено, але зв'язки з ним в інших картках прибрати не вдалося.":
+    "The client was deleted, but their links on other cards could not be removed.",
   "Таблиця в кошику": "The sheet is in the bin",
   "Ви перемістили її в кошик на Google Диску. Google видалить її остаточно приблизно за 30 днів.":
     "You moved it to the bin on Google Drive. Google will delete it for good in about 30 days.",
