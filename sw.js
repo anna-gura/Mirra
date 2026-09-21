@@ -68,6 +68,7 @@ const SHELL = [
   "./js/credentials.js",
   "./js/domain/client/Client.js",
   "./js/domain/client/ClientDraft.js",
+  "./js/domain/client/DuplicateFinder.js",
   "./js/domain/client/ClientId.js",
   "./js/domain/client/ClientList.js",
   "./js/domain/client/ClientSchema.js",

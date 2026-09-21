@@ -98,6 +98,7 @@ export const dictionary = {
   "скоро": "soon",
   "Ці дії з'являться згодом": "These will come later",
   "Телефон не вказано": "No phone number",
+  "Номер пошкоджено в таблиці — впишіть його знову": "This number was damaged in the sheet — please enter it again",
   "Соцмережі": "Socials",
   "Месенджери": "Messengers",
   "Пов'язані люди": "Related people",
@@ -277,6 +278,20 @@ export const dictionary = {
      than the interface — see ClientSchema.languageOf. */
   "Службовий стовпець Mirra — не редагуйте вручну":
     "Mirra's own column — please do not edit by hand",
+
+  /* ---------------- duplicates ---------------- */
+  "Схоже, такий клієнт уже є": "This client may already be here",
+  "Збігається: {}.": "Matches on: {}.",
+  "Нове: {}.": "New: {}.",
+  "Нічого нового — усе це вже є в картці.": "Nothing new — the card already has all of this.",
+  "Додати до наявного": "Add to the existing client",
+  "Все одно створити нового": "Create a new one anyway",
+  "Відкрити наявного": "Open the existing client",
+  "той самий телефон": "same phone",
+  "той самий {}": "same {}",
+  "те саме ім'я": "same name",
+  "Нотатка": "Note",
+  "Зв'язок": "Link",
 
   /* ---------------- errors ---------------- */
   "Доступ не надано. Щоб працювати з таблицею, потрібен дозвіл на вибраний файл.":

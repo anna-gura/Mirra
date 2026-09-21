@@ -20,10 +20,39 @@ export class PhoneNumber {
   /**
    * @param {string} raw as stored in the sheet
    */
+  /**
+   * Ukrainian mobile operator codes, as they appear after the leading 0.
+   * Used only to recognise a number Sheets has already damaged.
+   */
+  static UA_MOBILE = ["39", "50", "63", "66", "67", "68", "73",
+                      "91", "92", "93", "94", "95", "96", "97", "98", "99"];
+
   constructor(raw) {
     this.#raw = (raw ?? "").trim();
     this.#hadPlus = this.#raw.startsWith("+");
     this.#digits = this.#raw.replace(/\D/g, "");
+
+    /* Undoing damage done before Mirra wrote phones as text: Sheets
+       read "067 123 45 67" as a number and dropped the zero, leaving
+       nine digits no phone will dial. Nine digits opening with a
+       Ukrainian mobile code have exactly one sensible reading. */
+    if (!this.#hadPlus && this.#digits.length === 9
+        && PhoneNumber.UA_MOBILE.includes(this.#digits.slice(0, 2))) {
+      this.#digits = "0" + this.#digits;
+    }
+  }
+
+  /**
+   * Whether Sheets turned the cell into an error.
+   *
+   * "+380 67 123 45 67" written as a formula comes back as #ERROR!, and
+   * the digits cannot be recovered from that. Saying so plainly beats
+   * showing the error text as though it were a number.
+   *
+   * @returns {boolean}
+   */
+  get isBroken() {
+    return this.#raw.startsWith("#");
   }
 
   /** @returns {boolean} true when there is something dialable */
