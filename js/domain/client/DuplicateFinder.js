@@ -15,6 +15,7 @@ import { SocialCatalog } from "../values/SocialCatalog.js";
  * @property {string} field  which part of the client
  * @property {string} name   what it is — a label to translate
  * @property {string} value  what it says — data, never translated
+ * @property {string} [was]  what it replaces, when it is a change
  * @property {function(import("./ClientDraft.js").ClientDraft): void} apply
  */
 
@@ -68,12 +69,18 @@ export class DuplicateFinder {
   }
 
   /**
-   * What the draft knows that the existing client does not.
+   * What saving the draft into the existing client would change.
    *
-   * Only additions, never differences. A different phone on the new
-   * entry may be a correction or may be a mistake, and quietly choosing
-   * between two facts is not something to do on somebody's behalf —
-   * whereas a birthday the old card never had is simply more.
+   * Additions and replacements both, each marked for what it is. An
+   * earlier version offered additions only, on the theory that a
+   * different phone might be a mistake — and the result was a dialog
+   * that ignored the number somebody had just typed and sent them off
+   * to edit the card by hand. Showing the old value beside the new one
+   * gives the same safety with none of the extra taps: the person can
+   * see exactly what will be overwritten and decide.
+   *
+   * Fields left empty in the draft are never treated as changes. Not
+   * typing a surname is not a request to delete one.
    *
    * @param {import("./ClientDraft.js").ClientDraft} draft
    * @param {import("./Client.js").Client} client
@@ -83,30 +90,47 @@ export class DuplicateFinder {
   static newInfo(draft, client, dateFormat) {
     const found = [];
 
-    /* Names and phone only fill a gap; they never replace. */
     for (const [field, label] of [["firstName", "Ім'я"], ["lastName", "Прізвище"]]) {
       const value = draft[field].trim();
-      if (value && !client[field].trim()) {
-        found.push({ field, name: label, value, apply: target => { target[field] = value; } });
-      }
+      const old = client[field].trim();
+      if (!value || DuplicateFinder.#normalise(value) === DuplicateFinder.#normalise(old)) continue;
+
+      found.push({
+        field, name: label, value, was: old || undefined,
+        apply: target => { target[field] = value; },
+      });
     }
 
     const phone = new PhoneNumber(draft.phone);
     const existingPhone = new PhoneNumber(client.phone);
-    if (phone.isValid && (!existingPhone.isValid || existingPhone.isBroken)) {
+    const samePhone = existingPhone.isValid
+      && DuplicateFinder.#tail(draft.phone) === DuplicateFinder.#tail(client.phone);
+
+    if (phone.isValid && !samePhone) {
       found.push({
         field: "phone",
         name: "Телефон",
         value: phone.display,
+        /* A broken cell is not worth quoting back: "#ERROR!" as the old
+           value would only raise a question nobody needs answered. */
+        was: existingPhone.isValid && !existingPhone.isBroken ? existingPhone.display : undefined,
         apply: target => { target.phone = draft.phone.trim(); },
       });
     }
 
     for (const [field, label] of [["birthday", "День народження"], ["lastVisit", "Останній візит"]]) {
-      if (draft[field] && !client[field].trim()) {
-        const shown = DateValue.fromIso(draft[field]).format(dateFormat);
-        found.push({ field, name: label, value: shown, apply: target => { target[field] = draft[field]; } });
-      }
+      if (!draft[field]) continue;
+
+      const existing = client[field].trim() ? new DateValue(client[field], dateFormat) : null;
+      if (existing?.iso === draft[field]) continue;
+
+      found.push({
+        field,
+        name: label,
+        value: DateValue.fromIso(draft[field]).format(dateFormat),
+        was: existing?.isValid ? existing.format(dateFormat) : undefined,
+        apply: target => { target[field] = draft[field]; },
+      });
     }
 
     for (const kind of ["socials", "messengers"]) {

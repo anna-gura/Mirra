@@ -282,7 +282,9 @@ export const dictionary = {
   /* ---------------- duplicates ---------------- */
   "Схоже, такий клієнт уже є": "This client may already be here",
   "Збігається: {}.": "Matches on: {}.",
-  "Нове: {}.": "New: {}.",
+  "Буде записано: {}.": "Will be saved: {}.",
+  "було {}": "was {}",
+  "Оновити наявного": "Update the existing client",
   "Нічого нового — усе це вже є в картці.": "Nothing new — the card already has all of this.",
   "Додати до наявного": "Add to the existing client",
   "Все одно створити нового": "Create a new one anyway",

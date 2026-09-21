@@ -867,16 +867,25 @@ class MirraApp {
     const info = DuplicateFinder.newInfo(draft, match.client, this.#settings.dateFormat);
 
     const reasons = match.reasons.map(reason => t(reason.text, ...reason.values)).join(", ");
-    const added = info.map(item => `${t(item.name)}: ${item.value}`).join(" · ");
+
+    /* The old value is shown beside anything that would be replaced, so
+       one tap is enough and nobody is surprised afterwards. */
+    const changes = info.map(item => {
+      const line = `${t(item.name)}: ${item.value}`;
+      return item.was ? `${line} (${t("було {}", item.was)})` : line;
+    }).join(" · ");
 
     const note = t("Збігається: {}.", reasons) + " " + (info.length
-      ? t("Нове: {}.", added)
+      ? t("Буде записано: {}.", changes)
       : t("Нічого нового — усе це вже є в картці."));
 
-    /* With nothing to add, merging would be a save that changes
-       nothing — so the useful offer becomes opening the existing card. */
+    /* "Оновити" when something is being replaced, "Додати" when it is
+       only filling gaps — the button says what it is about to do. With
+       nothing to write at all, merging would be a save that changes
+       nothing, so the useful offer becomes opening the card. */
+    const replaces = info.some(item => item.was);
     const options = info.length
-      ? [{ id: "merge", label: t("Додати до наявного") },
+      ? [{ id: "merge", label: t(replaces ? "Оновити наявного" : "Додати до наявного") },
          { id: "create", label: t("Все одно створити нового") }]
       : [{ id: "open", label: t("Відкрити наявного") },
          { id: "create", label: t("Все одно створити нового") }];
