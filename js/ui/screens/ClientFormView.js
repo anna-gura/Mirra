@@ -483,7 +483,7 @@ export class ClientFormView extends EventTarget {
     const network = SocialCatalog.find(networkId);
     const handle = row.querySelector(".fm-handle");
     if (handle) {
-      handle.placeholder = network?.input === "phone" ? "+380 67 123 45 67" : "@нік";
+      handle.placeholder = network?.input === "phone" ? "+380 67 123 45 67" : t("@нік");
     }
   }
 

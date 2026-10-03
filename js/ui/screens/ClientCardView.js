@@ -221,16 +221,18 @@ export class ClientCardView extends EventTarget {
    * @param {string} emptyText
    */
   #fill(host, summary, profiles, emptyText) {
+    /* Network names are brands — Instagram is Instagram in every
+       language — so only the fallback and the empty line translate. */
     this.#setText(summary, profiles.length
-      ? profiles.map(profile => profile.network?.label ?? "інше").join(", ")
-      : emptyText);
+      ? profiles.map(profile => profile.network?.label ?? t("інше")).join(", ")
+      : t(emptyText));
 
     if (!host) return;
 
     host.replaceChildren(
       profiles.length
         ? this.#buildProfiles(profiles)
-        : this.#buildNone("Тут поки що порожньо.")
+        : this.#buildNone(t("Тут поки що порожньо."))
     );
   }
 
@@ -351,7 +353,7 @@ export class ClientCardView extends EventTarget {
     this.#extra.replaceChildren(
       fields.length
         ? this.#buildFields(fields)
-        : this.#buildNone("Більше нічого не записано.")
+        : this.#buildNone(t("Більше нічого не записано."))
     );
   }
 
@@ -364,9 +366,11 @@ export class ClientCardView extends EventTarget {
 
       const label = document.createElement("span");
       label.className = "cd-field-label";
-      label.textContent = field.label;
+      /* Translated here rather than by the DOM pass: cards are rebuilt
+         on every open, and the pass skips what it has already marked. */
+      label.textContent = t(field.label);
 
-      if (field.soon) label.append(this.#buildSoon(field.soon));
+      if (field.soon) label.append(this.#buildSoon(t(field.soon)));
       row.append(label);
 
       if (field.tags?.length) row.append(this.#buildTags(field.tags));
