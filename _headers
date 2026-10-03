@@ -26,16 +26,19 @@
 # live in assets/fonts precisely so that no other origin is needed.
 #
 # ---------------------------------------------------------------
-# Removed deliberately — put back only if the console proves otherwise
+# Removed, then put back
 #
-# Three entries were here on suspicion rather than evidence, and are now
-# gone. If sign-in or the picker breaks, the browser console names the
-# one it wants: "Refused to load ... because it violates the following
-# Content Security Policy directive". Add back only the one named.
+# These three were taken out on the grounds that nothing proved they
+# were needed. The picker then stopped opening on the live site, which
+# is the proof, so they are back:
 #
 #   script-src  https://www.gstatic.com         helper files for the picker
 #   img-src     https://*.gstatic.com           picker icons
 #   frame-src   https://content.googleapis.com  an older picker endpoint
+#
+# All three are Google's own origins, already trusted for the sign-in
+# that cannot be removed either. The lesson kept: remove on evidence,
+# not on suspicion — and restore the same way.
 #
 # ---------------------------------------------------------------
 # Considered and not used
@@ -52,7 +55,7 @@
 #     months. Worth adding once the domain has settled.
 
 /*
-  Content-Security-Policy: default-src 'none'; script-src 'self' https://accounts.google.com https://apis.google.com; style-src 'self'; img-src 'self' data: https://*.googleusercontent.com; font-src 'self'; connect-src 'self' https://*.googleapis.com https://accounts.google.com https://oauth2.googleapis.com; frame-src https://accounts.google.com https://docs.google.com; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'none'; script-src 'self' https://accounts.google.com https://apis.google.com https://www.gstatic.com; style-src 'self'; img-src 'self' data: https://*.googleusercontent.com https://*.gstatic.com; font-src 'self'; connect-src 'self' https://*.googleapis.com https://accounts.google.com https://oauth2.googleapis.com; frame-src https://accounts.google.com https://docs.google.com https://content.googleapis.com; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests
 
   # HTTPS only, for a year, including any subdomain.
   Strict-Transport-Security: max-age=31536000; includeSubDomains
