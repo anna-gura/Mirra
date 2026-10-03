@@ -59,7 +59,18 @@
 #     months. Worth adding once the domain has settled.
 
 /*
-  Content-Security-Policy: default-src 'none'; script-src 'self' https://accounts.google.com https://apis.google.com https://www.gstatic.com; style-src 'self'; img-src 'self' data: https://*.googleusercontent.com https://*.gstatic.com; font-src 'self'; connect-src 'self' https://*.googleapis.com https://accounts.google.com https://oauth2.googleapis.com; frame-src 'self' https://accounts.google.com https://docs.google.com https://drive.google.com https://content.googleapis.com; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests
+  # TEMPORARY — report-only while the picker is diagnosed.
+  #
+  # In this mode the policy forbids nothing and the browser reports what
+  # it would have forbidden, each line prefixed "[Report Only]". If the
+  # picker works like this, the policy is the cause and the console says
+  # which line; if it still hangs, the cause is one of the headers below
+  # and we test those next.
+  #
+  # Put back by deleting "-Report-Only" from the line below. The site
+  # scores lower while this stands, which is correct: right now it is
+  # not enforcing anything.
+  Content-Security-Policy-Report-Only: default-src 'none'; script-src 'self' https://accounts.google.com https://apis.google.com https://www.gstatic.com; style-src 'self'; img-src 'self' data: https://*.googleusercontent.com https://*.gstatic.com; font-src 'self'; connect-src 'self' https://*.googleapis.com https://accounts.google.com https://oauth2.googleapis.com; frame-src 'self' https://accounts.google.com https://docs.google.com https://drive.google.com https://content.googleapis.com; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests
 
   # HTTPS only, for a year, including any subdomain.
   Strict-Transport-Security: max-age=31536000; includeSubDomains
