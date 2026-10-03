@@ -1,3 +1,4 @@
+import { t } from "../../locales/t.js";
 import { InstallService } from "../../services/InstallService.js";
 
 /**
@@ -162,16 +163,46 @@ export class InstallPrompt {
       const text = document.createElement("span");
       text.className = "install-text";
 
-      /* The <b> in each step is written in this file — these strings
-         never come from a user or a sheet, so setting them as markup is
-         not the risk it would be anywhere else in the app. */
-      text.innerHTML = step.text;
+      text.append(...InstallPrompt.#emphasised(t(step.text)));
 
       row.append(number, text);
       if (step.icon) row.append(this.#buildIcon(step.icon));
 
       return row;
     }));
+  }
+
+  /**
+   * Turns "Press <b>Share</b>" into nodes, honouring nothing but <b>.
+   *
+   * These strings are written in this file today, which made innerHTML
+   * look safe — but they pass through the dictionary on their way here,
+   * and a translation may one day be contributed by somebody we have
+   * never met. Parsing exactly one tag and putting everything else in
+   * through textContent means the worst a bad translation can do is read
+   * oddly.
+   *
+   * @param {string} text
+   * @returns {Node[]}
+   */
+  static #emphasised(text) {
+    const nodes = [];
+    let cursor = 0;
+
+    for (const match of text.matchAll(/<b>(.*?)<\/b>/g)) {
+      if (match.index > cursor) {
+        nodes.push(document.createTextNode(text.slice(cursor, match.index)));
+      }
+
+      const strong = document.createElement("b");
+      strong.textContent = match[1];
+      nodes.push(strong);
+
+      cursor = match.index + match[0].length;
+    }
+
+    if (cursor < text.length) nodes.push(document.createTextNode(text.slice(cursor)));
+    return nodes;
   }
 
   #buildIcon(name) {

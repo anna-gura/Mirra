@@ -1,0 +1,8 @@
+# Where to report a security problem in Mirra.
+# https://securitytxt.org
+
+Contact: mailto:paintedfox.studio@gmail.com
+Expires: 2027-08-06T00:00:00.000Z
+Preferred-Languages: uk, en
+Canonical: https://mirra.day/.well-known/security.txt
+Policy: https://github.com/anna-gura/Mirra/blob/main/SECURITY.md

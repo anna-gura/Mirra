@@ -332,3 +332,6 @@ footer a:hover{ color:var(--ink); text-decoration-color:var(--line); }
 
 /* The open end of the list, held apart from the items with dates. */
 .rm-more b{ color:var(--soft); }
+
+/* Replaces a style attribute on the link that closes a section. */
+.cta-trailing{ margin-top:24px; }

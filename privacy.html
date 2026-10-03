@@ -4,6 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Політика конфіденційності — Mirra</title>
+  <script src="js/boot.js"></script>
+
   <link rel="icon" href="favicon.ico" sizes="any">
   <link rel="icon" href="assets/logo-120.png" type="image/png">
   <!-- Written out rather than generated at runtime. Google's search
@@ -34,18 +36,6 @@
   <meta name="author" content="Anna Gura">
 
 
-  <script>
-    /* Applied before first paint; otherwise the wrong theme shows for a frame. */
-    (function () {
-      try {
-        var t = localStorage.getItem("mirra:theme");
-        if (!t) t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-        document.documentElement.dataset.theme = t;
-      } catch (e) {
-        document.documentElement.dataset.theme = "light";
-      }
-    })();
-  </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -76,6 +66,7 @@
 
   <div class="doc-title">
     <h1>Політика конфіденційності</h1>
+  <p class="meta">Оновлено: 3 жовтня 2026</p>
     <p class="stamp">Чинна з 1 серпня 2026 року</p>
   </div>
 
@@ -132,6 +123,22 @@
   </section>
 
   <section>
+  <h2>Як Mirra захищає те, що у вашому браузері</h2>
+
+  <p>Оскільки записи живуть у вашому акаунті, а не на нашому сервері, головна небезпека — не викрадення бази, якої немає, а чужий код, що виконався б на сторінці Mirra. Такий код бачив би те саме, що й ви.</p>
+
+  <p>Тому сторінка працює за суворим правилом: <strong>вона виконує лише власний код і код Google, потрібний для входу та вибору файлу</strong>. Усе інше браузер блокує — не тому, що ми щось помітили, а щоб не було чого помічати.</p>
+
+  <ul>
+    <li>Жодного коду всередині самої сторінки — усе винесено в окремі файли, тож вставити щось «між рядків» неможливо.</li>
+    <li>Текст, який ви пишете, ніколи не стає частиною сторінки як код — лише як текст.</li>
+    <li>Сторінку не можна вбудувати в чужий сайт, щоб підсунути вам підроблені кнопки.</li>
+    <li>З'єднання лише захищене, і браузер пам'ятає це для наступних відвідин.</li>
+    <li>Камера, мікрофон, місцезнаходження та інші можливості пристрою вимкнені — Mirra їх не використовує й не зможе попросити непомітно.</li>
+  </ul>
+
+  <p>Якщо ви знайшли вразливість — напишіть на <a href="mailto:paintedfox.studio@gmail.com">paintedfox.studio@gmail.com</a>, будь ласка, до того, як розповідати публічно. Умови описані в <a href="https://github.com/anna-gura/Mirra/blob/main/SECURITY.md" target="_blank" rel="noopener">SECURITY.md</a>.</p>
+
   <h2>Чого немає</h2>
 
   <ul>

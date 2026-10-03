@@ -6,6 +6,8 @@
   <title>Roadmap — Mirra</title>
   <meta name="description" content="What already works in Mirra and what is planned: calendar, income tracking, routes, analytics, message templates.">
   <meta name="google-site-verification" content="uH2J-4VKAcDiEE0kQZOL1gIQak6KUfDMboTMo9XYfxI">
+  <script src="../js/boot.js"></script>
+
   <link rel="icon" href="../favicon.ico" sizes="any">
   <link rel="icon" href="../assets/logo-120.png" type="image/png">
   <!-- Written out rather than generated at runtime. Google's search
@@ -36,17 +38,6 @@
   <meta name="author" content="Anna Gura">
 
 
-  <script>
-    (function () {
-      try {
-        var t = localStorage.getItem("mirra:theme");
-        if (!t) t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-        document.documentElement.dataset.theme = t;
-      } catch (e) {
-        document.documentElement.dataset.theme = "light";
-      }
-    })();
-  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Karla:wght@300;400;500&display=swap" rel="stylesheet">
@@ -76,66 +67,94 @@
 
   <div class="doc-title">
     <h1>Roadmap</h1>
-  <p class="meta">What works today, and what is planned</p>
+  <p class="meta">What works today, and what comes next</p>
 
-  <p>Mirra is under active development. This page lists what is planned and roughly in what order — so you can see where it is heading and whether it is heading somewhere useful to you.</p>
+  <p>Mirra is under active development. This page shows where it is heading, so you can decide whether that is where you need it to go.</p>
 
   <div class="note">
-    <p><strong>Numbers are an order, not a schedule.</strong> Timing may change, and some features may never arrive at all if nobody turns out to want them.</p>
+    <p><strong>Numbers are an order, not a schedule.</strong> Timing may change, and some of this may never arrive if it turns out nobody wants it.</p>
   </div>
 
-  <h2>Where things stand</h2>
+  <h2>Done</h2>
 
   <ul class="rows">
     <li>
-      <b>1.0 — Client records</b>
-      <span>Done. A searchable list, client cards, calling and messaging, socials and messengers.</span>
+      <b>1.0 · Clients</b>
+      <span>A searchable client list, cards, calling and messaging in one tap, socials and messengers.</span>
     </li>
     <li>
-      <b>1.1 — Staying signed in</b>
-      <span>Done. The session resumes on its own instead of asking every time.</span>
+      <b>1.1 · Staying signed in</b>
+      <span>The session resumes on its own — an hour later, or after closing the tab.</span>
     </li>
     <li>
-      <b>1.2 — Tags and birthdays</b>
-      <span>Done. Tags written inside notes, birthdays with ages.</span>
+      <b>1.2 · Tags and birthdays</b>
+      <span>A word starting with # inside a note becomes a searchable tag. Birthdays, with the age beside them.</span>
     </li>
     <li>
-      <b>1.3 — Birthday reminders</b>
-      <span>Done. A note on the card and a marker in the list on the day.</span>
+      <b>1.3 · Birthday reminders</b>
+      <span>A cake beside the name on the day, and a line on the card from three days before.</span>
     </li>
     <li>
-      <b>2.0 — Linked clients</b>
-      <span>Done. A parent to a child, one partner to another, a guardian to the person they care for.</span>
+      <b>2.0 · Linked clients</b>
+      <span>A parent and a child, partners, a guardian. The link shows on both cards, and a tap opens the other one.</span>
     </li>
     <li>
-      <b>Next — Appointments</b>
-      <span>Booking clients into a calendar, with a view of the week ahead.</span>
+      <b>2.1 · English</b>
+      <span>A language switch beside the theme. Sheets are understood in both languages and written in whichever one they already use.</span>
     </li>
     <li>
-      <b>Later — Income</b>
+      <b>2.2 · Duplicates and phone numbers</b>
+      <span>Mirra notices when a "new" client is already there and offers to update them. Numbers no longer break on their way into the sheet.</span>
+    </li>
+    <li>
+      <b>2.3 · Security</b>
+      <span>A strict content policy: the page runs nothing but its own code. More below.</span>
+    </li>
+  </ul>
+
+  <p class="aside">Smaller releases sat between the larger ones — fixes for things that only showed up in use.<br>
+  The full list is on the <a href="https://github.com/anna-gura/Mirra/releases" target="_blank" rel="noopener">releases page</a>.</p>
+
+  <h2>Next</h2>
+
+  <ul class="rows">
+    <li>
+      <b>3.0 · Calendar</b>
+      <span>The next step. Booking a client in, a list of the days ahead, the next visit on their card. Mirra will make a calendar of its own and see only that one.</span>
+    </li>
+    <li>
+      <b>Later · Your existing calendar</b>
+      <span>Connect the one you already keep, instead of a new one.</span>
+    </li>
+    <li>
+      <b>Later · Services and prices</b>
+      <span>What was done and what it costs, without typing it in each time.</span>
+    </li>
+    <li>
+      <b>Later · Income</b>
       <span>What was earned, from whom and when, without a separate spreadsheet.</span>
     </li>
     <li>
-      <b>Later — Routes</b>
-      <span>For those who travel to clients: where and in what order.</span>
+      <b>Later · Message templates</b>
+      <span>Reminders and confirmations that do not have to be written out each time.</span>
     </li>
     <li>
-      <b>Later — Message templates</b>
-      <span>Reminders and confirmations that do not have to be typed out each time.</span>
+      <b>Later · Routes</b>
+      <span>For those who travel to clients: where, and in what order.</span>
     </li>
     <li>
-      <b>Later — Analytics</b>
+      <b>Later · Analytics</b>
       <span>Who comes back, who has not been seen in a while, when the busy weeks are.</span>
     </li>
   </ul>
 
   <h2>An honest caveat</h2>
 
-  <p><strong>Mirra stores none of your data.</strong> It works accountless: no accounts, no user database, and no place in the middle between you and Google. The site serves your browser the app's code — everything else goes straight from your browser into your own account.</p>
+  <p><strong>Mirra stores none of your data.</strong> It keeps no accounts and is not an intermediary between you and Google. The site serves your browser the app's code — everything else goes straight from your browser into your own account.</p>
 
-  <p>That is done for safety: what does not exist cannot be breached or lost. But it has a consequence worth stating plainly: <strong>what Mirra can do, and how reliably, depends on Google's infrastructure</strong>. If Google changes the rules for a service, Mirra changes with them.</p>
+  <p>That is done for safety: what does not exist cannot be breached or lost. But it has a consequence worth stating: <strong>what Mirra can do, and how reliably, depends on Google's infrastructure</strong>. If Google changes the rules for a service, Mirra changes with them.</p>
 
-  <p>Each new feature will ask for the narrowest permission that does the job, separately, and you can withdraw any of them at any time. Details are in the <a href="privacy.html">privacy policy</a>.</p>
+  <p>Each new feature will ask for the narrowest permission that does the job, and ask for it separately. You can withdraw any of them at any time. Details are in the <a href="privacy.html">privacy policy</a>.</p>
 
   <h2>Suggestions</h2>
 

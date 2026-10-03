@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="uk" data-theme="light">
+<html lang="uk" data-theme="light" data-boot-lang>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -10,29 +10,8 @@
   <!-- Applied before the first paint. ThemeManager arrives with the
        modules, which is one paint too late: coming back from another
        page in the dark theme, that gap is a flash of white. -->
-  <script>
-    (function () {
-      /* The language is set on <html> before the first paint, the same
-         way the theme is. Only the attribute: the Ukrainian in the
-         markup stays as it is, and another language replaces it a frame
-         later — which is why Ukrainian never flashes anything. */
-      try {
-        var l = localStorage.getItem("mirra:lang")
-             || (navigator.language || "uk").slice(0, 2).toLowerCase();
-        document.documentElement.lang = ["uk", "en"].indexOf(l) >= 0 ? l : "uk";
-      } catch (e) {
-        document.documentElement.lang = "uk";
-      }
+  <script src="js/boot.js"></script>
 
-      try {
-        var t = localStorage.getItem("mirra:theme");
-        if (!t) t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-        document.documentElement.dataset.theme = t;
-      } catch (e) {
-        document.documentElement.dataset.theme = "light";
-      }
-    })();
-  </script>
   <link rel="icon" href="favicon.ico" sizes="any">
   <link rel="icon" href="assets/logo-120.png" type="image/png">
   <!-- Written out rather than generated at runtime. Google's search

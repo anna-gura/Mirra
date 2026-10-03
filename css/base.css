@@ -38,3 +38,24 @@ button{
   *{ animation:none !important; }
   .rail{ transition-duration:.01ms !important; }
 }
+
+/* ============================================================
+   MOTION
+   Eighty transitions and animations are scattered through these files,
+   and five of them remembered to ask. This asks once, for all of them:
+   somebody who has told their system that motion makes them ill should
+   not have to rely on every future stylesheet remembering.
+
+   Not zero — 0.01ms rather than none — because code elsewhere waits for
+   transitionend, and an animation that never runs never ends.
+   ============================================================ */
+@media (prefers-reduced-motion: reduce){
+  *,
+  *::before,
+  *::after{
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;
+    scroll-behavior:auto !important;
+  }
+}

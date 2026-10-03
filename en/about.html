@@ -6,6 +6,8 @@
   <title>Mirra — a quiet workspace for a small business</title>
   <meta name="description" content="Mirra — a quiet workspace for a small business. Clients, records and reminders at hand. Less time on routine, more on people.">
   <meta name="google-site-verification" content="uH2J-4VKAcDiEE0kQZOL1gIQak6KUfDMboTMo9XYfxI">
+  <script src="../js/boot.js"></script>
+
   <link rel="icon" href="../favicon.ico" sizes="any">
   <link rel="icon" href="../assets/logo-120.png" type="image/png">
   <!-- Written out rather than generated at runtime. Google's search
@@ -36,18 +38,6 @@
   <meta name="author" content="Anna Gura">
 
 
-  <script>
-    /* Applied before first paint; otherwise the wrong theme shows for a frame. */
-    (function () {
-      try {
-        var t = localStorage.getItem("mirra:theme");
-        if (!t) t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-        document.documentElement.dataset.theme = t;
-      } catch (e) {
-        document.documentElement.dataset.theme = "light";
-      }
-    })();
-  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Karla:wght@300;400;500&display=swap" rel="stylesheet">
@@ -196,7 +186,7 @@
     <p class="aside">Mirra grows with the people using it.<br>
     Features are added and reworked based on what they ask for.</p>
 
-    <p style="margin-top:24px"><a class="cta" href="roadmap.html">See the roadmap →</a></p>
+    <p class="cta-trailing"><a class="cta" href="roadmap.html">See the roadmap →</a></p>
   </section>
 
   <section>
