@@ -18,8 +18,12 @@
 #   connect-src *.googleapis.com       reading and writing the sheet
 #               accounts.google.com    obtaining and renewing tokens
 #               oauth2.googleapis.com  revoking them on sign-out
-#   frame-src   accounts.google.com    the sign-in window
+#   frame-src   'self'                 the bridge the picker talks through,
+#                                      which is a frame onto this domain
+#               accounts.google.com    the sign-in window
 #               docs.google.com        the picker itself, which is a frame
+#               drive.google.com       listed by Google's own documentation
+#               content.googleapis.com an older picker endpoint
 #   img-src     *.googleusercontent.com  the account's own avatar
 #
 # Fonts, styles, workers and the manifest are all 'self': the font files
@@ -55,7 +59,7 @@
 #     months. Worth adding once the domain has settled.
 
 /*
-  Content-Security-Policy: default-src 'none'; script-src 'self' https://accounts.google.com https://apis.google.com https://www.gstatic.com; style-src 'self'; img-src 'self' data: https://*.googleusercontent.com https://*.gstatic.com; font-src 'self'; connect-src 'self' https://*.googleapis.com https://accounts.google.com https://oauth2.googleapis.com; frame-src https://accounts.google.com https://docs.google.com https://content.googleapis.com; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'none'; script-src 'self' https://accounts.google.com https://apis.google.com https://www.gstatic.com; style-src 'self'; img-src 'self' data: https://*.googleusercontent.com https://*.gstatic.com; font-src 'self'; connect-src 'self' https://*.googleapis.com https://accounts.google.com https://oauth2.googleapis.com; frame-src 'self' https://accounts.google.com https://docs.google.com https://drive.google.com https://content.googleapis.com; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests
 
   # HTTPS only, for a year, including any subdomain.
   Strict-Transport-Security: max-age=31536000; includeSubDomains
@@ -94,9 +98,14 @@
 # framing anything from here, so the bridge never forms and the picker
 # loads for ever.
 #
-# The exception is as small as it can be made: one file, framed by
-# Google alone. favicon.ico is an image — no data, no code, no access to
-# anything. Everything else on the domain stays under a flat refusal.
+# The exception is as small as it can be made: one file, framed by this
+# site and by Google. favicon.ico is an image — no data, no code, no
+# access to anything. Everything else on the domain stays under a flat
+# refusal.
+#
+# 'self' belongs here as much as Google does: the bridge is a frame that
+# Mirra's own page opens onto Mirra's own domain, and frame-ancestors
+# 'none' refuses even that.
 #
 # The two "!" lines remove the headers set above for this path only;
 # without them Cloudflare sends both, and a browser given two policies
@@ -104,7 +113,7 @@
 /favicon.ico
   ! X-Frame-Options
   ! Content-Security-Policy
-  Content-Security-Policy: default-src 'none'; frame-ancestors https://docs.google.com https://accounts.google.com https://apis.google.com https://content.googleapis.com
+  Content-Security-Policy: default-src 'none'; frame-ancestors 'self' https://docs.google.com https://drive.google.com https://accounts.google.com https://apis.google.com https://content.googleapis.com
   Cross-Origin-Resource-Policy: cross-origin
 
 # The service worker controls every page, so a stale one is worse than a
