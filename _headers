@@ -85,6 +85,28 @@
   # sign-in stops working.
   Cross-Origin-Opener-Policy: same-origin-allow-popups
 
+# ---------------------------------------------------------------
+# The one exception, and why it exists
+#
+# Google's file picker opens in a window of its own and talks back to
+# Mirra through a bridge: it loads a file from this domain inside its
+# own page, and uses it to pass messages across. The rule above forbids
+# framing anything from here, so the bridge never forms and the picker
+# loads for ever.
+#
+# The exception is as small as it can be made: one file, framed by
+# Google alone. favicon.ico is an image — no data, no code, no access to
+# anything. Everything else on the domain stays under a flat refusal.
+#
+# The two "!" lines remove the headers set above for this path only;
+# without them Cloudflare sends both, and a browser given two policies
+# obeys the stricter — which is the one being worked around.
+/favicon.ico
+  ! X-Frame-Options
+  ! Content-Security-Policy
+  Content-Security-Policy: default-src 'none'; frame-ancestors https://docs.google.com https://accounts.google.com https://apis.google.com https://content.googleapis.com
+  Cross-Origin-Resource-Policy: cross-origin
+
 # The service worker controls every page, so a stale one is worse than a
 # slow one.
 /sw.js
