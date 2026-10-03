@@ -12,7 +12,7 @@
  * replayed from one would fail in a way nobody could diagnose.
  */
 
-const VERSION = "mirra-v29";
+const VERSION = "mirra-v31";
 
 /**
  * Files the app is made of. Listed rather than discovered, because a
@@ -59,6 +59,7 @@ const SHELL = [
   "./assets/apple-touch-icon.png",
   "./version.json",
 
+  "./js/boot.js",
   "./js/App.js",
   "./js/config.js",
   "./js/core/ScreenManager.js",

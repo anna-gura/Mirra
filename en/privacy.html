@@ -4,6 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Privacy policy — Mirra</title>
+  <script src="../js/boot.js"></script>
+
   <link rel="icon" href="../favicon.ico" sizes="any">
   <link rel="icon" href="../assets/logo-120.png" type="image/png">
   <!-- Written out rather than generated at runtime. Google's search
@@ -34,18 +36,6 @@
   <meta name="author" content="Anna Gura">
 
 
-  <script>
-    /* Applied before first paint; otherwise the wrong theme shows for a frame. */
-    (function () {
-      try {
-        var t = localStorage.getItem("mirra:theme");
-        if (!t) t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-        document.documentElement.dataset.theme = t;
-      } catch (e) {
-        document.documentElement.dataset.theme = "light";
-      }
-    })();
-  </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -76,7 +66,7 @@
 
   <div class="doc-title">
     <h1>Privacy policy</h1>
-  <p class="meta">Last updated: 6 August 2026</p>
+  <p class="meta">Last updated: 3 October 2026</p>
 
   <p>Mirra is a workspace for keeping client records. This page explains what happens to your data — and, more to the point, what does not.</p>
 
@@ -122,6 +112,22 @@
     <li>No selling of data — there is nothing to sell</li>
     <li>No passing data to third parties — there is nothing to pass</li>
   </ul>
+
+  <h2>How Mirra protects what is in your browser</h2>
+
+  <p>Because your records live in your account rather than on a server of ours, the danger is not a stolen database — there is none — but somebody else's code running on Mirra's page. Such code would see exactly what you see.</p>
+
+  <p>So the page follows a strict rule: <strong>it runs nothing but its own code and the Google code needed to sign in and pick a file</strong>. Everything else the browser refuses — not because we noticed something, but so that there is nothing to notice.</p>
+
+  <ul>
+    <li>No code inside the page itself — all of it lives in separate files, so nothing can be slipped in between the lines.</li>
+    <li>What you type never becomes part of the page as code, only ever as text.</li>
+    <li>The page cannot be embedded in somebody else's site to put fake buttons in front of you.</li>
+    <li>The connection is encrypted only, and your browser remembers that for next time.</li>
+    <li>Camera, microphone, location and other device features are switched off — Mirra does not use them and cannot quietly ask for them.</li>
+  </ul>
+
+  <p>If you find a vulnerability, please write to <a href="mailto:paintedfox.studio@gmail.com">paintedfox.studio@gmail.com</a> before telling the world. The terms are in <a href="https://github.com/anna-gura/Mirra/blob/main/SECURITY.md" target="_blank" rel="noopener">SECURITY.md</a>.</p>
 
   <h2>When new features arrive</h2>
 

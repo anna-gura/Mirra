@@ -4,6 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Умови використання — Mirra</title>
+  <script src="js/boot.js"></script>
+
   <link rel="icon" href="favicon.ico" sizes="any">
   <link rel="icon" href="assets/logo-120.png" type="image/png">
   <!-- Written out rather than generated at runtime. Google's search
@@ -34,18 +36,6 @@
   <meta name="author" content="Anna Gura">
 
 
-  <script>
-    /* Applied before first paint; otherwise the wrong theme shows for a frame. */
-    (function () {
-      try {
-        var t = localStorage.getItem("mirra:theme");
-        if (!t) t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-        document.documentElement.dataset.theme = t;
-      } catch (e) {
-        document.documentElement.dataset.theme = "light";
-      }
-    })();
-  </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -76,6 +66,7 @@
 
   <div class="doc-title">
     <h1>Умови використання</h1>
+  <p class="meta">Оновлено: 3 жовтня 2026</p>
     <p class="stamp">Чинні з 1 серпня 2026 року</p>
   </div>
 
@@ -135,6 +126,12 @@
   <p>Чого не можна: продавати Mirra або її код, брати гроші за доступ, вбудовувати в платний продукт, а також видавати змінену версію за оригінал. Похідні роботи мають лишатися відкритими на тих самих умовах і зазначати авторство.</p>
 
   <p>Повні умови — у <a href="https://github.com/anna-gura/Mirra/blob/main/LICENSE" target="_blank" rel="noopener">файлі ліцензії</a>.</p>
+
+  <h2>Якщо ви знайшли вразливість</h2>
+
+  <p>Напишіть на <a href="mailto:paintedfox.studio@gmail.com">paintedfox.studio@gmail.com</a> — будь ласка, до того, як розповідати публічно, щоб виправлення вийшло разом із новиною. Ви отримаєте відповідь у будь-якому разі, навіть якщо це вже відоме або не є проблемою.</p>
+
+  <p>Умови — у <a href="https://github.com/anna-gura/Mirra/blob/main/SECURITY.md" target="_blank" rel="noopener">SECURITY.md</a>.</p>
 
   <h2>Чого не варто робити</h2>
 

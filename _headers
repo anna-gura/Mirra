@@ -1,0 +1,59 @@
+# Security headers.
+#
+# Read by Cloudflare and applied to every response. Kept in the
+# repository rather than clicked into a dashboard so that the rules are
+# reviewable, diffable, and survive a project being recreated.
+#
+# The policy below is deliberately stricter than Mirra currently needs.
+# Features arrive faster than audits do, and a policy that has to be
+# widened on purpose is safer than one that was wide enough all along.
+
+/*
+  # Nothing loads unless a line below allows it. Starting from 'none'
+  # means a new feature fails loudly in development rather than quietly
+  # widening what the page can reach in production.
+  Content-Security-Policy: default-src 'none'; script-src 'self' https://accounts.google.com https://apis.google.com https://www.gstatic.com; style-src 'self'; img-src 'self' data: https://*.googleusercontent.com https://*.gstatic.com; font-src 'self'; connect-src 'self' https://*.googleapis.com https://accounts.google.com https://oauth2.googleapis.com; frame-src https://accounts.google.com https://docs.google.com https://content.googleapis.com; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests
+
+  # HTTPS only, for a year, including any subdomain.
+  # "preload" is deliberately absent: it is a one-way door — browsers
+  # ship the list baked in, and removal takes months. Worth adding once
+  # the domain has settled, not before.
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+
+  # A file served as text/plain stays text/plain, whatever it contains.
+  X-Content-Type-Options: nosniff
+
+  # frame-ancestors above is the modern rule; this is for browsers that
+  # never learned it. Mirra is never framed by anybody, including us.
+  X-Frame-Options: DENY
+
+  # The origin travels to other sites, the path never does. Not
+  # "no-referrer", which would be stricter and would break the API key:
+  # Google checks the referring origin to decide whether the key may be
+  # used, and a key with no referrer restriction is a key anybody can
+  # borrow.
+  Referrer-Policy: strict-origin-when-cross-origin
+
+  # Hardware and ambient APIs Mirra does not use and must not acquire by
+  # accident. An empty list denies the page and everything it frames.
+  Permissions-Policy: accelerometer=(), autoplay=(), browsing-topics=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(), geolocation=(), gyroscope=(), idle-detection=(), local-fonts=(), magnetometer=(), microphone=(), midi=(), payment=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), usb=(), xr-spatial-tracking=()
+
+  # Our own files cannot be pulled into another site's page.
+  Cross-Origin-Resource-Policy: same-origin
+
+  # Isolates this window from anything it opens, except the popup Google
+  # signs people in with — "same-origin" alone severs that connection and
+  # sign-in stops working. Cross-Origin-Embedder-Policy is deliberately
+  # not set for the same reason: it would block Google's own libraries.
+  Cross-Origin-Opener-Policy: same-origin-allow-popups
+
+# The service worker controls every page, so a stale one is worse than a
+# slow one.
+/sw.js
+  Cache-Control: no-cache
+
+/js/version.js
+  Cache-Control: no-cache
+
+/version.json
+  Cache-Control: no-cache

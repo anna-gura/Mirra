@@ -62,7 +62,7 @@
         </span>
         <span class="cd-chev" aria-hidden="true"></span>
       </button>
-      <div class="cd-fold" id="fold-socials" style="height:0">
+      <div class="cd-fold" id="fold-socials">
         <div class="cd-fold-inner" data-socials></div>
       </div>
 
@@ -75,7 +75,7 @@
         </span>
         <span class="cd-chev" aria-hidden="true"></span>
       </button>
-      <div class="cd-fold" id="fold-messengers" style="height:0">
+      <div class="cd-fold" id="fold-messengers">
         <div class="cd-fold-inner" data-messengers></div>
       </div>
 
@@ -93,7 +93,7 @@
         </span>
         <span class="cd-chev" aria-hidden="true"></span>
       </button>
-      <div class="cd-fold" id="fold-links" style="height:0">
+      <div class="cd-fold" id="fold-links">
         <div class="cd-fold-inner cd-links" data-links></div>
       </div>
 
@@ -108,7 +108,7 @@
           <svg viewBox="0 0 24 24"><path d="M6 9.5 12 15.5 18 9.5"/></svg>
         </span>
       </button>
-      <div class="cd-fold" id="fold-extra" style="height:0">
+      <div class="cd-fold" id="fold-extra">
         <div class="cd-fold-inner cd-extra" data-extra></div>
       </div>
 

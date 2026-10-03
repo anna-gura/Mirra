@@ -200,7 +200,12 @@
 
 /* Height is animated from a measured value: auto is not an animatable
    length, so the panel is measured and set explicitly. */
+/* Closed by default. Written here rather than as style="height:0" in
+   the markup, so the page needs no 'unsafe-inline' in its style policy:
+   an attacker who can inject a style attribute can reposition anything
+   on the screen, including over a button somebody is about to press. */
 .cd-fold{
+  height:0;
   overflow:hidden;
   transition:height .28s cubic-bezier(.4,0,.2,1);
 }

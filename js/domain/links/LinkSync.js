@@ -197,7 +197,10 @@ export class LinkSync {
       /* Logged rather than silent. "Why did it not ask me?" is a
          question with four possible answers, and without this the only
          way to tell them apart is to read the source. */
-      if (skip) console.debug(`[links] ${link.name || link.id}: не питаю — ${skip}`);
+      /* By id, not by name. A console log is still a log: it is read by
+         whoever is near the screen, copied into bug reports, and kept by
+         the browser — none of which a client agreed to. */
+      if (skip) console.debug(`[links] ${link.id || "?"}: не питаю — ${skip}`);
 
       return !skip;
     });
