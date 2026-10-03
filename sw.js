@@ -12,7 +12,7 @@
  * replayed from one would fail in a way nobody could diagnose.
  */
 
-const VERSION = "mirra-v35";
+const VERSION = "mirra-v36";
 
 /**
  * Files the app is made of. Listed rather than discovered, because a

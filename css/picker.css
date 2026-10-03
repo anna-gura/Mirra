@@ -185,3 +185,53 @@
   transition:border-color .2s;
 }
 .picker-cancel:hover{ border-color:var(--soft); }
+
+/* ============================================================
+   GOOGLE'S FILE CHOOSER
+   Google builds this dialog inside our page and then shows it by
+   setting a style on the element directly — which a content policy
+   without 'unsafe-inline' refuses. The window was built, loaded, and
+   left invisible: loading that never ends.
+
+   Rather than carve an exception into the policy for one line of CSS,
+   the same thing is said here, where stylesheets belong. PickerService
+   removes the dialog from the page once a choice is made, so nothing
+   has to be hidden afterwards either.
+
+   !important throughout, because these rules are arguing with Google's
+   own stylesheet rather than with ours.
+   ============================================================ */
+
+.picker-dialog-bg{
+  position:fixed !important;
+  inset:0 !important;
+  display:block !important;
+  opacity:1 !important;
+  background:rgba(12,12,12,.45) !important;
+  z-index:1200 !important;
+}
+
+.picker-dialog{
+  position:fixed !important;
+  inset:0 !important;
+  margin:auto !important;
+  display:block !important;
+  width:min(94vw, 1051px) !important;
+  height:min(86vh, 650px) !important;
+  max-width:none !important;
+  max-height:none !important;
+  padding:0 !important;
+  border:none !important;
+  border-radius:14px !important;
+  overflow:hidden !important;
+  background:var(--surface) !important;
+  box-shadow:0 24px 60px -24px rgba(0,0,0,.55) !important;
+  z-index:1201 !important;
+}
+
+.picker-dialog-content,
+.picker-dialog-frame{
+  width:100% !important;
+  height:100% !important;
+  border:none !important;
+}

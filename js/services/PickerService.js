@@ -1,3 +1,5 @@
+import { t } from "../locales/t.js";
+import { translator } from "../locales/t.js";
 import { ScriptLoader } from "../core/ScriptLoader.js";
 import { config } from "../config.js";
 import { PickerCancelledError } from "../errors.js";
@@ -45,28 +47,36 @@ export class PickerService {
         .setDeveloperKey(config.API_KEY)
         .setOAuthToken(accessToken)
         .setOrigin(window.location.origin)
-        .setLocale("uk")
-        .setTitle("Виберіть таблицю")
+        .setLocale(translator.code)
+        .setTitle(t("Виберіть таблицю"))
         .addView(view)
-        .setCallback(data => this.#handle(data, resolve, reject))
+        .setCallback(data => this.#handle(data, resolve, reject, picker))
         .build();
 
+      /* Shown, then taken away entirely rather than hidden again.
+         Google shows and hides this dialog by setting a style on it
+         directly, which the content policy refuses — so css/picker.css
+         shows it instead, and dispose() removes it from the page when a
+         decision has been made. Hiding something that no longer exists
+         is not a problem anybody has. */
       picker.setVisible(true);
     });
   }
 
   /* ---------------- private ---------------- */
 
-  #handle(data, resolve, reject) {
+  #handle(data, resolve, reject, picker) {
     const { Action, Response, Document } = google.picker;
 
     switch (data[Response.ACTION]) {
       case Action.PICKED: {
         const doc = data[Response.DOCUMENTS][0];
+        picker?.dispose();
         resolve({ id: doc[Document.ID], name: doc[Document.NAME] });
         break;
       }
       case Action.CANCEL:
+        picker?.dispose();
         reject(new PickerCancelledError());
         break;
       default:

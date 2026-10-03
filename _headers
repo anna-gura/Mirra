@@ -45,31 +45,22 @@
 # not on suspicion — and restore the same way.
 #
 # ---------------------------------------------------------------
-# The one inline style, and why it is named rather than allowed
+# The inline style the picker wanted, and why there is no exception
 #
-# Google's picker is built, loaded, and then shown by setting a style on
-# it directly. With style-src 'self' that last step was refused, so the
-# window existed and stayed invisible — which looks exactly like loading
-# that never finishes, and reports nothing, because nothing failed.
+# Google builds its file chooser inside this page and then shows it by
+# setting a style on the element directly. style-src 'self' refuses
+# that, so the window was built, loaded, and left invisible — which
+# looks exactly like loading that never ends.
 #
-# Report-only mode named the offender: one style, one fingerprint. So
-# that single style is allowed by its hash instead of opening the door
-# to inline styles in general. Any other style, including one injected
-# by an attacker, still does not match and is still refused.
+# The first fix allowed that one style by its hash. It worked, and it
+# meant carrying 'unsafe-hashes' for a single line of CSS. The second
+# fix says the same thing in css/picker.css, where stylesheets belong,
+# and PickerService removes the dialog once a choice is made so nothing
+# needs hiding afterwards either.
 #
-# 'unsafe-hashes' is what lets a hash apply to a style attribute rather
-# than a <style> block. Its name is alarming and its effect here is not:
-# without a matching hash it permits nothing.
-#
-# It sits in style-src-attr rather than style-src so that the two
-# questions stay apart: stylesheets and <style> blocks may come only
-# from this site, and exactly one style may be set on an element. Older
-# browsers that do not know style-src-attr fall back to style-src, where
-# the answer is a flat 'self' — stricter, and at worst the picker needs
-# a newer browser.
-#
-# If the picker misbehaves again, report-only will name the next hash.
-# Add it beside this one rather than reaching for 'unsafe-inline'.
+# So the policy keeps a flat style-src 'self'. If the chooser ever
+# appears in the wrong place, the answer is a rule in that stylesheet —
+# not a keyword here.
 #
 # ---------------------------------------------------------------
 # Considered and not used
@@ -86,7 +77,7 @@
 #     months. Worth adding once the domain has settled.
 
 /*
-  Content-Security-Policy: default-src 'none'; script-src 'self' https://accounts.google.com https://apis.google.com https://www.gstatic.com; style-src 'self'; style-src-attr 'unsafe-hashes' 'sha256-O5RJqRuy+/mksltO9mWs9LuNKQs/41ZS8QoMC9SP/Fg=';  img-src 'self' data: https://*.googleusercontent.com https://*.gstatic.com; font-src 'self'; connect-src 'self' https://*.googleapis.com https://accounts.google.com https://oauth2.googleapis.com; frame-src 'self' https://accounts.google.com https://docs.google.com https://drive.google.com https://content.googleapis.com; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'none'; script-src 'self' https://accounts.google.com https://apis.google.com https://www.gstatic.com; style-src 'self';  img-src 'self' data: https://*.googleusercontent.com https://*.gstatic.com; font-src 'self'; connect-src 'self' https://*.googleapis.com https://accounts.google.com https://oauth2.googleapis.com; frame-src 'self' https://accounts.google.com https://docs.google.com https://drive.google.com https://content.googleapis.com; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests
 
   # HTTPS only, for a year, including any subdomain.
   Strict-Transport-Security: max-age=31536000; includeSubDomains
