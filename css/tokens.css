@@ -1,4 +1,58 @@
 /* ============================================================
+   FONTS
+   Served from here rather than from Google Fonts, for three reasons
+   that happen to point the same way.
+
+   Privacy first: a stylesheet fetched from Google tells Google the IP
+   address of everybody who opens Mirra, before they have signed in or
+   agreed to anything. The privacy page says Mirra passes nothing to
+   third parties; a font request is a third party.
+
+   Then the content policy: letting the page load styles and fonts from
+   another origin means widening two rules that are currently as tight
+   as they go. Keeping the files here keeps the rules closed.
+
+   And lastly speed and offline: no second connection to negotiate, and
+   the service worker can cache 64 KB of fonts like anything else, so an
+   installed Mirra looks the same with no network at all.
+
+   Latin only — which is all these faces have ever had. Ukrainian text
+   falls back to the system font exactly as it did before.
+   ============================================================ */
+
+@font-face{
+  font-family:Marcellus;
+  font-style:normal;
+  font-weight:400;
+  font-display:swap;
+  src:url("../assets/fonts/marcellus-latin-400-normal.woff2") format("woff2");
+}
+
+@font-face{
+  font-family:Karla;
+  font-style:normal;
+  font-weight:300;
+  font-display:swap;
+  src:url("../assets/fonts/karla-latin-300-normal.woff2") format("woff2");
+}
+
+@font-face{
+  font-family:Karla;
+  font-style:normal;
+  font-weight:400;
+  font-display:swap;
+  src:url("../assets/fonts/karla-latin-400-normal.woff2") format("woff2");
+}
+
+@font-face{
+  font-family:Karla;
+  font-style:normal;
+  font-weight:500;
+  font-display:swap;
+  src:url("../assets/fonts/karla-latin-500-normal.woff2") format("woff2");
+}
+
+/* ============================================================
    tokens.css — single source of colours and tuning numbers.
    Variables only. Edit the palette here and nowhere else.
    ============================================================ */

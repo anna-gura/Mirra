@@ -122,10 +122,10 @@ export class DateValue {
    * not липень. A hand-written list of months would get that wrong in
    * every language but the one it was written for.
    *
-   * @param {string} [locale]
+   * @param {string} [locale] defaults to whatever language is showing
    * @returns {{dayMonth: string, weekday: string, year: string}|null}
    */
-  parts(locale = "uk-UA") {
+  parts(locale = DateValue.locale()) {
     if (!this.isValid) return null;
 
     /* A leap year stands in when none was given, so the 29th of
@@ -237,6 +237,25 @@ export class DateValue {
   static #anniversaryIn(year, month, day) {
     const date = new Date(Date.UTC(year, month - 1, day));
     return date;
+  }
+
+  /**
+   * The locale month and weekday names are built in.
+   *
+   * Taken from the page rather than fixed, because "16 травня 1998" in
+   * an English interface is half a sentence in each language. The <html>
+   * lang attribute is already correct before the first paint — the boot
+   * script sets it — so this needs no connection to the translator and
+   * no argument threaded through four callers.
+   *
+   * @returns {string}
+   */
+  static locale() {
+    const language = typeof document !== "undefined"
+      ? document.documentElement.lang
+      : "";
+
+    return language || "uk";
   }
 
   /** @returns {string} */

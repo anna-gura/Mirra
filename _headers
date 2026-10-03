@@ -4,20 +4,57 @@
 # repository rather than clicked into a dashboard so that the rules are
 # reviewable, diffable, and survive a project being recreated.
 #
-# The policy below is deliberately stricter than Mirra currently needs.
-# Features arrive faster than audits do, and a policy that has to be
-# widened on purpose is safer than one that was wide enough all along.
+# The rule for this file: every origin listed must have a reason, and
+# the reason is written below. Anything that cannot be justified is
+# removed, even if removing it risks finding out the hard way that it
+# was needed — a policy nobody can account for drifts wider every year
+# until it protects nothing.
+#
+# ---------------------------------------------------------------
+# What the policy allows, and why
+#
+#   script-src  accounts.google.com    the sign-in library
+#               apis.google.com        the file picker
+#   connect-src *.googleapis.com       reading and writing the sheet
+#               accounts.google.com    obtaining and renewing tokens
+#               oauth2.googleapis.com  revoking them on sign-out
+#   frame-src   accounts.google.com    the sign-in window
+#               docs.google.com        the picker itself, which is a frame
+#   img-src     *.googleusercontent.com  the account's own avatar
+#
+# Fonts, styles, workers and the manifest are all 'self': the font files
+# live in assets/fonts precisely so that no other origin is needed.
+#
+# ---------------------------------------------------------------
+# Removed deliberately — put back only if the console proves otherwise
+#
+# Three entries were here on suspicion rather than evidence, and are now
+# gone. If sign-in or the picker breaks, the browser console names the
+# one it wants: "Refused to load ... because it violates the following
+# Content Security Policy directive". Add back only the one named.
+#
+#   script-src  https://www.gstatic.com         helper files for the picker
+#   img-src     https://*.gstatic.com           picker icons
+#   frame-src   https://content.googleapis.com  an older picker endpoint
+#
+# ---------------------------------------------------------------
+# Considered and not used
+#
+#   require-trusted-types-for 'script'
+#     Stricter still, and it would break Google's own libraries, which
+#     build markup the way this app deliberately does not.
+#
+#   Cross-Origin-Embedder-Policy
+#     Would block those libraries outright.
+#
+#   HSTS preload
+#     A one-way door: browsers ship the list baked in, and removal takes
+#     months. Worth adding once the domain has settled.
 
 /*
-  # Nothing loads unless a line below allows it. Starting from 'none'
-  # means a new feature fails loudly in development rather than quietly
-  # widening what the page can reach in production.
-  Content-Security-Policy: default-src 'none'; script-src 'self' https://accounts.google.com https://apis.google.com https://www.gstatic.com; style-src 'self'; img-src 'self' data: https://*.googleusercontent.com https://*.gstatic.com; font-src 'self'; connect-src 'self' https://*.googleapis.com https://accounts.google.com https://oauth2.googleapis.com; frame-src https://accounts.google.com https://docs.google.com https://content.googleapis.com; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'none'; script-src 'self' https://accounts.google.com https://apis.google.com; style-src 'self'; img-src 'self' data: https://*.googleusercontent.com; font-src 'self'; connect-src 'self' https://*.googleapis.com https://accounts.google.com https://oauth2.googleapis.com; frame-src https://accounts.google.com https://docs.google.com; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests
 
   # HTTPS only, for a year, including any subdomain.
-  # "preload" is deliberately absent: it is a one-way door — browsers
-  # ship the list baked in, and removal takes months. Worth adding once
-  # the domain has settled, not before.
   Strict-Transport-Security: max-age=31536000; includeSubDomains
 
   # A file served as text/plain stays text/plain, whatever it contains.
@@ -29,9 +66,8 @@
 
   # The origin travels to other sites, the path never does. Not
   # "no-referrer", which would be stricter and would break the API key:
-  # Google checks the referring origin to decide whether the key may be
-  # used, and a key with no referrer restriction is a key anybody can
-  # borrow.
+  # Google checks the referring origin before honouring it, and a key
+  # with no such check is a key anybody can borrow.
   Referrer-Policy: strict-origin-when-cross-origin
 
   # Hardware and ambient APIs Mirra does not use and must not acquire by
@@ -43,8 +79,7 @@
 
   # Isolates this window from anything it opens, except the popup Google
   # signs people in with — "same-origin" alone severs that connection and
-  # sign-in stops working. Cross-Origin-Embedder-Policy is deliberately
-  # not set for the same reason: it would block Google's own libraries.
+  # sign-in stops working.
   Cross-Origin-Opener-Policy: same-origin-allow-popups
 
 # The service worker controls every page, so a stale one is worse than a
@@ -57,3 +92,8 @@
 
 /version.json
   Cache-Control: no-cache
+
+# Font files never change without changing name, so they can be kept for
+# a year. Nothing here is personal: the same four files for everybody.
+/assets/fonts/*
+  Cache-Control: public, max-age=31536000, immutable

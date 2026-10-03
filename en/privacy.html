@@ -37,9 +37,15 @@
 
 
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Karla:wght@300;400;500&display=swap" rel="stylesheet">
+  <!-- The faces are declared in css/tokens.css and served from
+       assets/fonts: no request leaves the site to fetch them.
+
+       Deliberately not preloaded. Preloading warned on every page load
+       that the browser had fetched a font nobody used in time — true,
+       because the service worker serves them anyway and font-display
+       keeps text visible meanwhile. A warning on every load is worse
+       than the few milliseconds it was buying: it teaches you to ignore
+       the console, which is where real problems appear. -->
   <link rel="stylesheet" href="../css/page.css">
 </head>
 <body class="doc">

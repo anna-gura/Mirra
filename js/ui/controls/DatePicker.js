@@ -1,3 +1,4 @@
+import { DateValue } from "../../domain/values/DateValue.js";
 import { t } from "../../locales/t.js";
 
 /**
@@ -48,7 +49,16 @@ export class DatePicker extends EventTarget {
    * @param {string} [params.locale]
    * @param {string} [params.placeholder]
    */
-  constructor({ value = "", locale = "uk-UA", placeholder = t("Не вказано"), allowNoYear = false } = {}) {
+  /* The calendar's month names, weekday headings and the label on the
+     button all come from Intl, so the locale decides what language the
+     dates are in. Taken from the page rather than fixed, or an English
+     interface would offer "15 травня" as a choice. */
+  constructor({
+    value = "",
+    locale = DateValue.locale(),
+    placeholder = t("Не вказано"),
+    allowNoYear = false,
+  } = {}) {
     super();
     this.#locale = locale;
     this.#allowNoYear = allowNoYear;
