@@ -66,6 +66,20 @@ export class PhoneNumber {
   }
 
   /**
+   * The digits this reads the number as, repairs included.
+   *
+   * Exposed so that a caller can tell whether repairing happened:
+   * compare it against the digits in `raw`, and a difference means the
+   * cell holds a number this class had to mend on the way out. Nothing
+   * else can answer that, because the mending is done in here.
+   *
+   * @returns {string}
+   */
+  get digits() {
+    return this.#digits;
+  }
+
+  /**
    * The number grouped for reading.
    * @returns {string}
    */

@@ -41,6 +41,13 @@
           <button class="tile" type="button" data-open-clients>
             <span class="tile-name">Клієнти</span>
             <span class="tile-hint">Ваша база записів</span>
+            <!-- Shown in place of the hint while the sheet is being
+                 fetched. Words rather than only a spinner, so that it
+                 still says something when animation is turned off. -->
+            <span class="tile-wait">
+              <span class="tile-wait-text">Хвилинку…</span>
+              <span class="spinner" aria-hidden="true"></span>
+            </span>
           </button>
 
           <button class="tile-square" type="button" data-pick-other>

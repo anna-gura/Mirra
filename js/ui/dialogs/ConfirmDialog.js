@@ -21,6 +21,9 @@ export class ConfirmDialog {
   #cancel;
   #options;
   #resolve = null;
+  /** Set when this class closed the dialog itself, having already
+      settled the answer. See #close. */
+  #answered = false;
 
   /**
    * @param {object} [options]
@@ -124,17 +127,23 @@ export class ConfirmDialog {
       return Promise.resolve(undefined);
     }
 
-    this.#title.textContent = title;
+    /* Translated here, as in ask(), and for the same reason: a caller
+       that has to remember is a caller that will one day forget, and
+       the symptom is a Ukrainian button in an English dialog. The
+       message and the option labels stay the caller's own, because
+       those carry data — a client's name, a relationship — and a
+       client called Мама must not become "mother". */
+    this.#title.textContent = t(title);
     this.#message.textContent = message;
     this.#message.hidden = !message;
-    this.#note.textContent = note;
+    this.#note.textContent = t(note);
     this.#note.hidden = !note;
 
     /* The confirm button has nothing to confirm: the options are the
        answers, and a stray "Так" beside them would be a third meaning
        nobody asked for. */
     this.#confirm.hidden = true;
-    this.#cancel.textContent = cancelLabel;
+    this.#cancel.textContent = t(cancelLabel);
 
     this.#options.hidden = false;
     this.#options.replaceChildren(...options.map(option => {
@@ -169,8 +178,13 @@ export class ConfirmDialog {
     /* Escape and the backdrop both mean "no". For a yes-or-no that is
        false; for a choice it is null, which is what choose() callers
        check for — false would read as an answer. */
-    this.#element.addEventListener("close", () =>
-      this.#settle(this.#options?.hidden === false ? null : false));
+    this.#element.addEventListener("close", () => {
+      if (this.#answered) {
+        this.#answered = false;
+        return;
+      }
+      this.#settle(this.#options?.hidden === false ? null : false);
+    });
 
     /* The backdrop is part of the dialog element, so a click that lands
        outside the panel still has the dialog as its target. */
@@ -180,6 +194,23 @@ export class ConfirmDialog {
   }
 
   #close(answer) {
+    /* close() does not fire its event straight away — it queues one. So
+       when a caller answers this dialog and immediately asks the next
+       question, the order of events is:
+
+         1. the answer resolves, as a microtask
+         2. the caller wakes, calls ask(), stores a new resolver
+         3. only now the queued close event arrives
+
+       and step 3 would settle the question asked in step 2 with "no"
+       before anybody had seen it. The second dialog appears, the button
+       does nothing, and no error is raised anywhere.
+
+       So the close that this method itself performs is marked as
+       already answered, and the listener below steps over exactly one.
+       Guarded on .open: if the dialog was not showing, no event is
+       coming, and a flag left standing would swallow a real Escape. */
+    this.#answered = this.#element.open;
     this.#settle(answer);
     this.#element.close();
   }

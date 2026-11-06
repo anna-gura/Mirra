@@ -25,6 +25,8 @@ import { DuplicateFinder }      from "./domain/client/DuplicateFinder.js";
 import { ClientLinks }          from "./domain/links/ClientLinks.js";
 import { LinkSync }             from "./domain/links/LinkSync.js";
 import { SchemaUpgrade }        from "./services/SchemaUpgrade.js";
+import { SheetCheck }           from "./domain/client/SheetCheck.js";
+import { SheetLook }            from "./services/SheetLook.js";
 import { ClientId }             from "./domain/client/ClientId.js";
 import { Notice }               from "./ui/shell/Notice.js";
 import { ConfirmDialog }        from "./ui/dialogs/ConfirmDialog.js";
@@ -54,6 +56,16 @@ class MirraApp {
 
   /** Long enough for the save notice to be read first. */
   static LINK_NOTICE_DELAY = 2200;
+
+  /**
+   * How long the sheet check stays quiet once somebody declines it.
+   *
+   * A week, because that is long enough to stop being nagging and short
+   * enough that a sheet does not sit damaged for a month. Nothing is
+   * forgotten in the meantime — the damage is still there and will be
+   * reported again afterwards.
+   */
+  static QUIET_DAYS = 7;
   static VIEWS = ["loading", "hub", "chooser", "clients", "client", "client-form"];
 
   #theme;
@@ -411,6 +423,13 @@ class MirraApp {
 
       if (file.trashed) return this.#handleTrashed(saved, file, snapshot);
       this.#showClients(snapshot);
+
+      /* Not awaited: the list is already readable, and these may end in
+         a dialog that waits for an answer. Holding the loading state
+         open for that would leave the button spinning while somebody
+         reads a question. */
+      this.#tidySheet(saved, snapshot).catch(error =>
+        console.warn("Could not look over the sheet", error));
     });
   }
 
@@ -428,8 +447,177 @@ class MirraApp {
       this.#drive.getFile(saved.spreadsheetId),
     ]);
 
-    const snapshot = file.trashed ? loaded : await this.#catchUp(saved, loaded);
+    const snapshot = file.trashed ? loaded : await this.#upgradeShape(saved, loaded);
     return { snapshot, file };
+  }
+
+  /**
+   * Everything Mirra offers to do about the sheet, once the list is up.
+   *
+   * Appearance first, values second, because accepting the first can
+   * move columns and re-read the sheet — and the value check would then
+   * be examining rows that no longer exist in that arrangement.
+   *
+   * Both are rare enough that two questions in one visit is unlikely:
+   * the appearance is offered once per release that changes it, and the
+   * values only when something has actually gone wrong.
+   *
+   * @param {object} saved
+   * @param {object} snapshot
+   */
+  async #tidySheet(saved, snapshot) {
+    await this.#checkValues(saved, await this.#offerLook(saved, snapshot));
+  }
+
+  /**
+   * Offers to bring an older Mirra sheet up to the current look.
+   *
+   * @param {object} saved
+   * @param {object} snapshot
+   * @returns {Promise<object>} the sheet as it now stands
+   */
+  async #offerLook(saved, snapshot) {
+    const look = new SheetLook(snapshot, { saved });
+    if (!look.isNeeded) return snapshot;
+
+    const agreed = await this.#confirm.ask(look.question());
+
+    /* Recorded either way. "Not now" is an answer about this look, not
+       about every look Mirra will ever have — see setLookVersion. */
+    await this.#settings.setLookVersion(MirraApp.CLIENTS_SECTION, SheetLook.version);
+    if (!agreed) return snapshot;
+
+    try {
+      const updated = await look.apply(this.#sheets);
+      this.#showClients(updated);
+      this.#notice.done("Вигляд таблиці оновлено.");
+      return updated;
+    } catch (error) {
+      /* The sheet is unchanged or part-changed, and either way it still
+         opens. Not worth an error screen over decoration. */
+      console.warn("Could not update the sheet's look", error);
+      this.#notice.alert("Не вдалося оновити вигляд таблиці.");
+      return snapshot;
+    }
+  }
+
+  /**
+   * Looks for values that something outside Mirra damaged.
+   *
+   * Runs behind the list rather than before it, for two reasons. The
+   * rows are already in memory and the work is a few string tests
+   * each, so there is nothing to wait for. And one of the answers it
+   * offers is "take me to that client" — which needs a list to open a
+   * card from.
+   *
+   * Quiet unless there is something to say. A check that greets people
+   * with "everything is fine" every time they open their clients is a
+   * check they will learn to look past.
+   *
+   * @param {object} saved
+   * @param {object} snapshot
+   */
+  async #checkValues(saved, snapshot) {
+    /* Somebody already said "not now" recently, and meant it. */
+    if (this.#settings.isSilenced(MirraApp.CLIENTS_SECTION)) return;
+
+    const check = new SheetCheck(snapshot, {
+      dateFormat: this.#settings.dateFormat,
+      language: this.#translator.code,
+    });
+    if (!check.isNeeded) return;
+
+    /* Said in a dialog, not a notice. This is the one message in Mirra
+       that hands somebody a job — a number to ask a client for again —
+       and a job has to survive being looked away from. Notices report
+       what Mirra just did; they are the wrong container for work. */
+    if (!check.needsFixes) return this.#answerDamage(check, snapshot);
+
+    if (await this.#repairValues(check, snapshot)) {
+      this.#notice.done("Номери відновлено.");
+      this.#clients.render(snapshot);
+      return;
+    }
+
+    /* Declined. The dialog said this would happen, so it is not a
+       surprise — and without it the same question would arrive on every
+       visit until the answer changed, which is how a warning becomes
+       wallpaper. */
+    await this.#settings.silence(MirraApp.CLIENTS_SECTION, MirraApp.QUIET_DAYS);
+  }
+
+  /**
+   * Offers the three things that can be done about damage nothing can
+   * undo: fix it by hand, empty the cells, or be left alone for a week.
+   *
+   * @param {SheetCheck} check
+   * @param {object} snapshot
+   */
+  async #answerDamage(check, snapshot) {
+    const choice = await this.#confirm.choose(check.report());
+
+    if (choice === SheetCheck.MANUAL) return this.#openClient(check.firstDamagedRow);
+
+    if (choice === SheetCheck.QUIET) {
+      await this.#settings.silence(MirraApp.CLIENTS_SECTION, MirraApp.QUIET_DAYS);
+      return;
+    }
+
+    /* Closing the dialog, Escape and the backdrop all land here, and
+       all of them mean "leave it". Nothing is written and nothing is
+       silenced: next visit asks again, which is right, because the
+       question was never answered. */
+    if (choice !== SheetCheck.CLEAR) return;
+
+    /* Asked twice, and the second time in red. This is the only action
+       in the whole check that destroys something. */
+    if (!await this.#confirm.ask(check.clearQuestion())) return;
+
+    try {
+      for (const { column, rows } of await check.clear(this.#sheets)) {
+        for (const index of rows) {
+          if (snapshot.rows[index]) snapshot.rows[index][column] = "";
+        }
+      }
+
+      this.#clients.render(snapshot);
+      this.#notice.done("Пошкоджені клітинки очищено.");
+    } catch (error) {
+      console.warn("Could not clear the damaged cells", error);
+      this.#notice.alert("Не вдалося очистити клітинки. Спробуйте пізніше.");
+    }
+  }
+
+  /**
+   * Puts back what can be put back, having asked first.
+   *
+   * @param {SheetCheck} check
+   * @param {object} snapshot
+   * @returns {Promise<boolean>} whether anything was written
+   */
+  async #repairValues(check, snapshot) {
+    if (!await this.#confirm.ask(check.question())) return false;
+
+    try {
+      const written = await check.apply(this.#sheets);
+
+      /* The rows in memory are what the list draws from, so they are
+         brought in line here rather than re-reading the whole sheet for
+         a handful of cells. */
+      const column = new ClientSchema(snapshot.headers).indexOf("phone");
+      if (column >= 0) {
+        for (const [index, value] of written) {
+          if (snapshot.rows[index]) snapshot.rows[index][column] = value;
+        }
+      }
+
+      return written.size > 0;
+    } catch (error) {
+      /* A number Mirra still shows correctly is not worth refusing to
+         open the list over. It will be offered again next visit. */
+      console.warn("Could not repair damaged values", error);
+      return false;
+    }
   }
 
   /**
@@ -448,7 +636,7 @@ class MirraApp {
    * @param {object} snapshot
    * @returns {Promise<object>} the snapshot, re-read if columns were added
    */
-  async #catchUp(saved, snapshot) {
+  async #upgradeShape(saved, snapshot) {
     const upgrade = new SchemaUpgrade(snapshot);
     if (!upgrade.isNeeded) return this.#rememberVersion(snapshot);
 
@@ -947,11 +1135,11 @@ class MirraApp {
          { id: "create", label: t("Все одно створити нового") }];
 
     const choice = await this.#confirm.choose({
-      title: t("Схоже, такий клієнт уже є"),
+      title: "Схоже, такий клієнт уже є",
       message: match.client.displayName,
       note,
       options,
-      cancelLabel: t("Скасувати"),
+      cancelLabel: "Скасувати",
     });
 
     /* undefined means the dialog could not be shown at all. Saving as
@@ -1373,6 +1561,12 @@ class MirraApp {
       spreadsheetId: snapshot.spreadsheetId,
       sheetTitle: snapshot.sheetTitle,
       managed,
+      /* A sheet Mirra just made already looks the way Mirra makes them,
+         so it starts at the current appearance and is never offered an
+         update to the one it was born with. A sheet the user chose gets
+         the same number, which is moot: the offer is only ever made for
+         managed sheets. */
+      lookVersion: managed ? SheetLook.version : 0,
     });
   }
 

@@ -12,7 +12,7 @@
  * replayed from one would fail in a way nobody could diagnose.
  */
 
-const VERSION = "mirra-v38";
+const VERSION = "mirra-v39";
 
 /**
  * Files the app is made of. Listed rather than discovered, because a
@@ -77,6 +77,8 @@ const SHELL = [
   "./js/domain/client/ClientId.js",
   "./js/domain/client/ClientList.js",
   "./js/domain/client/ClientSchema.js",
+  "./js/domain/client/ColumnOrder.js",
+  "./js/domain/client/SheetCheck.js",
   "./js/domain/links/ClientLinks.js",
   "./js/domain/links/LinkCandidates.js",
   "./js/domain/links/LinkSync.js",
@@ -97,6 +99,7 @@ const SHELL = [
   "./js/services/InstallService.js",
   "./js/services/PickerService.js",
   "./js/services/SchemaUpgrade.js",
+  "./js/services/SheetLook.js",
   "./js/services/SettingsService.js",
   "./js/services/SheetsRepository.js",
   "./js/services/auth/AuthService.js",
