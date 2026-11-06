@@ -81,7 +81,32 @@
 }
 @keyframes spin{ to{ transform:rotate(360deg) } }
 
-/* ---------------- quiet bottom button ---------------- */
+/* ---------------- quiet buttons ----------------
+
+   .quiet lived in workspace.css, which stopped being linked when the
+   screen it styled was replaced by the client list. The file stayed in
+   the repository and the rule stayed in the file, so four buttons that
+   are still on screen — Вийти, Редагувати, Оновити, Додатково — quietly
+   lost their padding, their 46px touch target and their opacity, and
+   read as plain text for months.
+
+   Moved here, beside .more, which is the same idea with different
+   measurements. Nothing but these two should be able to go missing with
+   the next screen that gets replaced. */
+.quiet{
+  font-family:Karla,sans-serif;
+  font-size:12.5px;
+  letter-spacing:.09em;
+  color:var(--ink);
+  opacity:.45;
+  padding:14px 18px;
+  min-height:46px;
+  border-radius:99px;
+  transition:opacity .25s;
+}
+.quiet:hover,
+.quiet:focus-visible{ opacity:.85; }
+
 .more{
   font-family:Karla,sans-serif;
   font-size:12.5px;
