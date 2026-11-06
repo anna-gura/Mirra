@@ -120,6 +120,54 @@
 }
 .tile[disabled] .tile-name{ color:var(--soft); }
 
+/* ---------------- a tile that is fetching something ----------------
+
+   #setBusy disables the button while a request is in flight, which
+   without this would hand it the dashed "coming soon" look above — so
+   tapping Clients made the tile read as unavailable. That is almost
+   exactly backwards, and it is what made the wait feel like a hang.
+
+   Declared after the [disabled] rules on purpose: the two selectors
+   weigh the same, so order is what decides. */
+.tile-wait{ display:none; }
+
+.tile[data-busy]{
+  cursor:progress;
+  background:var(--surface);
+  border-style:solid;
+  border-color:var(--soft);
+}
+.tile[data-busy] .tile-name{ color:var(--ink); }
+.tile[data-busy] .tile-hint{ display:none; }
+
+.tile[data-busy] .tile-wait{
+  display:flex;
+  align-items:center;
+  gap:9px;
+}
+
+.tile-wait-text{
+  font-family:Karla,sans-serif;
+  font-weight:300;
+  font-size:13px;
+  color:var(--soft);
+}
+
+.tile[data-busy] .spinner{
+  display:block;
+  width:14px; height:14px;
+  border:1.5px solid var(--line);
+  border-top-color:var(--soft);
+  border-radius:50%;
+  animation:spin .7s linear infinite;
+}
+
+/* The words carry it on their own; a ring that cannot turn is just a
+   circle, and a circle says nothing. */
+@media (prefers-reduced-motion:reduce){
+  .tile[data-busy] .spinner{ display:none; }
+}
+
 .tile-soon{
   font-family:Karla,sans-serif;
   font-weight:300;

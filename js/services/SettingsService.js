@@ -178,6 +178,68 @@ export class SettingsService {
   }
 
   /**
+   * Records which appearance this sheet has been offered.
+   *
+   * Written whether the answer was yes or no, and that is the whole
+   * mechanism: the question is asked again only when Mirra's own look
+   * moves past the number stored here. "Not now" therefore means "not
+   * until there is something new to show me", which is what somebody
+   * declining a cosmetic change almost always means.
+   *
+   * @param {string} name one of SettingsService.SECTIONS
+   * @param {number} version
+   */
+  async setLookVersion(name, version) {
+    const section = this.#data?.sections?.[name];
+    if (!section || section.lookVersion === version) return this;
+
+    section.lookVersion = version;
+    this.#data.updatedAt = new Date().toISOString();
+    await this.save();
+    return this;
+  }
+
+  /**
+   * Stops the value check mentioning this sheet for a while.
+   *
+   * "Not now" is a real answer to a problem somebody cannot fix this
+   * minute, and a tool that asks again every single visit is one people
+   * learn to dismiss without reading — which costs the warning its whole
+   * purpose on the day it finally matters.
+   *
+   * Dated rather than counted, and stored here rather than in the
+   * browser, so that silencing it on a laptop also silences it on the
+   * phone. It is the same sheet and the same person.
+   *
+   * @param {string} name one of SettingsService.SECTIONS
+   * @param {number} days
+   */
+  async silence(name, days) {
+    const section = this.#data?.sections?.[name];
+    if (!section) return this;
+
+    section.quietUntil = new Date(Date.now() + days * 86_400_000).toISOString();
+    this.#data.updatedAt = new Date().toISOString();
+    await this.save();
+    return this;
+  }
+
+  /**
+   * @param {string} name
+   * @returns {boolean} whether the check should stay quiet for now
+   */
+  isSilenced(name) {
+    const until = this.#data?.sections?.[name]?.quietUntil;
+    if (!until) return false;
+
+    const date = new Date(until);
+    /* An unparseable date means a hand-edited file, and the cautious
+       reading of nonsense is "not silenced": a warning shown once too
+       often is a smaller harm than one never shown at all. */
+    return !Number.isNaN(date.getTime()) && date.getTime() > Date.now();
+  }
+
+  /**
    * Writes the file. Saves are chained rather than fired in parallel:
    * two overlapping writes to the same file would race, and the loser
    * would silently undo the winner.
@@ -248,6 +310,15 @@ export class SettingsService {
              versions, and absent means no — the cautious answer, and the
              right one for a sheet somebody brought themselves. */
           managed: value.managed === true,
+          /* Until when the value check keeps quiet about this sheet.
+             Kept per sheet rather than globally: silencing one sheet
+             says nothing about another, and there will be more of them
+             once bookings and finances arrive. */
+          quietUntil: typeof value.quietUntil === "string" ? value.quietUntil : "",
+          /* The appearance this sheet has been offered, whether or not
+             the offer was taken. Absent means never asked, which is
+             right for every sheet made before the question existed. */
+          lookVersion: Number(value.lookVersion) || 0,
         };
       }
     }

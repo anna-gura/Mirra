@@ -13,6 +13,8 @@ import { SheetsError } from "../errors.js";
  * @property {string[]}   headers     first row, blanks filled in
  * @property {string[][]} rows        everything below the first row
  * @property {number}     width       widest row, in columns
+ * @property {object[]}   bandedRanges alternating-colour ranges, as Sheets holds them
+ * @property {number}     frozenRowCount how many rows stay put when scrolling
  */
 
 /**
@@ -46,16 +48,18 @@ export class SheetsRepository {
   async load(spreadsheetId, sheetTitle) {
     const meta = await this.#api.get(
       `${config.SHEETS_API}/${spreadsheetId}` +
-      "?fields=properties.title,sheets.properties(title,sheetId,gridProperties.columnCount)"
+      "?fields=properties.title,sheets.bandedRanges," +
+      "sheets.properties(title,sheetId,gridProperties(columnCount,frozenRowCount))"
     );
 
-    const tabs = meta.sheets?.map(sheet => sheet.properties) ?? [];
+    const tabs = meta.sheets ?? [];
     if (!tabs.length) throw new SheetsError(404, "The spreadsheet contains no sheets");
 
     /* A tab remembered in settings can be renamed or removed between
        visits, so a stale name falls back to the first tab instead of
        failing. */
-    const tab = tabs.find(properties => properties.title === sheetTitle) ?? tabs[0];
+    const sheet = tabs.find(each => each.properties?.title === sheetTitle) ?? tabs[0];
+    const tab = sheet.properties ?? {};
 
     const values = await this.#api.get(
       `${config.SHEETS_API}/${spreadsheetId}/values/${encodeURIComponent(tab.title)}` +
@@ -64,7 +68,9 @@ export class SheetsRepository {
 
     return this.#toSnapshot(
       spreadsheetId, meta.properties.title, tab.title, tab.sheetId,
-      tab.gridProperties?.columnCount ?? 26, values.values ?? []
+      tab.gridProperties?.columnCount ?? 26, values.values ?? [],
+      { bandedRanges: sheet.bandedRanges ?? [],
+        frozenRowCount: tab.gridProperties?.frozenRowCount ?? 0 }
     );
   }
 
@@ -117,14 +123,25 @@ export class SheetsRepository {
       await this.#drive.moveToFolder(created.spreadsheetId, folderId);
     }
 
-    return this.#toSnapshot(
+    const snapshot = this.#toSnapshot(
       created.spreadsheetId,
       created.properties.title,
       created.sheets[0].properties.title,
       created.sheets[0].properties.sheetId,
       created.sheets[0].properties.gridProperties?.columnCount ?? headers.length,
-      [Array.from(headers)]
+      [Array.from(headers)],
+      { frozenRowCount: 1 }
     );
+
+    /* Styled at birth, so a sheet Mirra just made is never offered an
+       update to a look it already has. Failure is logged rather than
+       raised, as with the date picker above: a sheet without stripes is
+       still a working sheet, and refusing to create one over missing
+       decoration would be the wrong trade. */
+    await this.applyLook(snapshot).catch(error =>
+      console.warn("Could not style the new sheet", error));
+
+    return snapshot;
   }
 
   /**
@@ -235,6 +252,12 @@ export class SheetsRepository {
    * slow enough that somebody would close the tab halfway through and
    * leave the sheet half-repaired.
    *
+   * RAW, not USER_ENTERED, and callers depend on it: the string is
+   * stored exactly as given, so a repaired phone number keeps its
+   * leading zero without needing the apostrophe that marks text
+   * elsewhere. Switching this to USER_ENTERED would turn those values
+   * back into numbers and undo the repair — see SheetCheck.
+   *
    * @param {object} snapshot
    * @param {number} column zero-based
    * @param {Map<number, string>} values row index → value
@@ -253,6 +276,185 @@ export class SheetsRepository {
     await this.#api.post(
       `${config.SHEETS_API}/${snapshot.spreadsheetId}/values:batchUpdate`,
       { valueInputOption: "RAW", data }
+    );
+  }
+
+  /**
+   * Gives a sheet Mirra's own appearance.
+   *
+   * Three things, in one call so that a half-styled sheet never exists:
+   * a heading row in the app's colours, alternating row colours, and a
+   * frozen top row so the headings stay put while scrolling.
+   *
+   * The alternating colours go in as a banded range rather than as cell
+   * backgrounds. Sheets works the bands out at render time, so deleting
+   * a row, inserting one, sorting or filtering all leave the stripes
+   * correct — where painted cells would be wrong from the first
+   * deletion onwards, in a way nobody would think to report as a bug.
+   *
+   * An existing banded range is replaced rather than added to: Sheets
+   * refuses two bandings over the same cells, and this is the only way
+   * to change the colours in a later release.
+   *
+   * @param {import("./SheetsRepository.js").SheetSnapshot} snapshot
+   * @param {object} [options]
+   * @param {number} [options.columns] how wide to band; defaults to the data
+   * @param {boolean} [options.styleHeading] also set the heading row's
+   *        text in bold and in Mirra's ink. Left off for a sheet
+   *        somebody brought: the banding already colours that row and
+   *        can be lifted again from Sheets' own menu, while a text
+   *        format written over theirs is gone for good.
+   */
+  async applyLook(snapshot, { columns = snapshot.width, styleHeading = true } = {}) {
+    const { SHEET_LOOK } = config;
+    const sheetId = snapshot.sheetId;
+
+    const range = {
+      sheetId,
+      startRowIndex: 0,
+      startColumnIndex: 0,
+      endColumnIndex: Math.max(1, columns),
+    };
+
+    const rowProperties = {
+      headerColor:     SheetsRepository.colour(SHEET_LOOK.header),
+      firstBandColor:  SheetsRepository.colour(SHEET_LOOK.bandA),
+      secondBandColor: SheetsRepository.colour(SHEET_LOOK.bandB),
+    };
+
+    const requests = [];
+
+    /* Bands Mirra put there before are removed first. Anything the user
+       set up themselves is left alone — see #ownBanding. */
+    for (const id of this.#ownBanding(snapshot, columns)) {
+      requests.push({ deleteBanding: { bandedRangeId: id } });
+    }
+
+    requests.push({ addBanding: { bandedRange: { range, rowProperties } } });
+
+    if (styleHeading) {
+      requests.push({
+        repeatCell: {
+          range: { ...range, startRowIndex: 0, endRowIndex: 1 },
+          cell: {
+            userEnteredFormat: {
+              backgroundColor: SheetsRepository.colour(SHEET_LOOK.header),
+              textFormat: {
+                bold: true,
+                foregroundColor: SheetsRepository.colour(SHEET_LOOK.headerText),
+              },
+            },
+          },
+          fields: "userEnteredFormat(backgroundColor,textFormat)",
+        },
+      });
+    }
+
+    requests.push({
+      updateSheetProperties: {
+        properties: { sheetId, gridProperties: { frozenRowCount: 1 } },
+        fields: "gridProperties.frozenRowCount",
+      },
+    });
+
+    await this.#api.post(
+      `${config.SHEETS_API}/${snapshot.spreadsheetId}:batchUpdate`, { requests }
+    );
+  }
+
+  /**
+   * Moves columns, leftward, in the order given.
+   *
+   * One request per move in a single batch: Sheets applies them in
+   * order, which is what the plan assumes.
+   *
+   * @param {import("./SheetsRepository.js").SheetSnapshot} snapshot
+   * @param {Array<{from: number, to: number}>} moves
+   */
+  async moveColumns(snapshot, moves) {
+    if (!moves.length) return;
+
+    await this.#api.post(`${config.SHEETS_API}/${snapshot.spreadsheetId}:batchUpdate`, {
+      requests: moves.map(({ from, to }) => ({
+        moveDimension: {
+          source: {
+            sheetId: snapshot.sheetId,
+            dimension: "COLUMNS",
+            startIndex: from,
+            endIndex: from + 1,
+          },
+          /* Every move in the plan is leftward, so destinationIndex is
+             simply the target. A rightward move would have to be asked
+             for as to + 1, because the index is read before the source
+             is taken out — which is the usual way this call scrambles a
+             sheet. ColumnOrder never produces one. */
+          destinationIndex: to,
+        },
+      })),
+    });
+  }
+
+  /**
+   * A colour as the Sheets API wants it.
+   *
+   * Kept as hex in config so that it can be compared by eye with
+   * css/tokens.css, and converted here rather than there.
+   *
+   * @param {string} hex
+   * @returns {{red: number, green: number, blue: number}}
+   */
+  static colour(hex) {
+    const value = hex.replace("#", "");
+    const channel = at => Number.parseInt(value.slice(at, at + 2), 16) / 255;
+
+    return { red: channel(0), green: channel(2), blue: channel(4) };
+  }
+
+  /**
+   * Banded ranges that are Mirra's to replace.
+   *
+   * Only a band starting at the first row and the first column is
+   * treated as ours: that is the one applyLook creates, and nothing
+   * else looks like it. A band somebody put over a block of their own
+   * in the middle of the sheet is theirs, and is left where it is.
+   */
+  #ownBanding(snapshot, columns) {
+    return (snapshot.bandedRanges ?? [])
+      .filter(banded => {
+        const range = banded.range ?? {};
+        return (range.startRowIndex ?? 0) === 0
+            && (range.startColumnIndex ?? 0) === 0
+            && (range.endColumnIndex ?? columns) <= Math.max(columns, snapshot.columnCount);
+      })
+      .map(banded => banded.bandedRangeId)
+      .filter(id => id !== undefined);
+  }
+
+  /**
+   * Empties cells.
+   *
+   * batchClear, not a write of empty strings. Writing "" through
+   * values:batchUpdate looks like it should clear a cell and does not
+   * reliably do it — the API treats an empty value as nothing to set
+   * and the old contents stay put, with a success response either way.
+   * That is the worst shape a bug can take: the call reports that it
+   * worked and the data is still there.
+   *
+   * @param {import("./SheetsRepository.js").SheetSnapshot} snapshot
+   * @param {number} column zero-based
+   * @param {number[]} rows zero-based indexes into snapshot.rows
+   */
+  async clearCells(snapshot, column, rows) {
+    if (column < 0 || !rows.length) return;
+
+    const letter = SheetsRepository.columnLetter(column + 1);
+
+    await this.#api.post(
+      `${config.SHEETS_API}/${snapshot.spreadsheetId}/values:batchClear`,
+      {
+        /* +2: one for the header row, one because sheets count from 1. */
+        ranges: rows.map(index => `${snapshot.sheetTitle}!${letter}${index + 2}`),
+      }
     );
   }
 
@@ -425,7 +627,7 @@ export class SheetsRepository {
    * below it. Padding everything to one width here means the grid never
    * has to guess.
    */
-  #toSnapshot(spreadsheetId, title, sheetTitle, sheetId, columnCount, values) {
+  #toSnapshot(spreadsheetId, title, sheetTitle, sheetId, columnCount, values, look = {}) {
     const width = values.reduce((widest, row) => Math.max(widest, row.length), 0);
 
     const headers = Array.from({ length: width }, (_, index) => {
@@ -437,6 +639,10 @@ export class SheetsRepository {
       Array.from({ length: width }, (_, index) => row[index] ?? "")
     );
 
-    return { spreadsheetId, title, sheetTitle, sheetId, columnCount, headers, rows, width };
+    return {
+      spreadsheetId, title, sheetTitle, sheetId, columnCount, headers, rows, width,
+      bandedRanges: look.bandedRanges ?? [],
+      frozenRowCount: look.frozenRowCount ?? 0,
+    };
   }
 }

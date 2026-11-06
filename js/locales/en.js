@@ -26,6 +26,8 @@ export const plurals = {
   "рік":    n => (n === 1 ? "year" : "years"),
   "запис":  n => (n === 1 ? "record" : "records"),
   "день":   n => (n === 1 ? "day" : "days"),
+  "номер":  n => (n === 1 ? "number" : "numbers"),
+  "значення": n => (n === 1 ? "value" : "values"),
 };
 
 export const dictionary = {
@@ -237,6 +239,50 @@ export const dictionary = {
   "записи": "records",
   "записів": "records",
 
+  /* ---------------- checking the sheet ---------------- */
+  "Відновити номери телефонів?": "Restore the phone numbers?",
+  "{} {} пошкоджено.": "{} {} with digits missing.",
+  "Схоже, таблицю редагували поза Mirra, і вона прочитала номер як число — так зникає нуль на початку. Ті номери, які Mirra може відновити, вона запише назад. Інші дані не зміняться. Якщо не чіпати, Mirra не нагадає про це наступні 7 днів.":
+    "It looks as though the sheet was edited outside Mirra, and it read the number as a figure — which is how a leading zero disappears. The numbers Mirra can recover, it will write back. Nothing else changes. Leave it alone and Mirra will not mention it again for seven days.",
+  "Номери відновлено.": "The numbers have been restored.",
+  "Не вдалося прочитати: {}.": "Could not be read: {}.",
+  "{} — {} і ще {}": "{} — {} and {} more",
+
+  "Частина даних не читається": "Some of the data cannot be read",
+  "Схоже, таблицю редагували поза Mirra, і ці значення пошкодилися так, що відновити їх неможливо. Mirra нічого не змінювала й не змінить без вашої згоди.":
+    "It looks as though the sheet was edited outside Mirra, and these values were damaged beyond recovery. Mirra has changed nothing, and will change nothing without your say.",
+  "Відкрити картку: {}": "Open the card: {}",
+  "Відкрити картку": "Open the card",
+  "Очистити пошкоджені клітинки": "Empty the damaged cells",
+  "Не нагадувати 7 днів": "Do not remind me for 7 days",
+  "Закрити": "Close",
+  "рядок {}": "row {}",
+
+  "Очистити ці клітинки?": "Empty these cells?",
+  "{} {} буде видалено.": "{} {} will be deleted.",
+  "Клітинки стануть порожніми, і поля в картці читатимуться як незаповнені. Те, що там написано зараз, Mirra прочитати не може — але ви, можливо, можете. Якщо там є щось зрозуміле вам, спершу перепишіть це собі: скасувати видалення Mirra не вміє.":
+    "The cells will be left empty, and the fields on the card will read as unfilled. Mirra cannot make sense of what is in them now — but you may be able to. If any of it means something to you, copy it down first: Mirra cannot undo a deletion.",
+  "Не видаляти": "Keep them",
+  "Пошкоджені клітинки очищено.": "The damaged cells have been emptied.",
+  "Не вдалося очистити клітинки. Спробуйте пізніше.":
+    "The cells could not be emptied. Please try again later.",
+
+  /* ---------------- the sheet's appearance ---------------- */
+  "Оновити вигляд таблиці?": "Update how the sheet looks?",
+  "Зміниться: {}.": "What changes: {}.",
+  "кольори рядків": "row colours",
+  "закріплений заголовок": "a frozen heading row",
+  "порядок стовпців": "the column order",
+  "Таблиця читатиметься так, як Mirra робить їх тепер. Стовпці, які ви додали самі, не рухаються. Але якщо десь — в іншому аркуші, у діаграмі, у фільтрі чи в умовному форматуванні — є посилання на конкретну клітинку цієї таблиці, воно може зламатися, бо стовпці Mirra поміняються місцями. Дані не зміняться. Якщо відмовитися, Mirra не спитає знову, доки вигляд не зміниться в новому випуску.":
+    "The sheet will read the way Mirra builds them now. Columns you added yourself stay where they are. But if anything — another tab, a chart, a filter, a conditional format — points at a particular cell in this sheet, it may break, because Mirra's own columns will swap places. The data itself does not change. Decline and Mirra will not ask again until the look changes in a later release.",
+  "Таблиця читатиметься так, як Mirra робить їх тепер. Дані не зміняться. Якщо відмовитися, Mirra не спитає знову, доки вигляд не зміниться в новому випуску.":
+    "The sheet will read the way Mirra builds them now. The data itself does not change. Decline and Mirra will not ask again until the look changes in a later release.",
+  "Цю таблицю створили не в Mirra, тож змінюються лише кольори рядків і закріплення заголовка. Ні дані, ні порядок стовпців, ні ваше оформлення не чіпаються, а самі кольори ви можете прибрати в Google Таблицях: Формат → Чергові кольори → Видалити. Якщо відмовитися, Mirra не спитає знову, доки вигляд не зміниться в новому випуску.":
+    "This sheet was not made in Mirra, so only the row colours and the frozen heading change. The data, the column order and your own formatting are all left alone, and you can take the colours off again from Google Sheets itself: Format → Alternating colours → Remove. Decline and Mirra will not ask again until the look changes in a later release.",
+  "Оновити вигляд": "Update the look",
+  "Вигляд таблиці оновлено.": "The sheet's appearance has been updated.",
+  "Не вдалося оновити вигляд таблиці.": "The sheet's appearance could not be updated.",
+
   /* ---------------- installing ---------------- */
   "Додати на головний екран": "Add to home screen",
   "Mirra як застосунок": "Mirra as an app",
@@ -262,7 +308,6 @@ export const dictionary = {
   "Відкрийте меню браузера": "Open your browser's menu",
   "Знайдіть <b>Встановити</b> або <b>Додати на головний екран</b>":
     "Look for <b>Install</b> or <b>Add to home screen</b>",
-  "Закрити": "Close",
   "Не пропонувати тут": "Do not offer here",
 
   /* ---------------- odds and ends ---------------- */

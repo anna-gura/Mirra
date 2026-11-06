@@ -93,6 +93,41 @@ export const config = Object.freeze({
   /** Refresh this many seconds before the token actually expires. */
   TOKEN_SAFETY_MARGIN: 60,
 
+  /**
+   * How a Mirra spreadsheet looks when opened in Google Sheets.
+   *
+   * The file is meant to be opened directly — that is the whole promise
+   * — so it is worth it being pleasant to read there, not only inside
+   * Mirra. Colours are the app's own, from css/tokens.css: a sheet in
+   * Google's default grey looks like any other document, and this one
+   * is supposed to look like it belongs to something.
+   *
+   * Alternating colours are applied as banding, which Sheets recomputes
+   * itself on every render. Painting the cells instead would look the
+   * same until the first row was deleted, after which the stripes would
+   * be wrong for ever.
+   *
+   * version is what decides whether an existing sheet is offered an
+   * update. Raise it whenever anything here changes, or whenever the
+   * column order in NEW_SHEET.fields changes — those are the two things
+   * the offer can put right. Nothing else depends on the number.
+   */
+  SHEET_LOOK: Object.freeze({
+    version: 1,
+
+    /* --bg-deep's warmer cousin: far enough from the band in hue that
+       the heading reads as a heading rather than as a darker stripe.
+       Text on it clears AAA at 7.5:1. */
+    header:     "#DDB9A4",
+    headerText: "#382C1D",
+
+    /* --surface and a warm cream a shade off it. The difference is
+       deliberately small: enough to follow a row across ten columns,
+       not enough to look striped. */
+    bandA: "#FFFFFF",
+    bandB: "#F2EBDE",
+  }),
+
   /** Starting point for a spreadsheet created from inside the app. */
   NEW_SHEET: Object.freeze({
     /* The column order matters only to a person reading the file —
