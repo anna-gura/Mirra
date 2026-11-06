@@ -46,7 +46,7 @@ export class ClientCardView extends EventTarget {
     super();
     this.#root = document.querySelector(selector);
     if (!this.#root) {
-      console.error(`ClientCardView: ${selector} not found — is views/client.html in place?`);
+      console.error(`ClientCardView: ${selector} not found — is views/client.tpl in place?`);
       return;
     }
 
@@ -90,7 +90,7 @@ export class ClientCardView extends EventTarget {
   /**
    * Looks up a required element and says so when it is absent.
    *
-   * The markup lives in views/client.html and arrives at runtime, so it
+   * The markup lives in views/client.tpl and arrives at runtime, so it
    * can be out of step with this class in a way the code cannot prevent.
    * A named warning costs one line and turns "Cannot set properties of
    * null" into a sentence that says which element is missing.
@@ -100,7 +100,7 @@ export class ClientCardView extends EventTarget {
    */
   #find(selector) {
     const element = this.#root.querySelector(selector);
-    if (!element) console.error(`ClientCardView: ${selector} missing from views/client.html`);
+    if (!element) console.error(`ClientCardView: ${selector} missing from views/client.tpl`);
     return element;
   }
 
