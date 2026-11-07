@@ -19,6 +19,14 @@ export class DriveRepository {
   static API    = "https://www.googleapis.com/drive/v3/files";
   static UPLOAD = "https://www.googleapis.com/upload/drive/v3/files";
   static FOLDER_MIME = "application/vnd.google-apps.folder";
+  static JSON_MIME   = "application/json";
+
+  /**
+   * Markdown rather than text/plain, and that is not cosmetic: an
+   * assistant asked to read the folder decides what to open from the
+   * file's type as much as its name.
+   */
+  static TEXT_MIME = "text/markdown";
 
   #api;
 
@@ -110,6 +118,26 @@ export class DriveRepository {
 
   /**
    * Creates a JSON file inside a folder.
+   * @param {string} name
+   * @param {string} folderId
+   * @param {object} data
+   * @returns {Promise<{id: string}>}
+   */
+  createJson(name, folderId, data) {
+    return this.createText(name, folderId, JSON.stringify(data, null, 2), DriveRepository.JSON_MIME);
+  }
+
+  /**
+   * Replaces the contents of an existing JSON file.
+   * @param {string} fileId
+   * @param {object} data
+   */
+  updateJson(fileId, data) {
+    return this.updateText(fileId, JSON.stringify(data, null, 2), DriveRepository.JSON_MIME);
+  }
+
+  /**
+   * Creates a text file inside a folder.
    *
    * Drive wants metadata and content in one multipart body; sending
    * them as two requests would leave a moment where an empty file
@@ -117,20 +145,21 @@ export class DriveRepository {
    *
    * @param {string} name
    * @param {string} folderId
-   * @param {object} data
+   * @param {string} text
+   * @param {string} [mimeType]
    * @returns {Promise<{id: string}>}
    */
-  createJson(name, folderId, data) {
+  createText(name, folderId, text, mimeType = DriveRepository.TEXT_MIME) {
     const boundary = `mirra-${crypto.randomUUID()}`;
-    const metadata = { name, parents: [folderId], mimeType: "application/json" };
+    const metadata = { name, parents: [folderId], mimeType };
 
     const body =
       `--${boundary}\r\n` +
-      "Content-Type: application/json; charset=UTF-8\r\n\r\n" +
+      `Content-Type: ${DriveRepository.JSON_MIME}; charset=UTF-8\r\n\r\n` +
       `${JSON.stringify(metadata)}\r\n` +
       `--${boundary}\r\n` +
-      "Content-Type: application/json; charset=UTF-8\r\n\r\n" +
-      `${JSON.stringify(data, null, 2)}\r\n` +
+      `Content-Type: ${mimeType}; charset=UTF-8\r\n\r\n` +
+      `${text}\r\n` +
       `--${boundary}--`;
 
     return this.#api.request("POST", `${DriveRepository.UPLOAD}?uploadType=multipart&fields=id`, {
@@ -140,14 +169,15 @@ export class DriveRepository {
   }
 
   /**
-   * Replaces the contents of an existing JSON file.
+   * Replaces the contents of an existing text file.
    * @param {string} fileId
-   * @param {object} data
+   * @param {string} text
+   * @param {string} [mimeType]
    */
-  updateJson(fileId, data) {
+  updateText(fileId, text, mimeType = DriveRepository.TEXT_MIME) {
     return this.#api.request("PATCH", `${DriveRepository.UPLOAD}/${fileId}?uploadType=media`, {
-      rawBody: JSON.stringify(data, null, 2),
-      headers: { "Content-Type": "application/json; charset=UTF-8" },
+      rawBody: text,
+      headers: { "Content-Type": `${mimeType}; charset=UTF-8` },
     });
   }
 

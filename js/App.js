@@ -25,6 +25,7 @@ import { DuplicateFinder }      from "./domain/client/DuplicateFinder.js";
 import { ClientLinks }          from "./domain/links/ClientLinks.js";
 import { LinkSync }             from "./domain/links/LinkSync.js";
 import { SchemaUpgrade }        from "./services/SchemaUpgrade.js";
+import { AiGuide }              from "./services/AiGuide.js";
 import { SheetCheck }           from "./domain/client/SheetCheck.js";
 import { SheetLook }            from "./services/SheetLook.js";
 import { ClientId }             from "./domain/client/ClientId.js";
@@ -79,6 +80,7 @@ class MirraApp {
   #drive;
   #sheets;
   #settings;
+  #guide;
   #picker;
   #chooser;
   #clients;
@@ -151,6 +153,7 @@ class MirraApp {
     this.#drive    = new DriveRepository({ api: this.#api });
     this.#sheets   = new SheetsRepository({ api: this.#api, drive: this.#drive });
     this.#settings = new SettingsService({ drive: this.#drive });
+    this.#guide    = new AiGuide({ drive: this.#drive, settings: this.#settings });
     this.#picker   = new PickerService();
 
     /* Built after the templates arrive, since the offer appears on the
@@ -466,7 +469,38 @@ class MirraApp {
    * @param {object} snapshot
    */
   async #tidySheet(saved, snapshot) {
+    /* Started before the two questions rather than after them, and not
+       waited on: writing the instructions on Drive needs nobody's
+       permission and nobody's attention, while a dialog can sit open
+       for as long as somebody takes to read it.
+
+       Safe to run alongside: the look can move columns and the value
+       check can rewrite a phone number, and the instructions describe
+       neither — they name the headings, which neither of those
+       changes. */
+    const guide = this.#refreshGuide(snapshot);
+
     await this.#checkValues(saved, await this.#offerLook(saved, snapshot));
+    await guide;
+  }
+
+  /**
+   * Keeps the instructions on Drive matching the sheet.
+   *
+   * Silent in both directions. Nothing is said when the file is already
+   * current, which is nearly always; and nothing is said when it could
+   * not be written, because somebody who came to look at their clients
+   * did not ask about a file they may not know exists. It is tried
+   * again on the next visit.
+   *
+   * @param {object} snapshot
+   */
+  async #refreshGuide(snapshot) {
+    try {
+      await this.#guide.refresh(snapshot);
+    } catch (error) {
+      console.warn("Could not write the instructions for assistants", error);
+    }
   }
 
   /**
@@ -656,7 +690,8 @@ class MirraApp {
     try {
       const updated = await upgrade.apply(this.#sheets, saved, this.#translator.code);
 
-      if (upgrade.needsRepair) this.#notice.done("Технічні позначки відновлено.");
+      if (upgrade.damagedRows.length) this.#notice.done("Технічні позначки відновлено.");
+      else if (upgrade.needsRepair) this.#notice.done("Позначки дописано.");
       else if (!saved.managed) this.#notice.done("Таблицю оновлено.");
 
       return this.#rememberVersion(updated);
@@ -781,6 +816,12 @@ class MirraApp {
          being asked. */
       await this.#remember(snapshot, false);
       this.#showClients(snapshot);
+
+      /* Written as soon as there is a sheet to describe rather than on
+         some later visit: the point of the file is that somebody can
+         hand their Mirra folder to an assistant, and they may well do
+         that this afternoon. */
+      this.#refreshGuide(snapshot);
     });
   }
 
@@ -805,6 +846,7 @@ class MirraApp {
       await this.#remember(snapshot, true);
       this.#showClients(snapshot);
       this.#notice.done("Таблицю створено в теці Mirra на вашому Диску.");
+      this.#refreshGuide(snapshot);
     });
   }
 
@@ -820,6 +862,11 @@ class MirraApp {
 
       this.#snapshot = snapshot;
       this.#clients.render(snapshot).resetScroll();
+
+      /* Somebody who has just pressed refresh may have renamed a column
+         a minute ago, which is exactly the kind of change the
+         instructions on Drive have to keep up with. */
+      this.#refreshGuide(snapshot);
     });
   }
 

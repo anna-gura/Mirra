@@ -86,6 +86,83 @@ export const config = Object.freeze({
    */
   DEFAULT_DATE_FORMAT: "dd/mm/yyyy",
 
+  /**
+   * The shape of the data in each kind of sheet, as a number.
+   *
+   * Mirra itself never decides anything by it. Whether a sheet needs a
+   * column added is answered by looking at the columns, which stays
+   * true after somebody edits the file by hand — a number cannot say
+   * that, and a number that contradicts the data is worse than no
+   * number at all.
+   *
+   * It exists for the assistants people work through. ai.md states the
+   * version it was written for, mirra.json states the version the sheet
+   * is at, and an assistant comparing the two can tell that its
+   * instructions are older than the sheet and stop before writing
+   * something in the wrong place.
+   *
+   * One number per kind of sheet, because they move independently:
+   * bookings arriving will not change anything about a client row.
+   * Raise a number when the sheet's fields change — not when its
+   * colours do; that is SHEET_LOOK.version.
+   */
+  SCHEMA: Object.freeze({
+    clients: 1,
+  }),
+
+  /**
+   * The instructions Mirra leaves on Drive for whatever assistant the
+   * person works through.
+   *
+   * Written into their folder rather than published on the site,
+   * because the file has to describe *their* sheet — its real headings,
+   * its ids, its date format — and because an assistant reading
+   * mirra.day would be reading about a Mirra the person may not have
+   * opened yet. The copy beside the data is the one that matches it.
+   */
+  AI_GUIDE: Object.freeze({
+    fileName: "ai.md",
+    template: "assets/ai-guide.md",
+
+    /**
+     * What the file says, as a number of its own.
+     *
+     * Raise it whenever the template changes or whenever the generator
+     * starts putting something different in — the same job
+     * SHEET_LOOK.version does for the sheet's colours.
+     *
+     * It exists because the alternative was leaning on VERSION, and
+     * VERSION can be wrong in exactly the situation where this matters:
+     * a checkout with a stale js/version.js, a deployment whose build
+     * step did not run. Then every input to the file looks unchanged,
+     * the file is left alone, and the instructions on somebody's Drive
+     * quietly describe a Mirra that no longer exists.
+     *
+     * 2 — the rule to re-read the file before every change, and the
+     *     staleness check moved from the first write to every write.
+     */
+    version: 2,
+  }),
+
+  /**
+   * Where Mirra lives, written out rather than read from the browser.
+   *
+   * Everything in the app uses relative addresses and needs none of
+   * this. The one exception is a link Mirra writes into a file on
+   * somebody's Drive: that file is read somewhere else entirely — by an
+   * assistant, on another machine — and a link taken from wherever the
+   * app happened to be running would be useless there. A development
+   * server would put http://127.0.0.1:5500 into the real file on the
+   * real Drive, which is also why this is not location.origin with a
+   * guard around it: a file generated locally should be the same file
+   * that production generates, or testing it locally proves nothing.
+   *
+   * A fork should change this line, and will point at mirra.day until
+   * it does. That is the harmless direction to be wrong in: the page it
+   * names explains the file, which is true wherever the fork lives.
+   */
+  SITE_URL: "https://mirra.day",
+
   SHEETS_API: "https://sheets.googleapis.com/v4/spreadsheets",
   GIS_SRC:    "https://accounts.google.com/gsi/client",
   GAPI_SRC:   "https://apis.google.com/js/api.js",
