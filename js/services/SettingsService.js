@@ -35,6 +35,17 @@ export class SettingsService {
   static VERSION     = 2;
   static SECTIONS    = Object.freeze(["clients", "bookings", "other"]);
 
+  /** Values idColumn may hold. See the accessor below. */
+  static ID_OWNERS   = Object.freeze(["mirra", "theirs"]);
+
+  /**
+   * How many spreadsheets Mirra keeps notes on besides the one in use.
+   *
+   * Ten is more than anybody switches between and few enough that the
+   * file stays readable. The notes are tiny — a number, a date, two
+   * flags — and losing the oldest costs one question, once. */
+  static REMEMBERED_SHEETS = 10;
+
   #drive;
   #folder = null;
   #fileId = null;
@@ -176,6 +187,18 @@ export class SettingsService {
   async setSection(name, config) {
     if (!this.#data) return this;
 
+    /* What Mirra had learnt about the sheet being left is kept rather
+       than dropped, because it is true about that sheet and will still
+       be true if somebody comes back to it. Switching between two
+       spreadsheets used to make each of them forget: which appearance
+       it had been offered, how long it was asked to stay quiet, whose
+       the ID column is — all of it lived in a record that held one
+       sheet at a time. */
+    const leaving = this.#data.sections[name];
+    if (leaving?.spreadsheetId && leaving.spreadsheetId !== config?.spreadsheetId) {
+      this.#archive(leaving);
+    }
+
     this.#data.sections[name] = config;
     this.#data.updatedAt = new Date().toISOString();
     await this.save();
@@ -199,6 +222,56 @@ export class SettingsService {
     if (!section || section.lookVersion === version) return this;
 
     section.lookVersion = version;
+    this.#data.updatedAt = new Date().toISOString();
+    await this.save();
+    return this;
+  }
+
+  /**
+   * What Mirra knew about a spreadsheet it is no longer looking at.
+   *
+   * @param {string} spreadsheetId
+   * @returns {object|null}
+   */
+  sheetMemory(spreadsheetId) {
+    return this.#data?.sheets?.[spreadsheetId] ?? null;
+  }
+
+  /**
+   * Who writes the ID column of a sheet.
+   *
+   * "mirra" — Mirra made the sheet, or added the column to it with
+   * permission, so filling an empty cell there needs no further
+   * asking: it is Mirra's own bookkeeping and no other value depends
+   * on it.
+   *
+   * "theirs" — the sheet already had a column Mirra reads as an id
+   * when it was first chosen. It may be a client number, an invoice
+   * reference, anything; Mirra has no business writing into it
+   * unasked.
+   *
+   * Empty — unknown, which is the honest answer for every sheet
+   * remembered before this was recorded. Treated as Mirra's, because
+   * the alternative is asking everybody about a column nobody can
+   * tell them anything useful about.
+   *
+   * @param {string} name one of SettingsService.SECTIONS
+   * @returns {string} "mirra", "theirs" or ""
+   */
+  idColumn(name) {
+    return this.#data?.sections?.[name]?.idColumn ?? "";
+  }
+
+  /**
+   * @param {string} name
+   * @param {string} owner "mirra" or "theirs"
+   */
+  async setIdColumn(name, owner) {
+    const section = this.#data?.sections?.[name];
+    if (!section || section.idColumn === owner) return this;
+    if (!SettingsService.ID_OWNERS.includes(owner)) return this;
+
+    section.idColumn = owner;
     this.#data.updatedAt = new Date().toISOString();
     await this.save();
     return this;
@@ -341,11 +414,44 @@ export class SettingsService {
       language: "",
       dateFormat: config.DEFAULT_DATE_FORMAT,
       sections: Object.fromEntries(SettingsService.SECTIONS.map(name => [name, null])),
+      /* What Mirra knows about spreadsheets other than the one in use:
+         see setSection, which fills this in, and #archive. */
+      sheets: {},
       /* What the instructions on Drive were written for. Absent until
          they have been written once. */
       ai: null,
       updatedAt: new Date().toISOString(),
     };
+  }
+
+  /**
+   * Files the kept records: one small entry per spreadsheet, the most
+   * recently left last.
+   *
+   * Capped, and oldest first out. Somebody who has tried a dozen
+   * spreadsheets does not need Mirra carrying notes on all of them,
+   * and a settings file that grows without limit is one nobody can
+   * read — which would cost more than the question it saves.
+   */
+  #archive(section) {
+    const sheets = this.#data.sheets;
+
+    /* Deleted before being written so the key moves to the end: object
+       keys keep their insertion order, and that order is the only
+       record of which was used last. */
+    delete sheets[section.spreadsheetId];
+
+    sheets[section.spreadsheetId] = {
+      sheetTitle: section.sheetTitle ?? "",
+      managed: section.managed === true,
+      lookVersion: Number(section.lookVersion) || 0,
+      quietUntil: typeof section.quietUntil === "string" ? section.quietUntil : "",
+      idColumn: SettingsService.ID_OWNERS.includes(section.idColumn) ? section.idColumn : "",
+    };
+
+    for (const id of Object.keys(sheets).slice(0, -SettingsService.REMEMBERED_SHEETS)) {
+      delete sheets[id];
+    }
   }
 
   async #readSafely(fileId) {
@@ -385,6 +491,27 @@ export class SettingsService {
       }
     }
 
+    /* Kept notes about other spreadsheets. Read with the same suspicion
+       as everything else here — anybody can edit this file — and
+       trimmed to the cap, oldest first, in case it was edited into
+       something enormous. */
+    if (raw.sheets && typeof raw.sheets === "object") {
+      const ids = Object.keys(raw.sheets).slice(-SettingsService.REMEMBERED_SHEETS);
+
+      for (const id of ids) {
+        const value = raw.sheets[id];
+        if (!value || typeof value !== "object") continue;
+
+        safe.sheets[id] = {
+          sheetTitle: typeof value.sheetTitle === "string" ? value.sheetTitle : "",
+          managed: value.managed === true,
+          lookVersion: Number(value.lookVersion) || 0,
+          quietUntil: typeof value.quietUntil === "string" ? value.quietUntil : "",
+          idColumn: SettingsService.ID_OWNERS.includes(value.idColumn) ? value.idColumn : "",
+        };
+      }
+    }
+
     /* Only the fields Mirra put there, and all of them text: this one
        is written for a person to read and for a string comparison, so
        anything that arrived in it by hand can be dropped without
@@ -419,6 +546,12 @@ export class SettingsService {
              the offer was taken. Absent means never asked, which is
              right for every sheet made before the question existed. */
           lookVersion: Number(value.lookVersion) || 0,
+          /* Whose the ID column is — see the idColumn accessor. An
+             unrecognised value is dropped rather than trusted: this
+             one decides whether Mirra writes without asking. */
+          idColumn: SettingsService.ID_OWNERS.includes(value.idColumn)
+            ? value.idColumn
+            : "",
         };
       }
     }

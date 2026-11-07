@@ -1,6 +1,7 @@
 import { t, plural } from "../locales/t.js";
 import { ClientSchema } from "../domain/client/ClientSchema.js";
 import { ClientId } from "../domain/client/ClientId.js";
+import { ClientLinks } from "../domain/links/ClientLinks.js";
 import { config } from "../config.js";
 
 /**
@@ -88,6 +89,76 @@ export class SchemaUpgrade {
       .filter(index => String(this.#snapshot.rows[index]?.[column] ?? "").trim());
   }
 
+  /**
+   * Ids that something in the sheet points at and that are no longer
+   * there.
+   *
+   * This is what tells a cleared ID column apart from a sheet that
+   * never had one. An id means nothing by itself — it is Mirra's
+   * bookkeeping, and a fresh one does the same job as the one it
+   * replaces. What makes losing them a loss is that relationships
+   * between clients are written down by id, so a link pointing at an
+   * id that has gone is a connection nobody can follow.
+   *
+   * Names survive in the link cell beside the ids, which is why this
+   * is worth reporting rather than repairing silently: the person can
+   * see who was connected to whom and make the links again.
+   *
+   * @returns {string[]}
+   */
+  get lostLinks() {
+    const idColumn = this.#schema.indexOf("id");
+    const linkColumn = this.#schema.indexOf("links");
+    if (idColumn < 0 || linkColumn < 0) return [];
+
+    const present = new Set(
+      this.#snapshot.rows
+        .map(row => String(row[idColumn] ?? "").trim())
+        .filter(Boolean)
+    );
+
+    const lost = new Set();
+
+    for (const row of this.#snapshot.rows) {
+      for (const link of ClientLinks.parse(row[linkColumn] ?? "")) {
+        if (link.id && !present.has(link.id)) lost.add(link.id);
+      }
+    }
+
+    return [...lost];
+  }
+
+  /**
+   * Whether the ID column holds Mirra's own ids. See ClientId.areOurs,
+   * which says why this is asked of the contents and not of the file.
+   *
+   * @returns {boolean|null} null when there is nothing to judge by —
+   *          no column, or no values in it
+   */
+  get idsAreOurs() {
+    const column = this.#schema.indexOf("id");
+    if (column < 0) return null;
+
+    return ClientId.areOurs(this.#snapshot.rows.map(row => row[column]));
+  }
+
+  /**
+   * @returns {boolean} whether anything suggests ids were lost rather
+   *          than simply never written
+   */
+  get isDamaged() {
+    if (this.damagedRows.length) return true;
+    if (!this.lostLinks.length) return false;
+
+    /* A link pointing nowhere is not by itself a reason to stop: old
+       sheets collect them — a row deleted by hand months ago leaves
+       one, and it stays dangling whether or not a new row gets its
+       mark today. It becomes news when it coincides with most of the
+       sheet having no mark at all, which is what a cleared column
+       looks like and what no amount of adding clients ever does. */
+    return this.idFixes.size * 2 > this.#snapshot.rows.length;
+  }
+
   /** @returns {boolean} whether anything at all needs doing */
   get isNeeded() {
     return this.needsColumns || this.needsRepair;
@@ -140,20 +211,22 @@ export class SchemaUpgrade {
     const count = this.idFixes.size;
 
     /* Nothing was damaged: these rows arrived without a mark, which is
-       what a row added outside Mirra looks like. Saying "пошкоджено" to
-       somebody whose assistant has just added a client would be a
-       fright over something that went exactly as intended. */
-    if (!this.damagedRows.length) {
+       what a row added outside Mirra looks like. Mirra fills those in
+       by itself — this question is only ever asked about a column that
+       is not Mirra's to write in, where the cells may have been left
+       empty on purpose. */
+    if (!this.isDamaged) {
       return {
-        title: "Нові записи в таблиці",
+        title: "Дописати позначки у стовпець ID?",
         message: t("{} {} без позначки", count,
                     plural(count, ["запис", "записи", "записів"])),
-        note: "Mirra позначає кожного клієнта службовим кодом у стовпці ID — за ним "
-            + "вона впізнає людину у зв'язках між клієнтами. Ці записи додали поза "
-            + "Mirra: у Google Таблицях або через АІ-помічника. Дописати позначки? "
-            + "Інші дані не зміняться.",
+        note: "Стовпець ID у цій таблиці з'явився не з Mirra, тож вона не пише в "
+            + "нього без дозволу. Це службовий стовпець: за ним Mirra впізнає людину "
+            + "у зв'язках між клієнтами, і на решту даних він не впливає — ні на "
+            + "імена, ні на телефони, ні на нотатки. Заповнені клітинки не "
+            + "змінюються, позначки з'являться лише в порожніх.",
         confirmLabel: "Дописати",
-        cancelLabel: "Не зараз",
+        cancelLabel: "Не чіпати",
       };
     }
 

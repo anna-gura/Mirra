@@ -426,14 +426,33 @@ class MirraApp {
 
       if (file.trashed) return this.#handleTrashed(saved, file, snapshot);
       this.#showClients(snapshot);
-
-      /* Not awaited: the list is already readable, and these may end in
-         a dialog that waits for an answer. Holding the loading state
-         open for that would leave the button spinning while somebody
-         reads a question. */
-      this.#tidySheet(saved, snapshot).catch(error =>
-        console.warn("Could not look over the sheet", error));
+      this.#afterLoad(snapshot);
     });
+  }
+
+  /**
+   * What follows every freshly read sheet.
+   *
+   * One place, called from every path that loads one: opening the list,
+   * picking another spreadsheet, creating one, pressing refresh. It
+   * used to be called from the first of those only, so choosing
+   * another sheet left it unchecked — and, because the list was then in
+   * memory, every later visit took the shortcut past the checks too.
+   * Nothing looked at that sheet again until the page was reloaded.
+   *
+   * Not awaited by its callers: the list is already readable, and this
+   * may end in a dialog that waits for an answer. Holding a button's
+   * loading state open for that would leave it spinning while somebody
+   * reads a question.
+   *
+   * @param {object} snapshot
+   */
+  #afterLoad(snapshot) {
+    const saved = this.#settings.section(MirraApp.CLIENTS_SECTION);
+    if (!saved) return;
+
+    this.#tidySheet(saved, snapshot).catch(error =>
+      console.warn("Could not look over the sheet", error));
   }
 
   /**
@@ -674,23 +693,38 @@ class MirraApp {
     const upgrade = new SchemaUpgrade(snapshot);
     if (!upgrade.isNeeded) return this.#rememberVersion(snapshot);
 
-    /* A sheet Mirra made is brought up to date without asking: the
-       columns are Mirra's own, and stopping to ask about them every
-       release would be a toll on people who never chose to pay it.
+    /* Three different things can need doing, and only two of them are
+       anybody's business but Mirra's.
 
-       A sheet the user brought is asked about, every time, because its
-       shape is theirs. */
-    /* Adding columns to a sheet Mirra made needs no permission — they
-       are its own. Repairing ids does: something happened to that file
-       outside Mirra, and whoever did it deserves to hear about it
-       before anything is written back over the top. */
-    const mustAsk = !saved.managed || upgrade.needsRepair;
+       Adding a column to a sheet Mirra made needs no permission: the
+       columns are its own. Adding one to a sheet somebody brought does,
+       because its shape is theirs.
+
+       Writing an id into an empty cell of Mirra's own ID column needs
+       none either, and asking was a mistake: it is a service value
+       nobody chose and nobody reads, nothing else depends on it, and a
+       question with one sensible answer is a toll rather than a choice.
+       It is asked about only where the column itself is not Mirra's.
+
+       Repairing an id that is there and wrong is different again —
+       something happened to a row that already existed, and whoever
+       did it deserves to hear about it before it is written over. */
+    const mustAsk = (upgrade.needsColumns && !saved.managed)
+      || upgrade.isDamaged
+      || (upgrade.needsRepair && this.#idColumnIsTheirs(saved, upgrade));
+
     if (mustAsk && !await this.#askToUpgrade(upgrade)) return snapshot;
 
     try {
       const updated = await upgrade.apply(this.#sheets, saved, this.#translator.code);
 
-      if (upgrade.damagedRows.length) this.#notice.done("Технічні позначки відновлено.");
+      /* The column exists because Mirra just made it, so from now on
+         filling it in is Mirra's own business and needs no asking. */
+      if (upgrade.missingColumns.includes("id")) {
+        await this.#settings.setIdColumn(MirraApp.CLIENTS_SECTION, "mirra");
+      }
+
+      if (upgrade.isDamaged) this.#notice.done("Технічні позначки відновлено.");
       else if (upgrade.needsRepair) this.#notice.done("Позначки дописано.");
       else if (!saved.managed) this.#notice.done("Таблицю оновлено.");
 
@@ -702,6 +736,52 @@ class MirraApp {
       console.warn("Could not bring the sheet up to date", error);
       return snapshot;
     }
+  }
+
+  /**
+   * What to write down about the ID column of a sheet being chosen.
+   *
+   * @param {object} snapshot
+   * @returns {string} "mirra", "theirs" or "" for nothing to record
+   */
+  #idOwnerOf(snapshot) {
+    const ours = new SchemaUpgrade(snapshot).idsAreOurs;
+    if (ours === true) return "mirra";
+    if (ours === false) return "theirs";
+
+    /* The column exists and holds nothing. Its contents will never
+       settle it, so the fact that it was already there when the sheet
+       was chosen is the only thing there is to go on. */
+    return new ClientSchema(snapshot.headers).has("id") ? "theirs" : "";
+  }
+
+  /**
+   * Whether the ID column belongs to the person rather than to Mirra.
+   *
+   * The column's contents are asked first and settle it nearly always:
+   * ids in Mirra's own format are Mirra's own, whoever opened the file
+   * and however it was chosen. That matters because a sheet Mirra made
+   * and then had to be picked again through the Picker — a new phone,
+   * or "Інша таблиця" — looks like a stranger's sheet from the
+   * outside, and judging it by its columns alone had Mirra asking
+   * people for permission to write into a column it had made itself.
+   *
+   * What is recorded in settings decides only the case the contents
+   * cannot: a column that is there and entirely empty. Then the one
+   * moment somebody can be asked is the moment the sheet was chosen,
+   * and that is what was written down.
+   *
+   * @param {object} saved the section as recorded in settings
+   * @param {SchemaUpgrade} upgrade
+   * @returns {boolean}
+   */
+  #idColumnIsTheirs(saved, upgrade) {
+    if (saved.managed) return false;
+
+    const ours = upgrade.idsAreOurs;
+    if (ours !== null) return !ours;
+
+    return this.#settings.idColumn(MirraApp.CLIENTS_SECTION) === "theirs";
   }
 
   /**
@@ -797,8 +877,16 @@ class MirraApp {
 
     try {
       await this.#drive.restore(saved.spreadsheetId);
-      if (snapshot) this.#showClients(snapshot);
       this.#notice.done("Таблицю відновлено з кошика.");
+
+      /* The sheet was read before anyone knew it was in the bin, so the
+         checks were skipped on the way here. Now that it is back out,
+         they run — the same as for any other sheet that has just been
+         read. */
+      if (snapshot) {
+        this.#showClients(snapshot);
+        this.#afterLoad(snapshot);
+      }
     } catch (error) {
       this.#report(error);
     }
@@ -813,15 +901,18 @@ class MirraApp {
 
       /* Picked rather than created, so it is theirs: Mirra reads it,
          works with whatever columns it has, and adds nothing without
-         being asked. */
+         being asked. Unless it is the sheet already in use, which
+         #remember recognises and does not demote. */
       await this.#remember(snapshot, false);
       this.#showClients(snapshot);
 
-      /* Written as soon as there is a sheet to describe rather than on
-         some later visit: the point of the file is that somebody can
-         hand their Mirra folder to an assistant, and they may well do
-         that this afternoon. */
-      this.#refreshGuide(snapshot);
+      /* Looked over like any other freshly read sheet — and this is the
+         sheet most worth looking over, since Mirra has never seen it
+         before. The instructions on Drive are written here too, because
+         the point of that file is that somebody can hand their Mirra
+         folder to an assistant, and they may well do that this
+         afternoon. */
+      this.#afterLoad(snapshot);
     });
   }
 
@@ -846,7 +937,7 @@ class MirraApp {
       await this.#remember(snapshot, true);
       this.#showClients(snapshot);
       this.#notice.done("Таблицю створено в теці Mirra на вашому Диску.");
-      this.#refreshGuide(snapshot);
+      this.#afterLoad(snapshot);
     });
   }
 
@@ -863,10 +954,11 @@ class MirraApp {
       this.#snapshot = snapshot;
       this.#clients.render(snapshot).resetScroll();
 
-      /* Somebody who has just pressed refresh may have renamed a column
-         a minute ago, which is exactly the kind of change the
-         instructions on Drive have to keep up with. */
-      this.#refreshGuide(snapshot);
+      /* Somebody presses refresh because they believe the sheet has
+         changed, which is exactly when it is worth looking over again —
+         and when the instructions on Drive may have a renamed column to
+         catch up with. */
+      this.#afterLoad(snapshot);
     });
   }
 
@@ -1264,6 +1356,12 @@ class MirraApp {
       const snapshot = await this.#sheets.load(saved.spreadsheetId, saved.sheetTitle);
       this.#snapshot = snapshot;
 
+      /* The sheet has a new heading, so the instructions on Drive now
+         describe a sheet that no longer exists. Only those: the whole
+         look-over belongs to opening a sheet, not to the middle of
+         saving a client, who is still waiting to be written. */
+      this.#refreshGuide(snapshot);
+
       /* Rebuilt against the widened sheet: the draft holds column
          positions from the schema it was made with, and those have just
          changed. */
@@ -1604,16 +1702,45 @@ class MirraApp {
    * @param {boolean} managed whether Mirra created this sheet
    */
   #remember(snapshot, managed) {
+    /* Choosing the sheet that is already in use is not news about it.
+       People arrive back at the Picker for all sorts of reasons — a new
+       phone, a look around "Інша таблиця" and back — and everything
+       Mirra had learnt about that file used to be thrown away on the
+       way past: which appearance it had already been offered, how long
+       it was asked to stay quiet about damaged values, whose the ID
+       column is. The questions then came round again, every single
+       time, however they had been answered. */
+    const current = this.#settings.section(MirraApp.CLIENTS_SECTION);
+    const known = current?.spreadsheetId === snapshot.spreadsheetId
+      ? current
+      : this.#settings.sheetMemory(snapshot.spreadsheetId);
+
+    /* A sheet Mirra made stays a sheet Mirra made. The Picker hands
+       over a file and nothing about where it came from, so arriving
+       through it says nothing either way. */
+    const isOurs = managed || known?.managed === true;
+
     return this.#settings.setSection(MirraApp.CLIENTS_SECTION, {
       spreadsheetId: snapshot.spreadsheetId,
       sheetTitle: snapshot.sheetTitle,
-      managed,
+      managed: isOurs,
+      /* Written down for the one case nothing can be read off the sheet
+         later: a column that is there and empty. Everywhere else the
+         contents answer the question every time it is asked — see
+         #idColumnIsTheirs. A picked sheet with no id column at all is
+         left unrecorded; it becomes Mirra's if Mirra adds one. */
+      idColumn: isOurs
+        ? "mirra"
+        : this.#idOwnerOf(snapshot) || known?.idColumn || "",
       /* A sheet Mirra just made already looks the way Mirra makes them,
          so it starts at the current appearance and is never offered an
-         update to the one it was born with. A sheet the user chose gets
-         the same number, which is moot: the offer is only ever made for
-         managed sheets. */
-      lookVersion: managed ? SheetLook.version : 0,
+         update to the one it was born with. A sheet Mirra has met
+         before keeps whatever it was already offered. */
+      lookVersion: known
+        ? (Number(known.lookVersion) || 0)
+        : (isOurs ? SheetLook.version : 0),
+      /* Silence is about a sheet, not about a visit to the Picker. */
+      quietUntil: known?.quietUntil ?? "",
     });
   }
 

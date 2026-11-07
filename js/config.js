@@ -140,8 +140,10 @@ export const config = Object.freeze({
      *
      * 2 — the rule to re-read the file before every change, and the
      *     staleness check moved from the first write to every write.
+     * 3 — Mirra fills an empty id in by itself, so the file no longer
+     *     promises that the person will be asked about it.
      */
-    version: 2,
+    version: 3,
   }),
 
   /**
