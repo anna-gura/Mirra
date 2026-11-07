@@ -61,9 +61,13 @@
           </button>
         </div>
 
-        <button class="tile" type="button" disabled>
+        <button class="tile" type="button" data-open-calendar>
           <span class="tile-name">Календар</span>
-          <span class="tile-soon">Скоро</span>
+          <span class="tile-hint">Записи на візити</span>
+          <span class="tile-wait">
+            <span class="tile-wait-text">Хвилинку…</span>
+            <span class="spinner" aria-hidden="true"></span>
+          </span>
         </button>
 
         <button class="tile" type="button" disabled>

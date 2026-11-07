@@ -113,6 +113,19 @@
   --alert-bg:   #F8ECEC;
   --alert-line: #EBD3D3;
 
+  /* Something worth knowing that is nobody's mistake: a calendar
+     deleted on purpose, a permission not given. Red would say
+     "broken" about a thing that works exactly as asked, and people
+     believe colours before they read words.
+
+     Amber at 38° — the same candlelight the tags are drawn from, far
+     enough round the wheel from the green of success (149°) and the
+     red of failure (0°) to be told apart at a glance, and 6.1:1
+     against its own background. */
+  --warn:       #7A5412;
+  --warn-bg:    #FBF2E0;
+  --warn-line:  #EEDEBE;
+
   /* Tags. Warm gold, taken from the aurora that lights the cover rather
      than from the blue every interface reaches for by default — this
      palette is porcelain, tan and candlelight, and a link blue sat in
@@ -170,6 +183,12 @@
   --alert:      #E2A0A0;
   --alert-bg:   #2A1A1A;
   --alert-line: #3D2828;
+
+  /* 8.7:1 on its own background, as light tones need to be in a dark
+     theme to read as text rather than as a glow. */
+  --warn:       #E0BC84;
+  --warn-bg:    #2A2317;
+  --warn-line:  #3E3424;
 
   --accent:      #D4B483;
 

@@ -1,0 +1,174 @@
+/* ============================================================
+   calendar.css — the calendar and its settings.
+
+   Field, action and spinner styles are shared with the chooser and
+   are not repeated here; this file holds only what the calendar adds.
+   ============================================================ */
+
+.calset{ display:flex; flex-direction:column; }
+
+.cs-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:14px 20px 0;
+}
+
+.cs-body{
+  flex:1 1 auto;
+  overflow-y:auto;
+  padding:0 24px 40px;
+  -webkit-overflow-scrolling:touch;
+}
+
+.cs-inner{
+  width:100%;
+  max-width:420px;
+  margin:0 auto;
+  padding-top:26px;
+}
+
+.cs-title{
+  font-family:Marcellus,Georgia,serif;
+  font-weight:400;
+  font-size:clamp(26px,6vw,32px);
+  line-height:1.15;
+  margin:0 0 10px;
+}
+
+.cs-lead{
+  font-family:Karla,sans-serif;
+  font-weight:300;
+  font-size:15px;
+  line-height:1.6;
+  color:var(--soft);
+  margin:0 0 26px;
+}
+
+/* What Mirra is attached to, said on the screen rather than in a
+   notice that fades. Somebody who has just deleted a calendar in
+   Google needs to see the answer when they look, not six seconds
+   after something happened. */
+.cs-state{
+  display:inline-block;
+  margin:0 0 14px;
+  padding:6px 12px;
+  border-radius:99px;
+  font-family:Karla,sans-serif;
+  font-weight:400;
+  font-size:12.5px;
+  line-height:1.4;
+  color:var(--ok);
+  background:var(--ok-bg);
+  border:1px solid var(--ok-line);
+}
+.cs-state[data-missing]{
+  color:var(--warn);
+  background:var(--warn-bg);
+  border-color:var(--warn-line);
+}
+
+/* The calendar's own identifier, shown because names are not unique
+   and Google's sidebar will happily hold three calendars called the
+   same thing. This is the only way to tell which one Mirra is
+   attached to — and the same string appears in Google Calendar under
+   the calendar's integration settings. */
+.cs-id{
+  margin:-8px 0 16px;
+  padding-left:2px;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:11px;
+  line-height:1.5;
+  color:var(--faint);
+  overflow-wrap:anywhere;
+  user-select:all;
+}
+
+/* The explanation that belongs to one field. Smaller than the lead and
+   directly under what it explains, because a note floating at the
+   bottom of a form is read by nobody. */
+.cs-note{
+  display:block;
+  margin:7px 0 0;
+  padding-left:2px;
+  font-family:Karla,sans-serif;
+  font-weight:300;
+  font-size:12.5px;
+  line-height:1.5;
+  color:var(--faint);
+}
+.cs-note-wide{ margin:-6px 0 18px; }
+
+/* A fieldset carries a browser border and padding of its own. */
+.cs-fieldset{
+  border:none;
+  margin:0 0 14px;
+  padding:0;
+}
+
+/* Two fields that belong together: times, then durations. They stay
+   side by side on a phone — each holds four characters, and stacking
+   them would push the button below the fold for no gain. */
+.cs-pair{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+}
+
+/* A native select rather than Mirra's own dropdown: this one holds
+   several hundred time zones, and the platform's picker handles that
+   better than anything built here — with search on a phone, and with
+   the keyboard on a desktop. */
+.cs-select{
+  appearance:none;
+  padding-right:38px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236E6E6A' stroke-width='1.5'%3E%3Cpath d='M7 10l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right 12px center;
+  background-size:18px 18px;
+}
+
+/* ---------------- working days ---------------- */
+
+.cs-days{
+  display:grid;
+  grid-template-columns:repeat(7, 1fr);
+  gap:6px;
+}
+
+/* Seven small targets in a row is the one place in Mirra where a
+   control is under the 44px it should be. Kept because the row has to
+   fit a narrow phone and because missing is cheap here: the wrong day
+   is visible immediately and costs one more tap to put right. */
+.cs-day{
+  min-height:44px;
+  padding:0 2px;
+  font-family:Karla,sans-serif;
+  font-weight:400;
+  font-size:13px;
+  color:var(--soft);
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:10px;
+  cursor:pointer;
+  transition:border-color .2s, color .2s, background .2s;
+}
+.cs-day:hover{ border-color:var(--soft); }
+.cs-day:focus-visible{ outline:2px solid var(--soft); outline-offset:2px; }
+
+/* Pressed state carried by aria-pressed rather than a class, so the
+   styling and what a screen reader announces cannot drift apart. */
+.cs-day[aria-pressed="true"]{
+  color:var(--surface);
+  background:var(--ink);
+  border-color:var(--ink);
+}
+
+@media(prefers-reduced-motion:reduce){
+  .cs-day{ transition:none; }
+}
+
+/* The second of the two buttons. They are different actions rather
+   than one choice, so they are not spaced like a pair of options. */
+.cs-second{ margin-top:10px; }

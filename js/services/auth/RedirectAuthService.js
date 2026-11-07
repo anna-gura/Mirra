@@ -26,8 +26,21 @@ export class RedirectAuthService extends EventTarget {
   static STATE_KEY = "mirra:oauth-state";
   static TOKEN_KEY = "mirra:oauth-token";
 
+  /**
+   * Granted permissions, kept apart from the token and outliving it.
+   *
+   * A token is good for an hour; a permission lasts until the person
+   * takes it back. Keeping both in one record meant that discarding an
+   * expired token also discarded the knowledge that the calendar had
+   * ever been allowed — and the next request for it would be made
+   * without the permission it needs. See TokenStore, where the popup
+   * flow draws the same line.
+   */
+  static SCOPE_KEY = "mirra:oauth-scopes";
+
   #token = null;
   #expiresAt = 0;
+  #granted = new Set();
   #error = null;
 
   /**
@@ -53,6 +66,10 @@ export class RedirectAuthService extends EventTarget {
    * @returns {Promise<this>}
    */
   async init() {
+    /* Before either, and separately from both: what the person has
+       allowed survives the token that carried it. */
+    this.#remember(this.#storedScope());
+
     this.#readFragment() || this.#restore();
 
     if (this.#error) {
@@ -77,6 +94,30 @@ export class RedirectAuthService extends EventTarget {
   /** @returns {string|null} */
   get token() {
     return this.isSignedIn ? this.#token : null;
+  }
+
+  /**
+   * @param {string[]} scopes
+   * @returns {boolean} whether the token in hand already covers them
+   */
+  hasScopes(scopes) {
+    return this.isSignedIn && scopes.every(scope => this.#granted.has(scope));
+  }
+
+  /**
+   * Asks for permissions beyond the ones signing in covers.
+   *
+   * Matches AuthService.grant, with this flow's own cost: the page
+   * leaves and comes back, so the returned promise never settles and
+   * whatever was waiting on it simply stops. The person returns to the
+   * screen they left, and presses the thing they pressed again.
+   *
+   * @param {string[]} scopes
+   * @returns {Promise<string|never>}
+   */
+  grant(scopes) {
+    if (this.hasScopes(scopes)) return Promise.resolve(this.#token);
+    return this.requestToken(scopes);
   }
 
   /**
@@ -112,7 +153,7 @@ export class RedirectAuthService extends EventTarget {
    *
    * @returns {Promise<never>}
    */
-  requestToken() {
+  requestToken(extra = []) {
     const state = this.#issueState();
 
     /* `prompt` is deliberately absent. Forcing "consent" would show the
@@ -124,7 +165,10 @@ export class RedirectAuthService extends EventTarget {
       client_id: config.CLIENT_ID,
       redirect_uri: this.redirectUri,
       response_type: "token",
-      scope: config.SCOPE,
+      /* Everything granted so far travels with every request: the
+         token that comes back replaces the one in hand, and one asked
+         for narrowly would silently drop a permission already given. */
+      scope: [...new Set([config.SCOPE, ...this.#granted, ...extra])].join(" "),
       state,
       include_granted_scopes: "true",
     });
@@ -148,6 +192,9 @@ export class RedirectAuthService extends EventTarget {
   invalidate() {
     this.#token = null;
     this.#expiresAt = 0;
+
+    /* The permissions stay: they belong to the account, not to this
+       token, and the next request has to carry them all again. */
     this.#forget();
   }
 
@@ -155,6 +202,12 @@ export class RedirectAuthService extends EventTarget {
   async signOut() {
     const token = this.#token;
     this.invalidate();
+
+    /* The one moment the permissions are forgotten too: whoever opens
+       this browser next may not be the person who gave them. */
+    this.#granted.clear();
+    try { RedirectAuthService.store.removeItem(RedirectAuthService.SCOPE_KEY); }
+    catch { /* nothing to clean */ }
 
     if (token) {
       // Best effort: revocation failing must not block signing out.
@@ -199,7 +252,11 @@ export class RedirectAuthService extends EventTarget {
       return true;
     }
 
-    this.#accept(params.get("access_token"), Number(params.get("expires_in")));
+    this.#accept(
+      params.get("access_token"),
+      Number(params.get("expires_in")),
+      params.get("scope")
+    );
     return true;
   }
 
@@ -212,11 +269,12 @@ export class RedirectAuthService extends EventTarget {
     if (!stored) return false;
 
     try {
-      const { token, expiresAt } = JSON.parse(stored);
+      const { token, expiresAt, scope } = JSON.parse(stored);
       if (Date.now() >= expiresAt) { this.#forget(); return false; }
 
       this.#token = token;
       this.#expiresAt = expiresAt;
+      if (scope) this.#remember(scope);
       queueMicrotask(() => this.dispatchEvent(new CustomEvent("signin")));
       return true;
     } catch {
@@ -225,21 +283,39 @@ export class RedirectAuthService extends EventTarget {
     }
   }
 
-  #accept(token, expiresIn) {
+  #accept(token, expiresIn, scope) {
     this.#token = token;
     this.#expiresAt = Date.now() + (expiresIn - config.TOKEN_SAFETY_MARGIN) * 1000;
+    this.#remember(scope);
 
     /* sessionStorage, not localStorage: the token dies with the tab.
        Without it a reload would throw the user back to the cover
        screen, which the popup flow never did. */
     try {
+      const granted = [...this.#granted].join(" ");
+
       RedirectAuthService.store.setItem(
         RedirectAuthService.TOKEN_KEY,
-        JSON.stringify({ token: this.#token, expiresAt: this.#expiresAt })
+        JSON.stringify({ token: this.#token, expiresAt: this.#expiresAt, scope: granted })
       );
+      if (granted) RedirectAuthService.store.setItem(RedirectAuthService.SCOPE_KEY, granted);
     } catch { /* the token will simply not survive a reload */ }
 
     queueMicrotask(() => this.dispatchEvent(new CustomEvent("signin")));
+  }
+
+  /**
+   * What Google says the token carries.
+   *
+   * @param {string} [scope] space-separated, from the fragment or from
+   *        the record written when it arrived
+   */
+  #remember(scope) {
+    this.#granted = new Set(String(scope ?? "").split(" ").filter(Boolean));
+
+    /* A token from before scopes were recorded. It was obtained by
+       signing in, so that is what it covers. */
+    if (!this.#granted.size) this.#granted.add(config.SCOPE);
   }
 
   #clearFragment() {
@@ -264,5 +340,11 @@ export class RedirectAuthService extends EventTarget {
   #forget() {
     try { RedirectAuthService.store.removeItem(RedirectAuthService.TOKEN_KEY); }
     catch { /* nothing to clean */ }
+  }
+
+  /** @returns {string} permissions granted, whatever became of the token */
+  #storedScope() {
+    try { return RedirectAuthService.store.getItem(RedirectAuthService.SCOPE_KEY) ?? ""; }
+    catch { return ""; }
   }
 }

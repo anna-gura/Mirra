@@ -228,6 +228,53 @@ export class SettingsService {
   }
 
   /**
+   * The calendar Mirra keeps appointments in, and how it is set up.
+   *
+   * Null until somebody opens the calendar for the first time and lets
+   * Mirra make one — which is also when the permission for it is asked
+   * for. Everything here except the id is theirs to change: the name,
+   * the time zone, the hours they work.
+   *
+   * @returns {object|null}
+   */
+  get calendar() {
+    return this.#data?.calendar ?? null;
+  }
+
+  /**
+   * Records a calendar, or changes part of its setup.
+   *
+   * Merged rather than replaced, so saving the working hours cannot
+   * drop the time zone — the mistake that cost an evening when the
+   * record about a sheet was rebuilt from scratch on every visit to
+   * the Picker.
+   *
+   * @param {object} changes
+   */
+  async setCalendar(changes) {
+    if (!this.#data) return this;
+
+    this.#data.calendar = SettingsService.#calendar({
+      ...(this.#data.calendar ?? {}),
+      ...changes,
+    });
+
+    this.#data.updatedAt = new Date().toISOString();
+    await this.save();
+    return this;
+  }
+
+  /** Forgets the calendar entirely: it was deleted in Google Calendar. */
+  async forgetCalendar() {
+    if (!this.#data?.calendar) return this;
+
+    this.#data.calendar = null;
+    this.#data.updatedAt = new Date().toISOString();
+    await this.save();
+    return this;
+  }
+
+  /**
    * What Mirra knew about a spreadsheet it is no longer looking at.
    *
    * @param {string} spreadsheetId
@@ -417,11 +464,74 @@ export class SettingsService {
       /* What Mirra knows about spreadsheets other than the one in use:
          see setSection, which fills this in, and #archive. */
       sheets: {},
+      /* The calendar and its setup. Null until somebody asks for one. */
+      calendar: null,
       /* What the instructions on Drive were written for. Absent until
          they have been written once. */
       ai: null,
       updatedAt: new Date().toISOString(),
     };
+  }
+
+  /**
+   * Reads a calendar record and gives back one the app can rely on.
+   *
+   * Anybody can open mirra.json and type into it, and this one decides
+   * when somebody's working day starts. So every field is checked, and
+   * anything unreadable falls back to what Mirra would have used
+   * anyway rather than stopping the app.
+   */
+  static #calendar(raw) {
+    const text = (value, fallback = "") =>
+      typeof value === "string" && value.trim() ? value.trim() : fallback;
+
+    const minutes = (value, fallback, max) => {
+      const number = Math.round(Number(value));
+      return Number.isFinite(number) && number >= 0 && number <= max ? number : fallback;
+    };
+
+    /* HH:MM, 24-hour. Stored as text because that is what somebody
+       reading the file expects to see, and because these are
+       wall-clock times in the calendar's own zone — a number of
+       minutes since midnight would be neither readable nor clearer. */
+    const clock = (value, fallback) =>
+      /^([01]\d|2[0-3]):[0-5]\d$/.test(String(value ?? "")) ? String(value) : fallback;
+
+    const days = Array.isArray(raw?.days)
+      ? [...new Set(raw.days.map(Number).filter(day => Number.isInteger(day) && day >= 1 && day <= 7))]
+          .sort((a, b) => a - b)
+      : [];
+
+    return {
+      id: text(raw?.id),
+      summary: text(raw?.summary),
+      /* Checked against the zones this browser knows, so a typo cannot
+         become an event at the wrong hour. */
+      timeZone: SettingsService.#timeZone(raw?.timeZone),
+      duration: minutes(raw?.duration, config.CALENDAR.duration, 24 * 60),
+      gap: minutes(raw?.gap, config.CALENDAR.gap, 12 * 60),
+      days: days.length ? days : [...config.CALENDAR.days],
+      from: clock(raw?.from, config.CALENDAR.from),
+      to: clock(raw?.to, config.CALENDAR.to),
+    };
+  }
+
+  /**
+   * @param {string} [name]
+   * @returns {string} a zone this browser recognises, or the device's own
+   */
+  static #timeZone(name) {
+    const here = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+    if (typeof name !== "string" || !name.trim()) return here;
+
+    try {
+      /* The only reliable test: ask Intl to use it. A list of valid
+         zones is not available in every browser Mirra runs in. */
+      new Intl.DateTimeFormat("en", { timeZone: name }).format();
+      return name;
+    } catch {
+      return here;
+    }
   }
 
   /**
@@ -489,6 +599,10 @@ export class SettingsService {
         const version = Number(raw.schema[name]);
         if (version > 0) safe.schema[name] = version;
       }
+    }
+
+    if (raw.calendar && typeof raw.calendar === "object") {
+      safe.calendar = SettingsService.#calendar(raw.calendar);
     }
 
     /* Kept notes about other spreadsheets. Read with the same suspicion

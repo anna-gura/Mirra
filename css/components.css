@@ -400,6 +400,12 @@
   border-color:var(--ok-line);
 }
 
+.notice[data-tone="warn"]{
+  color:var(--warn);
+  background:var(--warn-bg);
+  border-color:var(--warn-line);
+}
+
 .notice[data-tone="alert"]{
   color:var(--alert);
   background:var(--alert-bg);

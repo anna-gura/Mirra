@@ -301,6 +301,80 @@ export const dictionary = {
     "Do not edit it: Mirra rewrites the file whenever anything about the sheet changes, and your edits would be lost. What an assistant can and cannot do with your records is explained here: {}",
   "Оновлено {} · Мірра {}": "Updated {} · Mirra {}",
 
+  /* ---------------- calendar ---------------- */
+  "Записи на візити": "Appointments",
+  "Налаштування календаря": "Calendar settings",
+  "Mirra створить у вашому Google Календарі окремий календар і бачитиме тільки його. Усе інше у вашому календарі лишиться їй невидимим.":
+    "Mirra will make a calendar of its own in your Google Calendar and see only that one. Everything else in your calendar stays invisible to it.",
+  "Цей календар створила Mirra. Вона бачить тільки його — решта вашого Google Календаря їй невидима.":
+    "Mirra made this calendar. It sees only this one — the rest of your Google Calendar is invisible to it.",
+  "Назва календаря": "Calendar name",
+  "Так він називатиметься у вашому Google Календарі. Перейменувати його там можна будь-коли — Mirra впізнає його за внутрішнім номером, а не за назвою.":
+    "This is what it will be called in your Google Calendar. You can rename it there whenever you like — Mirra knows it by an internal id, not by its name.",
+  "Часовий пояс": "Time zone",
+  "Записи, які вже створені, залишаться на своєму часі. Пояс визначає, о котрій годині з'являтимуться нові.":
+    "Appointments already made stay at their own time. The zone decides what hour new ones land on.",
+  "Робочі дні": "Working days",
+  "Початок дня": "Day starts",
+  "Кінець дня": "Day ends",
+  "Поза цими годинами записувати можна — вони просто показані тьмянішими, щоб день читався з першого погляду.":
+    "You can still book outside these hours — they are simply shown dimmer, so a day reads at a glance.",
+  "Візит триває, хв": "A visit lasts, min",
+  "Перерва, хв": "Gap, min",
+  "Цим буде заповнена форма нового запису. Змінити час конкретного візиту можна буде в ній самій.":
+    "This is what a new appointment starts as. The time of any one visit can be changed in the form itself.",
+  "Створити календар": "Create the calendar",
+  "Зберегти зміни": "Save changes",
+  "Для календаря, який уже створено": "For the calendar that already exists",
+  "Новий календар у вашому Google Календарі": "A new calendar in your Google Calendar",
+  "Створити календар?": "Create a calendar?",
+  "Mirra не бачить цього календаря": "Mirra cannot see this calendar",
+  "Календаря ще немає": "No calendar yet",
+  "Перевірити календар": "Check the calendar",
+  "Спитати Google, чи він на місці": "Ask Google whether it is still there",
+  "Календаря ще немає — спершу створіть його.": "There is no calendar yet — make one first.",
+  "Календаря більше немає в Google — його видалили поза Mirra. Можна створити новий.":
+    "The calendar is no longer in Google — it was deleted outside Mirra. You can make a new one.",
+  "Календар на місці, але прихований у вашому Google Календарі.":
+    "The calendar is there, but hidden in your Google Calendar.",
+  "Календар на місці. Чи є він у вашому переліку календарів — Google цього разу не відповів.":
+    "The calendar is there. Whether it is on your list of calendars, Google did not answer this time.",
+  "Календар на місці — Google його бачить.": "The calendar is there — Google can see it.",
+  "Підключено: {}": "Connected: {}",
+  "Існує в Google, але не у вашому переліку календарів: {}":
+    "Exists in Google, but not on your list of calendars: {}",
+  "Прихований у вашому Google Календарі: {}": "Hidden in your Google Calendar: {}",
+  "Цього календаря немає у вашому переліку календарів Google — схоже, його прибрали зі списку. Він існує, але ви його не бачите.":
+    "This calendar is not on your list of calendars in Google — it looks as though it was removed from the list. It exists, but you cannot see it.",
+  "Збережено, але цього календаря немає у вашому переліку календарів Google — там змін не видно.":
+    "Saved, but this calendar is not on your list of calendars in Google — the changes are not visible there.",
+  "Календар створено, але Google не додав його до вашого переліку календарів — у Google Календарі його не видно.":
+    "The calendar has been created, but Google did not add it to your list of calendars — it is not visible in Google Calendar.",
+  "Теперішнього календаря немає у вашому переліку календарів Google — зазвичай це означає, що його прибрали зі списку, а не видалили. Новий календар буде видимий, але порожній: записи зі старого в нього не переносяться, а доступ до старого Mirra втратить назавжди.":
+    "The present calendar is not on your list of calendars in Google — which usually means it was removed from the list rather than deleted. A new calendar will be visible but empty: the appointments in the old one do not move across, and Mirra will lose access to it for good.",
+  "Його видалили або прибрали з вашого Google Календаря поза Mirra, і повернути його Mirra не може. Створити натомість новий? Він буде порожній — записи зі старого в нього не переносяться.":
+    "It was deleted or removed from your Google Calendar outside Mirra, and Mirra cannot bring it back. Make a new one instead? It will be empty — appointments from the old one do not move across.",
+  "Створити новий": "Make a new one",
+  "Такий календар уже є": "There is already a calendar like this",
+  "Mirra вже працює з календарем із цією назвою. Якщо ви хотіли змінити його налаштування — їх можна просто зберегти.":
+    "Mirra is already working with a calendar of that name. If you meant to change its settings, they can simply be saved.",
+  "Зберегти зміни в ньому": "Save the changes to it",
+  "Все одно створити новий": "Make a new one anyway",
+  "Mirra назавжди втратить доступ до теперішнього календаря: за правилами Google вона бачить лише той календар, який створила сама, і повернутися до попереднього не зможе. Він залишиться у вашому Google Календарі, але Mirra його більше не читатиме, і чи вдасться колись це змінити — поки невідомо.":
+    "Mirra will lose access to the present calendar for good: by Google's rules it sees only the calendar it made itself, and it cannot go back to an earlier one. That calendar stays in your Google Calendar, but Mirra will no longer read it — and whether that can ever be changed is not yet known.",
+  "Створити": "Create",
+  "Mirra бачить лише той календар, який створила сама. Решту вашого Google Календаря вона не читає й читати не може.":
+    "Mirra sees only the calendar it made itself. The rest of your Google Calendar it does not read, and cannot.",
+  "Mirra бачить лише той календар, який створила сама — решту вашого Google Календаря вона не читає. Попередній календар вона більше не знаходить, тож якщо він десь лишився, записи в ньому там і залишаться.":
+    "Mirra sees only the calendar it made itself — the rest of your Google Calendar it does not read. It can no longer find the previous one, so if that still exists somewhere, the appointments in it stay there.",
+  "Календар створено.": "The calendar has been created.",
+  "Налаштування збережено.": "Your settings have been saved.",
+  "Цей календар видалили в Google Календарі поза Mirra. Можна створити новий.":
+    "This calendar was deleted in Google Calendar, outside Mirra. You can make a new one.",
+  "Виберіть хоча б один робочий день.": "Choose at least one working day.",
+  "Без дозволу на календар записи вести не вийде. Усе інше в Mirra працює як раніше.":
+    "Without permission for the calendar there is no way to keep appointments. Everything else in Mirra works as before.",
+
   /* ---------------- installing ---------------- */
   "Додати на головний екран": "Add to home screen",
   "Mirra як застосунок": "Mirra as an app",

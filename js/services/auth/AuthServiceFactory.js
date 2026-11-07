@@ -17,7 +17,8 @@ import { RedirectAuthService } from "./RedirectAuthService.js";
  *
  * Both satisfy the same contract, so nothing above this layer changes:
  *   init() · isReady · isSignedIn · token · getToken()
- *   requestToken() · invalidate() · signOut() · "signin" event
+ *   requestToken() · grant(scopes) · hasScopes(scopes)
+ *   invalidate() · signOut() · "signin" event
  *
  * Flip config.AUTH_MODE to switch. No other file needs editing, which
  * is the whole point of having the seam here.

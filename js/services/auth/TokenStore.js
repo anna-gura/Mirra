@@ -22,8 +22,21 @@ export class TokenStore {
   static KEY = "mirra:token";
 
   /**
-   * @returns {{token: string, expiresAt: number}|null} null when there
-   *          is nothing usable
+   * Granted permissions are kept apart from the token, and outlive it.
+   *
+   * A token is good for an hour; a permission lasts until the person
+   * takes it back in their Google account. Keeping them in one record
+   * meant that coming back the next morning — when the token is thrown
+   * away as expired — also threw away the knowledge that the calendar
+   * had ever been allowed. Mirra would then renew with the narrow
+   * permission it started with, and the first thing it tried to read
+   * in the calendar would fail for a reason nobody could see.
+   */
+  static SCOPE_KEY = "mirra:scopes";
+
+  /**
+   * @returns {{token: string, expiresAt: number, scope: string}|null}
+   *          null when there is nothing usable
    */
   read() {
     let raw = null;
@@ -46,7 +59,11 @@ export class TokenStore {
          next. */
       if (Date.now() >= record.expiresAt) { this.clear(); return null; }
 
-      return record;
+      /* Records written before scopes were tracked carry none. They
+         were written when signing in asked for files and nothing else,
+         so that is what they cover — and reading them as such is what
+         stops Mirra assuming a calendar permission it never had. */
+      return { ...record, scope: typeof record.scope === "string" ? record.scope : "" };
     } catch {
       this.clear();
       return null;
@@ -56,18 +73,38 @@ export class TokenStore {
   /**
    * @param {string} token
    * @param {number} expiresAt
+   * @param {string} [scope] space-separated scopes the token carries,
+   *        exactly as Google reported them
    */
-  write(token, expiresAt) {
+  write(token, expiresAt, scope = "") {
     try {
-      localStorage.setItem(TokenStore.KEY, JSON.stringify({ token, expiresAt }));
+      localStorage.setItem(TokenStore.KEY, JSON.stringify({ token, expiresAt, scope }));
+      if (scope) localStorage.setItem(TokenStore.SCOPE_KEY, scope);
     } catch {
       /* Private browsing refuses to write. The session still works —
          it simply will not outlive the tab. */
     }
   }
 
+  /**
+   * @returns {string} permissions granted to the app, space-separated,
+   *          whether or not a usable token is left
+   */
+  readScope() {
+    try { return localStorage.getItem(TokenStore.SCOPE_KEY) ?? ""; }
+    catch { return ""; }
+  }
+
+  /** Drops the token. What the person allowed is not the token's to forget. */
   clear() {
     try { localStorage.removeItem(TokenStore.KEY); }
+    catch { /* nothing to clean */ }
+  }
+
+  /** Drops the permissions too: for signing out, and nothing else. */
+  forget() {
+    this.clear();
+    try { localStorage.removeItem(TokenStore.SCOPE_KEY); }
     catch { /* nothing to clean */ }
   }
 }

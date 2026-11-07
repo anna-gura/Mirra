@@ -70,6 +70,19 @@ export class GoogleApiClient {
     const init = {
       method,
       headers: { Authorization: `Bearer ${token}`, ...headers },
+
+      /* Never from the browser's cache, and never into it.
+         Google's APIs send validators with their answers, so a browser
+         is free to re-ask with an If-None-Match and be told 304 — and
+         then hand this code the copy it kept, with no sign that
+         anything was reused. For a photograph that is a saved round
+         trip; for somebody's data it is a lie with a timestamp. A
+         deleted calendar came back alive this way, which looked for an
+         hour like the deletion had never happened.
+
+         Reading data is the whole point of every request here, so
+         there is no case where an older copy is the right answer. */
+      cache: "no-store",
     };
 
     if (rawBody !== undefined) {

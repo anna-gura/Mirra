@@ -41,6 +41,46 @@ try {
   );
 }
 
+/**
+ * Everything Mirra ever asks Google for.
+ *
+ * All three are non-sensitive, which is not a detail: a sensitive
+ * scope would put the app in Google's verification queue, and every
+ * person using it would meet an "unverified app" warning until it came
+ * out the other side. The architecture is shaped around staying out of
+ * that queue — files are hand-picked rather than searched, and the
+ * calendar is one Mirra makes rather than the one they already keep.
+ */
+const SCOPES = Object.freeze({
+  /** Only files the user picks or Mirra creates. Nothing else on Drive. */
+  FILES: "https://www.googleapis.com/auth/drive.file",
+
+  /** Secondary calendars Mirra creates, and the events on them. */
+  CALENDAR: "https://www.googleapis.com/auth/calendar.app.created",
+
+  /** Public calendars, which is where the holidays of a country live. */
+  HOLIDAYS: "https://www.googleapis.com/auth/calendar.events.public.readonly",
+
+  /**
+   * The names of the calendars this account is subscribed to. Read
+   * only, and never written to.
+   *
+   * Asked for because of a question nothing else can answer: whether
+   * the calendar Mirra made is one the person can actually see. The
+   * calendar itself and the account's list of calendars are two
+   * separate things in Google's API — a calendar can exist, answer
+   * every request Mirra makes, and still be absent from the list the
+   * person looks at in Google Calendar. Without this scope Mirra
+   * cannot tell those apart, and reports "saved" about a calendar
+   * nobody can find.
+   *
+   * Non-sensitive, like the rest. It reads names, not events, and
+   * Mirra never calls the list method — only asks after the one id it
+   * wrote itself.
+   */
+  CALENDAR_LIST: "https://www.googleapis.com/auth/calendar.calendarlist.readonly",
+});
+
 export const config = Object.freeze({
   /** This build, from the most recent git tag. */
   VERSION: version,
@@ -49,13 +89,21 @@ export const config = Object.freeze({
   API_KEY:   credentials.API_KEY,
   APP_ID:    credentials.APP_ID,
 
+  SCOPES,
+
   /**
-   * drive.file is a non-sensitive scope: it grants access only to
-   * files the user hand-picks through the Picker. That is what keeps
-   * the project out of Google's sensitive-scope verification queue.
-   * Widening this to .../auth/spreadsheets would require review.
+   * What signing in asks for, and all it asks for.
+   *
+   * The calendar scopes are deliberately absent. Somebody who keeps a
+   * client list and never books anybody should not be handed a consent
+   * screen about calendars — so those are asked for on the day they
+   * first open the calendar, and not before. Google calls this
+   * incremental authorisation; see AuthService.grant.
    */
-  SCOPE: "https://www.googleapis.com/auth/drive.file",
+  SCOPE: SCOPES.FILES,
+
+  /** Asked for together, so the calendar costs one consent and not two. */
+  CALENDAR_SCOPES: Object.freeze([SCOPES.CALENDAR, SCOPES.HOLIDAYS, SCOPES.CALENDAR_LIST]),
 
   /**
    * Sign-in strategy: "popup" or "redirect".
@@ -165,7 +213,46 @@ export const config = Object.freeze({
    */
   SITE_URL: "https://mirra.day",
 
+  /**
+   * The calendar Mirra keeps appointments in.
+   *
+   * Its own, created by Mirra, and the only one it can see. The one
+   * the person already keeps — work, family, the dentist — stays
+   * invisible, which is the price of a scope that needs no review and
+   * a promise worth making: Mirra reads nothing it did not make.
+   */
+  CALENDAR: Object.freeze({
+    /* Named so it is recognisable among a dozen other calendars in
+       Google's sidebar. Renaming it there breaks nothing: Mirra knows
+       it by id. */
+    /* "Робота" rather than "Клієнти": appointments are what goes in it
+       first, but it is the calendar Mirra works in, and the next thing
+       to land there may not be a client at all. A name that has to be
+       changed later is a name that stays wrong in everybody's sidebar,
+       because nobody renames a calendar twice. */
+    title: Object.freeze({ uk: "Mirra — Робота", en: "Mirra — Work" }),
+
+    /* What a new appointment starts as, until services with durations
+       of their own arrive. Minutes. */
+    duration: 60,
+
+    /* Breathing room between one client and the next. Offered when
+       booking rather than enforced. */
+    gap: 15,
+
+    /* Working days as ISO numbers: 1 is Monday, 7 is Sunday. ISO
+       rather than JavaScript's own 0-for-Sunday, because a number
+       stored in a file somebody can open should mean what the rest of
+       the world means by it. */
+    days: Object.freeze([1, 2, 3, 4, 5]),
+
+    /* Wall-clock times in the calendar's own time zone. */
+    from: "09:00",
+    to: "18:00",
+  }),
+
   SHEETS_API: "https://sheets.googleapis.com/v4/spreadsheets",
+  CALENDAR_API: "https://www.googleapis.com/calendar/v3",
   GIS_SRC:    "https://accounts.google.com/gsi/client",
   GAPI_SRC:   "https://apis.google.com/js/api.js",
 

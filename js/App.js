@@ -9,6 +9,7 @@ import { AuthServiceFactory }   from "./services/auth/AuthServiceFactory.js";
 import { GoogleApiClient }      from "./services/GoogleApiClient.js";
 import { DriveRepository }      from "./services/DriveRepository.js";
 import { SheetsRepository }     from "./services/SheetsRepository.js";
+import { CalendarRepository }   from "./services/CalendarRepository.js";
 import { SettingsService }      from "./services/SettingsService.js";
 import { PickerService }        from "./services/PickerService.js";
 import { InstallService }       from "./services/InstallService.js";
@@ -18,6 +19,7 @@ import { ChooserView }          from "./ui/screens/ChooserView.js";
 import { ClientListView }       from "./ui/screens/ClientListView.js";
 import { ClientCardView }       from "./ui/screens/ClientCardView.js";
 import { ClientFormView }       from "./ui/screens/ClientFormView.js";
+import { CalendarSettingsView } from "./ui/screens/CalendarSettingsView.js";
 import { ClientDraft }          from "./domain/client/ClientDraft.js";
 import { ClientSchema }         from "./domain/client/ClientSchema.js";
 import { ClientList }           from "./domain/client/ClientList.js";
@@ -34,7 +36,7 @@ import { ConfirmDialog }        from "./ui/dialogs/ConfirmDialog.js";
 import { InstallPrompt }        from "./ui/shell/InstallPrompt.js";
 import { PeoplePicker }         from "./ui/dialogs/PeoplePicker.js";
 import { config, findMissingConfig } from "./config.js";
-import { AppError, ConfigError } from "./errors.js";
+import { AccessDeniedError, AppError, ConfigError } from "./errors.js";
 
 /**
  * MirraApp — composition root.
@@ -67,7 +69,8 @@ class MirraApp {
    * reported again afterwards.
    */
   static QUIET_DAYS = 7;
-  static VIEWS = ["loading", "hub", "chooser", "clients", "client", "client-form"];
+  static VIEWS = ["loading", "hub", "chooser", "clients", "client", "client-form",
+                  "calendar-settings"];
 
   #theme;
   #translator;
@@ -79,6 +82,8 @@ class MirraApp {
   #api;
   #drive;
   #sheets;
+  #calendars;
+  #calendarSettings;
   #settings;
   #guide;
   #picker;
@@ -146,12 +151,14 @@ class MirraApp {
     this.#clients = new ClientListView().init();
     this.#card    = new ClientCardView().init();
     this.#form    = new ClientFormView().init();
+    this.#calendarSettings = new CalendarSettingsView().init();
     this.#theme.refresh();
 
     this.#auth     = AuthServiceFactory.create();
     this.#api      = new GoogleApiClient({ auth: this.#auth });
     this.#drive    = new DriveRepository({ api: this.#api });
     this.#sheets   = new SheetsRepository({ api: this.#api, drive: this.#drive });
+    this.#calendars = new CalendarRepository({ api: this.#api });
     this.#settings = new SettingsService({ drive: this.#drive });
     this.#guide    = new AiGuide({ drive: this.#drive, settings: this.#settings });
     this.#picker   = new PickerService();
@@ -314,6 +321,10 @@ class MirraApp {
     this.#actions
       .set("data-signin",        button => this.#signIn(button))
       .set("data-open-clients",  button => this.#openClients(button))
+      .set("data-open-calendar", button => this.#openCalendar(button))
+      .set("data-save-calendar", button => this.#saveCalendar(button))
+      .set("data-create-calendar", button => this.#createCalendar(button))
+      .set("data-check-calendar", button => this.#checkCalendar(button))
       .set("data-open-existing", button => this.#openExisting(button))
       .set("data-create-sheet",  button => this.#createNew(button))
       .set("data-reload",        button => this.#reload(button))
@@ -428,6 +439,400 @@ class MirraApp {
       this.#showClients(snapshot);
       this.#afterLoad(snapshot);
     });
+  }
+
+  /**
+   * Hub → the calendar.
+   *
+   * The permission is asked for here rather than at sign-in, and that
+   * is the whole reason this is not two lines. Somebody who keeps a
+   * client list and books nobody should never be handed a consent
+   * screen about calendars; somebody who taps "Календар" has the
+   * reason for the question on the screen behind it.
+   *
+   * Until the month grid arrives, this lands on the calendar's own
+   * settings — which is also the screen that creates it.
+   *
+   * @param {HTMLElement|null} button
+   */
+  async #openCalendar(button) {
+    await this.#run(button, async () => {
+      try {
+        await this.#auth.grant(config.CALENDAR_SCOPES);
+      } catch (error) {
+        /* Declining is an answer, not a fault, and it deserves to be
+           answered in its own words: the standing message is about
+           files, and being told the sheet needs permission after
+           saying no to a calendar is the kind of small wrongness that
+           makes people stop trusting what an app tells them. */
+        if (error instanceof AccessDeniedError) {
+          this.#notice.warn("Без дозволу на календар записи вести не вийде. Усе інше в Mirra працює як раніше.");
+          return;
+        }
+        throw error;
+      }
+
+      const { calendar, presence } = await this.#findCalendar();
+
+      this.#calendarSettings.show(calendar, presence);
+      this.#screens.show("calendar-settings");
+      this.#dom.apply();
+    });
+  }
+
+  /**
+   * The calendar as Google has it, or nothing.
+   *
+   * Checked rather than trusted, because a calendar can be deleted in
+   * Google Calendar and nothing here would know: every later request
+   * would fail on its own, one at a time, and none of them would say
+   * why. Finding it gone forgets it and leaves the screen offering to
+   * make a new one, which is the only thing left to offer.
+   *
+   * @param {object} [options]
+   * @param {boolean} [options.announce] say so when it has gone. True
+   *        when opening the screen, where nothing else would explain
+   *        why it is offering to make one; false when saving, where
+   *        what happens next is the explanation.
+   * @returns {Promise<{calendar: object|null, presence: string}>}
+   *          presence is "missing", "listed", "hidden", "unlisted" or
+   *          "unknown" — see #presenceOf
+   */
+  async #findCalendar({ announce = true } = {}) {
+    const saved = this.#settings.calendar;
+
+    if (!saved?.id) {
+      console.info("Mirra: no calendar recorded — nothing to ask Google about");
+      return { calendar: null, presence: "missing" };
+    }
+
+    console.info(`Mirra: asking Google about calendar ${saved.id}`);
+    const live = await this.#calendars.get(saved.id);
+
+    if (!live) {
+      await this.#settings.forgetCalendar();
+      if (announce) this.#notice.warn("Цей календар видалили в Google Календарі поза Mirra. Можна створити новий.");
+      return { calendar: null, presence: "missing" };
+    }
+
+    /* Renaming it in Google Calendar, or moving the account to another
+       time zone, is allowed and breaks nothing — Mirra knows the
+       calendar by its id. What it should not do is go on showing a
+       name nobody uses any more. */
+    if (live.summary !== saved.summary || live.timeZone !== saved.timeZone) {
+      await this.#settings.setCalendar({ summary: live.summary, timeZone: live.timeZone });
+    }
+
+    const presence = await this.#presenceOf(live.id);
+
+    if (announce && presence === "unlisted") {
+      this.#notice.warn("Цього календаря немає у вашому переліку календарів Google — схоже, його прибрали зі списку. Він існує, але ви його не бачите.");
+    }
+
+    return { calendar: this.#settings.calendar, presence };
+  }
+
+  /**
+   * Whether the person can actually see the calendar.
+   *
+   * The second of the two questions Google answers separately, asked
+   * every time the first one comes back yes. Existing and being on
+   * somebody's list are different facts, and only the second one is
+   * what a person means by "my calendar is there".
+   *
+   * A failure here is not an answer, so it is not turned into one:
+   * "unknown" says the question could not be put, and the screen says
+   * nothing rather than something wrong.
+   *
+   * @param {string} calendarId
+   * @returns {Promise<"listed"|"hidden"|"unlisted"|"unknown">}
+   */
+  async #presenceOf(calendarId) {
+    try {
+      const entry = await this.#calendars.listEntry(calendarId);
+      if (!entry) return "unlisted";
+      return entry.hidden ? "hidden" : "listed";
+    } catch (error) {
+      console.warn("Mirra: could not tell whether the calendar is on the account's list", error);
+      return "unknown";
+    }
+  }
+
+  /**
+   * Saves changes to a calendar that already exists.
+   *
+   * Asks Google whether it still does, every single time, and nothing
+   * else is trusted: not the settings file, not the browser's cache,
+   * not the fact that this screen was showing a calendar when it was
+   * opened. All three have been wrong about it at some point.
+   *
+   * Finding it gone does not quietly make another one. It says what
+   * happened and asks — because a new calendar is empty, and somebody
+   * pressing "save" is not asking for an empty calendar.
+   *
+   * @param {HTMLElement|null} button
+   */
+  async #saveCalendar(button) {
+    const values = this.#calendarSettings.values;
+    if (!this.#hasWorkingDays(values)) return;
+
+    const { ok, calendar: saved, presence } = await this.#liveCalendar(button);
+    if (!ok) return;
+
+    if (!saved?.id) {
+      console.info("Mirra: nothing to save to — no live calendar");
+      this.#calendarSettings.show(null, "missing");
+      this.#dom.apply();
+      await this.#offerNewCalendar(button, values);
+      return;
+    }
+
+    await this.#run(button, async () => {
+      if (values.summary !== saved.summary || values.timeZone !== saved.timeZone) {
+        await this.#calendars.update(saved.id, {
+          summary: values.summary,
+          timeZone: values.timeZone,
+        });
+      }
+
+      await this.#settings.setCalendar(values);
+      console.info(`Mirra: calendar ${saved.id} updated (${presence})`);
+
+      /* Saved is true and useless on its own when the calendar is on
+         no list: the change went through, and the person will look
+         for it in Google Calendar and find nothing. */
+      if (presence === "unlisted") {
+        this.#notice.warn("Збережено, але цього календаря немає у вашому переліку календарів Google — там змін не видно.");
+      } else {
+        this.#notice.done("Налаштування збережено.");
+      }
+    });
+  }
+
+  /**
+   * Looks the calendar up, with the button showing that something is
+   * happening.
+   *
+   * Not through #run, for two reasons. #run swallows what the action
+   * returns, and — the one that matters — a request that fails because
+   * the network is down would then be indistinguishable from a
+   * calendar that has been deleted. Offering to build a new one
+   * because a train went into a tunnel is not a mistake worth risking.
+   *
+   * @param {HTMLElement|null} button
+   * @returns {Promise<{ok: boolean, calendar: object|null, presence: string}>}
+   */
+  async #liveCalendar(button) {
+    this.#notice.hide();
+    this.#setBusy(button, true);
+
+    try {
+      const { calendar, presence } = await this.#findCalendar({ announce: false });
+
+      /* The screen is as old as the last answer, and the answer just
+         changed. Only the state line, never the fields: refilling
+         those would throw away whatever is half-typed in them. */
+      this.#calendarSettings.state(calendar, presence);
+
+      return { ok: true, calendar, presence };
+    } catch (error) {
+      this.#report(error);
+      return { ok: false, calendar: null, presence: "unknown" };
+    } finally {
+      this.#setBusy(button, false);
+    }
+  }
+
+  /**
+   * Offers a new calendar when the one being saved to has gone.
+   *
+   * @param {HTMLElement|null} button
+   * @param {object} values
+   */
+  async #offerNewCalendar(button, values) {
+    const agreed = await this.#confirm.ask({
+      title: "Mirra не бачить цього календаря",
+      message: values.summary,
+      note: "Його видалили або прибрали з вашого Google Календаря поза Mirra, "
+          + "і повернути його Mirra не може. Створити натомість новий? Він буде "
+          + "порожній — записи зі старого в нього не переносяться.",
+      confirmLabel: "Створити новий",
+      cancelLabel: "Не зараз",
+    });
+
+    if (agreed) await this.#makeCalendar(button, values);
+  }
+
+  /**
+   * Makes a new calendar, deliberately.
+   *
+   * Two questions stand between the button and the calendar, and both
+   * exist because of the same rule: Mirra can only ever see calendars
+   * it made itself. So it cannot look for one that is already there,
+   * and it cannot go back to one it has left behind.
+   *
+   * @param {HTMLElement|null} button
+   */
+  async #createCalendar(button) {
+    const values = this.#calendarSettings.values;
+    if (!this.#hasWorkingDays(values)) return;
+
+    const { ok, calendar: live, presence } = await this.#liveCalendar(button);
+    if (!ok) return;
+
+    /* A calendar of that name is already open in front of them, which
+       nearly always means they meant to change it. Making a second one
+       called the same thing would leave two identical names in their
+       Google Calendar and Mirra attached to the newer, empty one.
+
+       Not offered when that calendar is on no list: saving into
+       something the person cannot see is advice that leads nowhere,
+       and "there is already a calendar like this" reads as "all is
+       well" when plainly it is not. */
+    if (live?.id && live.summary.trim() === values.summary.trim() && presence !== "unlisted") {
+      const answer = await this.#confirm.choose({
+        title: "Такий календар уже є",
+        message: values.summary,
+        note: "Mirra вже працює з календарем із цією назвою. Якщо ви хотіли "
+            + "змінити його налаштування — їх можна просто зберегти.",
+        options: [
+          { id: "save", label: t("Зберегти зміни в ньому") },
+          { id: "create", label: t("Все одно створити новий") },
+        ],
+        cancelLabel: "Скасувати",
+      });
+
+      if (answer !== "create") {
+        if (answer === "save") await this.#saveCalendar(button);
+        return;
+      }
+    }
+
+    const agreed = await this.#confirm.ask({
+      title: "Створити календар?",
+      message: values.summary,
+      note: presence === "unlisted"
+        ? "Теперішнього календаря немає у вашому переліку календарів Google — зазвичай це "
+          + "означає, що його прибрали зі списку, а не видалили. Новий календар буде "
+          + "видимий, але порожній: записи зі старого в нього не переносяться, а доступ до "
+          + "старого Mirra втратить назавжди."
+        : live?.id
+        ? "Mirra назавжди втратить доступ до теперішнього календаря: за правилами "
+          + "Google вона бачить лише той календар, який створила сама, і повернутися "
+          + "до попереднього не зможе. Він залишиться у вашому Google Календарі, але "
+          + "Mirra його більше не читатиме, і чи вдасться колись це змінити — поки "
+          + "невідомо."
+        : "Mirra бачить лише той календар, який створила сама. Решту вашого Google "
+          + "Календаря вона не читає й читати не може.",
+      confirmLabel: "Створити",
+      cancelLabel: "Не зараз",
+    });
+
+    if (agreed) await this.#makeCalendar(button, values);
+  }
+
+  /**
+   * The creation itself, once somebody has said yes to it.
+   *
+   * @param {HTMLElement|null} button
+   * @param {object} values
+   */
+  async #makeCalendar(button, values) {
+    await this.#run(button, async () => {
+      const created = await this.#calendars.create({
+        summary: values.summary,
+        timeZone: values.timeZone,
+      });
+
+      /* Google's answer wins over the form: it decides the id, and it
+         may tidy the name or the zone on the way in. */
+      await this.#settings.setCalendar({
+        ...values,
+        id: created.id,
+        summary: created.summary || values.summary,
+        timeZone: created.timeZone || values.timeZone,
+      });
+
+      /* Asked straight after making it, because this is the moment
+         the answer is worth most: if a calendar Mirra just created is
+         on no list, that is Google's own doing and not somebody
+         deleting it afterwards. */
+      const presence = await this.#presenceOf(created.id);
+      console.info(`Mirra: calendar ${created.id} created (${presence})`);
+
+      this.#calendarSettings.show(this.#settings.calendar, presence);
+      this.#dom.apply();
+
+      if (presence === "unlisted") {
+        this.#notice.warn("Календар створено, але Google не додав його до вашого переліку календарів — у Google Календарі його не видно.");
+      } else {
+        this.#notice.done("Календар створено.");
+      }
+    });
+  }
+
+  /**
+   * Asks Google where the calendar stands, on demand.
+   *
+   * The same two questions #findCalendar asks when the screen opens,
+   * put again because a calendar can be deleted or taken off the list
+   * at any moment in another tab, and a screen that answered half an
+   * hour ago is not an answer.
+   *
+   * Nothing is written and nothing is created: the worst this can do
+   * is forget a calendar Google says no longer exists, which is what
+   * every other lookup does too.
+   *
+   * @param {HTMLElement|null} button
+   */
+  async #checkCalendar(button) {
+    if (!this.#settings.calendar?.id) {
+      this.#notice.warn("Календаря ще немає — спершу створіть його.");
+      return;
+    }
+
+    /* Through the same path as everything else, so the state line is
+       refreshed by the lookup itself and this method only has to say
+       the answer out loud. */
+    const { ok, calendar, presence } = await this.#liveCalendar(button);
+    if (!ok) return;
+
+    if (!calendar) {
+      this.#notice.warn("Календаря більше немає в Google — його видалили поза Mirra. Можна створити новий.");
+      return;
+    }
+
+    if (presence === "unlisted") {
+      this.#notice.warn("Цього календаря немає у вашому переліку календарів Google — схоже, його прибрали зі списку. Він існує, але ви його не бачите.");
+      return;
+    }
+
+    if (presence === "hidden") {
+      this.#notice.done("Календар на місці, але прихований у вашому Google Календарі.");
+      return;
+    }
+
+    if (presence === "unknown") {
+      this.#notice.warn("Календар на місці. Чи є він у вашому переліку календарів — Google цього разу не відповів.");
+      return;
+    }
+
+    this.#notice.done("Календар на місці — Google його бачить.");
+  }
+
+  /**
+   * @param {object} values from the settings screen
+   * @returns {boolean} whether the week they describe is workable
+   */
+  #hasWorkingDays(values) {
+    if (values.days.length) return true;
+
+    /* A week with no working days would leave every hour of every day
+       dimmed, which is not a setting anybody means. Said before
+       anything is sent, rather than silently corrected on the way into
+       the file. */
+    this.#notice.warn("Виберіть хоча б один робочий день.");
+    return false;
   }
 
   /**

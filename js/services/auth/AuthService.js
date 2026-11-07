@@ -33,6 +33,8 @@ export class AuthService extends EventTarget {
   #initPromise = null;
   #token = null;
   #expiresAt = 0;
+  #granted = new Set();
+  #clients = new Map();   // scope string → token client, built as needed
   #pending = null;   // { promise, resolve, reject } of the request in flight
   #store = new TokenStore();
 
@@ -57,12 +59,7 @@ export class AuthService extends EventTarget {
       await ScriptLoader.load(config.GIS_SRC);
       await ScriptLoader.waitFor(() => Boolean(window.google?.accounts?.oauth2));
 
-      this.#tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: config.CLIENT_ID,
-        scope: config.SCOPE,
-        callback: response => this.#settle(response),
-        error_callback: error => this.#fail(error),
-      });
+      this.#tokenClient = this.#clientFor(config.SCOPE);
 
       return this;
     })();
@@ -83,6 +80,47 @@ export class AuthService extends EventTarget {
   /** @returns {string|null} the raw token, or null if there is none */
   get token() {
     return this.isSignedIn ? this.#token : null;
+  }
+
+  /**
+   * Whether the token in hand already covers what is about to be done.
+   *
+   * @param {string[]} scopes
+   * @returns {boolean}
+   */
+  hasScopes(scopes) {
+    return this.isSignedIn && scopes.every(scope => this.#granted.has(scope));
+  }
+
+  /**
+   * Asks for permissions beyond the ones signing in covers.
+   *
+   * Google calls this incremental authorisation, and the point of it
+   * is restraint: somebody who only keeps a client list is never shown
+   * a consent screen about calendars. The permission is asked for on
+   * the day the calendar is first opened, in the same breath as
+   * opening it, where the reason for the question is on the screen
+   * behind it.
+   *
+   * The base scope travels along every time, because the token that
+   * comes back replaces the one in hand — asking only for the new
+   * permission would hand back a token that cannot read the sheet.
+   *
+   * Deliberately not an async function, for the same reason as
+   * requestToken: when the library is warm this reaches the popup in
+   * the same tick as the click that asked for it.
+   *
+   * @param {string[]} scopes
+   * @returns {Promise<string>} a token covering them
+   */
+  grant(scopes) {
+    if (this.hasScopes(scopes)) return Promise.resolve(this.#token);
+
+    const wanted = [config.SCOPE, ...scopes].join(" ");
+
+    return this.isReady
+      ? this.#ask(false, wanted)
+      : this.init().then(() => this.#ask(false, wanted));
   }
 
   /**
@@ -158,6 +196,10 @@ export class AuthService extends EventTarget {
   invalidate() {
     this.#token = null;
     this.#expiresAt = 0;
+
+    /* The permissions stay. They belong to the account rather than to
+       this token, and a renewal has to ask for all of them again — see
+       #renewalScope. */
     this.#store.clear();
   }
 
@@ -166,8 +208,12 @@ export class AuthService extends EventTarget {
     const token = this.#token;
 
     /* invalidate() clears the stored copy as well, which is what makes
-       signing out actually stick across visits. */
+       signing out actually stick across visits. Signing out is also
+       the one moment the granted permissions are forgotten: the next
+       person at this browser may not be the one who gave them. */
     this.invalidate();
+    this.#granted.clear();
+    this.#store.forget();
 
     if (token && window.google?.accounts?.oauth2) {
       await new Promise(resolve => google.accounts.oauth2.revoke(token, resolve));
@@ -177,8 +223,13 @@ export class AuthService extends EventTarget {
 
   /* ---------------- private ---------------- */
 
-  /** Opens the popup and hands back a promise for its outcome. */
-  #ask(_silent) {
+  /**
+   * Opens the popup and hands back a promise for its outcome.
+   *
+   * @param {boolean} _silent
+   * @param {string} [scope] when more than the sign-in scope is wanted
+   */
+  #ask(_silent, scope = this.#renewalScope) {
     const pending = {};
     pending.promise = new Promise((resolve, reject) => {
       pending.resolve = resolve;
@@ -191,7 +242,7 @@ export class AuthService extends EventTarget {
        to someone who granted it months ago — Google shows an account
        chooser or a consent screen when either is actually needed, and
        returns silently when neither is. */
-    this.#tokenClient.requestAccessToken({ prompt: "" });
+    this.#clientFor(scope).requestAccessToken({ prompt: "" });
     return pending.promise;
   }
 
@@ -223,7 +274,13 @@ export class AuthService extends EventTarget {
     this.#token = response.access_token;
     this.#expiresAt =
       Date.now() + (Number(response.expires_in) - config.TOKEN_SAFETY_MARGIN) * 1000;
-    this.#store.write(this.#token, this.#expiresAt);
+
+    /* What Google says it granted, not what was asked for. Somebody can
+       untick a permission on the consent screen, and a token believed
+       to carry one it does not is how an app ends up making a request
+       that fails for reasons nobody can see. */
+    this.#remember(response.scope);
+    this.#store.write(this.#token, this.#expiresAt, [...this.#granted].join(" "));
 
     pending?.resolve(this.#token);
     this.dispatchEvent(new CustomEvent("signin"));
@@ -255,11 +312,64 @@ export class AuthService extends EventTarget {
 
   /** Picks up a token left by an earlier visit, if it is still good. */
   #restore() {
+    /* Read first and separately: an expired token is discarded by the
+       store, and the permissions must survive that. */
+    this.#remember(this.#store.readScope());
+
     const record = this.#store.read();
     if (!record) return;
 
     this.#token = record.token;
     this.#expiresAt = record.expiresAt;
+    if (record.scope) this.#remember(record.scope);
+  }
+
+  /**
+   * One token client per scope set, made the first time it is needed.
+   *
+   * The library wants the scopes at construction, so asking for a new
+   * permission means a new client. They are kept rather than rebuilt
+   * because building one inside a click handler is free only while the
+   * library is already loaded, and keeping them removes the question.
+   *
+   * @param {string} scope space-separated
+   */
+  #clientFor(scope) {
+    if (!this.#clients.has(scope)) {
+      this.#clients.set(scope, google.accounts.oauth2.initTokenClient({
+        client_id: config.CLIENT_ID,
+        scope,
+        callback: response => this.#settle(response),
+        error_callback: error => this.#fail(error),
+      }));
+    }
+
+    return this.#clients.get(scope);
+  }
+
+  /**
+   * What a renewal should ask for: everything granted so far.
+   *
+   * An hour-old token is replaced by a new one, and a replacement that
+   * asked only for the sign-in scope would quietly drop the calendar
+   * permission — the next thing the person did in the calendar would
+   * then fail, an hour into a session, for no reason they could see.
+   *
+   * @returns {string}
+   */
+  get #renewalScope() {
+    return this.#granted.size ? [...this.#granted].join(" ") : config.SCOPE;
+  }
+
+  /** @param {string} [scope] space-separated, as Google reports it */
+  #remember(scope) {
+    this.#granted = new Set(String(scope ?? "").split(" ").filter(Boolean));
+
+    /* A token from before scopes were recorded, or one Google returned
+       without naming them. It was obtained by signing in, so that is
+       what it covers — and anything more will be asked for and
+       recorded properly when it is first needed. */
+    if (!this.#granted.size) this.#granted.add(config.SCOPE);
   }
 
   #takePending() {
