@@ -335,3 +335,43 @@ footer a:hover{ color:var(--ink); text-decoration-color:var(--line); }
 
 /* Replaces a style attribute on the link that closes a section. */
 .cta-trailing{ margin-top:24px; }
+
+/* ---------------- the prompt to hand an assistant ---------------- */
+
+/* Set apart like .point, because it is a block of text meant to be
+   taken away rather than read through. */
+.prompt{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:20px 22px;
+  margin:0 0 18px;
+}
+
+/* Wrapped rather than scrolled sideways. A prompt that runs off the
+   edge of a phone is a prompt nobody reads before sending it, and
+   reading it first is the entire point of showing it here. */
+.prompt pre{
+  margin:0;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:15px;
+  line-height:1.65;
+}
+
+/* The same object as a call to action — a <button> only because it
+   does something here instead of going somewhere, which inherits none
+   of the page's type until told to. */
+.cta-copy{
+  font-family:inherit;
+  font-weight:300;
+  color:inherit;
+  cursor:pointer;
+}
+.cta-copy:focus-visible{ border-color:var(--soft); }
+
+code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:.92em;
+}
