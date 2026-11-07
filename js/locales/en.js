@@ -235,10 +235,10 @@ export const dictionary = {
     "The ID column holds the markers Mirra uses to recognise clients in links between them. It looks as though they were changed or deleted outside Mirra. Restore them? Nothing else changes, but links pointing at the damaged rows will have to be made again.",
   "Не чіпати": "Leave it alone",
   "Технічні позначки відновлено.": "The technical markers have been restored.",
-  "Нові записи в таблиці": "New records in the sheet",
+  "Дописати позначки у стовпець ID?": "Fill in the markers in the ID column?",
   "{} {} без позначки": "{} {} without a marker",
-  "Mirra позначає кожного клієнта службовим кодом у стовпці ID — за ним вона впізнає людину у зв'язках між клієнтами. Ці записи додали поза Mirra: у Google Таблицях або через АІ-помічника. Дописати позначки? Інші дані не зміняться.":
-    "Mirra marks every client with a short code in the ID column, which is how it recognises a person in links between clients. These rows were added outside Mirra: in Google Sheets, or through an AI assistant. Add the markers? Nothing else changes.",
+  "Стовпець ID у цій таблиці з'явився не з Mirra, тож вона не пише в нього без дозволу. Це службовий стовпець: за ним Mirra впізнає людину у зв'язках між клієнтами, і на решту даних він не впливає — ні на імена, ні на телефони, ні на нотатки. Заповнені клітинки не змінюються, позначки з'являться лише в порожніх.":
+    "The ID column in this sheet did not come from Mirra, so Mirra does not write into it without permission. It is a service column: Mirra uses it to recognise a person in links between clients, and it affects nothing else — not names, not phone numbers, not notes. Cells that already hold something are left alone; markers appear only in the empty ones.",
   "Дописати": "Add them",
   "Позначки дописано.": "The markers have been added.",
   "запис": "record",

@@ -130,14 +130,22 @@ phone number into somebody's birthday.
 
 ### `{COL_ID}` — leave it empty on a new row
 
-Do not invent one. Write the row with that cell empty, and Mirra will
-fill it in the next time the person opens their clients. It will ask
-them first and say that a record arrived without a reference.
+Do not invent one. Write the row with that cell empty, and Mirra fills
+it in the next time the person opens their clients — by itself, without
+asking them anything, and without touching any other cell in the row.
+Nothing is pending and nothing is broken in the meantime: a row with no
+id is simply a row Mirra has not got round to marking yet.
 
 The reason is not that the format is secret. It is that an id must be
 unique across the whole sheet for ever, and the only way to be sure of
 that is for one piece of software to be in charge of making them. That
 is Mirra.
+
+It is a service column and nothing else. It affects no name, no number
+and no note; nobody reads it; and the only thing in the sheet that
+depends on it is the `{COL_LINKS}` column, where relationships between
+clients are written down by id. That is why an id already in a cell is
+never to be changed, and why an empty one costs nothing.
 
 ### `{COL_PHONE}` — one number, always as text
 

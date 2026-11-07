@@ -711,7 +711,7 @@ class MirraApp {
        did it deserves to hear about it before it is written over. */
     const mustAsk = (upgrade.needsColumns && !saved.managed)
       || upgrade.isDamaged
-      || (upgrade.needsRepair && this.#idColumnIsTheirs());
+      || (upgrade.needsRepair && this.#idColumnIsTheirs(saved, upgrade));
 
     if (mustAsk && !await this.#askToUpgrade(upgrade)) return snapshot;
 
@@ -739,6 +739,52 @@ class MirraApp {
   }
 
   /**
+   * What to write down about the ID column of a sheet being chosen.
+   *
+   * @param {object} snapshot
+   * @returns {string} "mirra", "theirs" or "" for nothing to record
+   */
+  #idOwnerOf(snapshot) {
+    const ours = new SchemaUpgrade(snapshot).idsAreOurs;
+    if (ours === true) return "mirra";
+    if (ours === false) return "theirs";
+
+    /* The column exists and holds nothing. Its contents will never
+       settle it, so the fact that it was already there when the sheet
+       was chosen is the only thing there is to go on. */
+    return new ClientSchema(snapshot.headers).has("id") ? "theirs" : "";
+  }
+
+  /**
+   * Whether the ID column belongs to the person rather than to Mirra.
+   *
+   * The column's contents are asked first and settle it nearly always:
+   * ids in Mirra's own format are Mirra's own, whoever opened the file
+   * and however it was chosen. That matters because a sheet Mirra made
+   * and then had to be picked again through the Picker — a new phone,
+   * or "Інша таблиця" — looks like a stranger's sheet from the
+   * outside, and judging it by its columns alone had Mirra asking
+   * people for permission to write into a column it had made itself.
+   *
+   * What is recorded in settings decides only the case the contents
+   * cannot: a column that is there and entirely empty. Then the one
+   * moment somebody can be asked is the moment the sheet was chosen,
+   * and that is what was written down.
+   *
+   * @param {object} saved the section as recorded in settings
+   * @param {SchemaUpgrade} upgrade
+   * @returns {boolean}
+   */
+  #idColumnIsTheirs(saved, upgrade) {
+    if (saved.managed) return false;
+
+    const ours = upgrade.idsAreOurs;
+    if (ours !== null) return !ours;
+
+    return this.#settings.idColumn(MirraApp.CLIENTS_SECTION) === "theirs";
+  }
+
+  /**
    * Asks before touching a sheet somebody else laid out.
    *
    * The version is named and linked, so that "оновити" is not a leap of
@@ -748,19 +794,6 @@ class MirraApp {
    * @param {SchemaUpgrade} upgrade
    * @returns {Promise<boolean>}
    */
-  /**
-   * Whether the ID column belongs to the person rather than to Mirra.
-   *
-   * Only ever true where Mirra watched a chosen sheet arrive with such
-   * a column already in it. Unknown counts as Mirra's: see
-   * SettingsService.idColumn for why that is the kinder reading.
-   *
-   * @returns {boolean}
-   */
-  #idColumnIsTheirs() {
-    return this.#settings.idColumn(MirraApp.CLIENTS_SECTION) === "theirs";
-  }
-
   #askToUpgrade(upgrade) {
     return this.#confirm.ask(upgrade.question(config.VERSION, this.#translator.code));
   }
@@ -868,7 +901,8 @@ class MirraApp {
 
       /* Picked rather than created, so it is theirs: Mirra reads it,
          works with whatever columns it has, and adds nothing without
-         being asked. */
+         being asked. Unless it is the sheet already in use, which
+         #remember recognises and does not demote. */
       await this.#remember(snapshot, false);
       this.#showClients(snapshot);
 
@@ -1668,27 +1702,45 @@ class MirraApp {
    * @param {boolean} managed whether Mirra created this sheet
    */
   #remember(snapshot, managed) {
+    /* Choosing the sheet that is already in use is not news about it.
+       People arrive back at the Picker for all sorts of reasons — a new
+       phone, a look around "Інша таблиця" and back — and everything
+       Mirra had learnt about that file used to be thrown away on the
+       way past: which appearance it had already been offered, how long
+       it was asked to stay quiet about damaged values, whose the ID
+       column is. The questions then came round again, every single
+       time, however they had been answered. */
+    const current = this.#settings.section(MirraApp.CLIENTS_SECTION);
+    const known = current?.spreadsheetId === snapshot.spreadsheetId
+      ? current
+      : this.#settings.sheetMemory(snapshot.spreadsheetId);
+
+    /* A sheet Mirra made stays a sheet Mirra made. The Picker hands
+       over a file and nothing about where it came from, so arriving
+       through it says nothing either way. */
+    const isOurs = managed || known?.managed === true;
+
     return this.#settings.setSection(MirraApp.CLIENTS_SECTION, {
       spreadsheetId: snapshot.spreadsheetId,
       sheetTitle: snapshot.sheetTitle,
-      managed,
-      /* Judged now, at the one moment it can be judged: a sheet Mirra
-         has just made has a column Mirra made, and a sheet somebody
-         picked with an id column already in it has a column that is
-         theirs — whatever it was for before Mirra read it as an id.
-         Later there is no telling the two apart, and this decides
-         whether ids get written without asking. A picked sheet with no
-         such column yet is left unrecorded; it becomes Mirra's if
-         Mirra adds one. */
-      idColumn: managed
+      managed: isOurs,
+      /* Written down for the one case nothing can be read off the sheet
+         later: a column that is there and empty. Everywhere else the
+         contents answer the question every time it is asked — see
+         #idColumnIsTheirs. A picked sheet with no id column at all is
+         left unrecorded; it becomes Mirra's if Mirra adds one. */
+      idColumn: isOurs
         ? "mirra"
-        : new ClientSchema(snapshot.headers).has("id") ? "theirs" : "",
+        : this.#idOwnerOf(snapshot) || known?.idColumn || "",
       /* A sheet Mirra just made already looks the way Mirra makes them,
          so it starts at the current appearance and is never offered an
-         update to the one it was born with. A sheet the user chose gets
-         the same number, which is moot: the offer is only ever made for
-         managed sheets. */
-      lookVersion: managed ? SheetLook.version : 0,
+         update to the one it was born with. A sheet Mirra has met
+         before keeps whatever it was already offered. */
+      lookVersion: known
+        ? (Number(known.lookVersion) || 0)
+        : (isOurs ? SheetLook.version : 0),
+      /* Silence is about a sheet, not about a visit to the Picker. */
+      quietUntil: known?.quietUntil ?? "",
     });
   }
 

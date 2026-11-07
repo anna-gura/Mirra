@@ -44,6 +44,35 @@ export class ClientId {
   }
 
   /**
+   * Whether a column of values holds Mirra's own ids.
+   *
+   * The only way to recognise a sheet Mirra made once it has been
+   * chosen through the Picker rather than created in front of us:
+   * Google hands over the file and nothing about where it came from,
+   * so a sheet Mirra built and one somebody has kept for years are
+   * indistinguishable from the outside. Their contents are not. An id
+   * is eight characters from an alphabet with no 0, O, 1, l or I in
+   * it, and a client number, an invoice reference or a hand-typed code
+   * will not pass that test by accident.
+   *
+   * A majority rather than all of them, because one cell somebody
+   * typed over should not change the answer — and that cell is
+   * reported as damage on its own account.
+   *
+   * @param {string[]} values the column, blanks and all
+   * @returns {boolean|null} null when there is nothing to judge by
+   */
+  static areOurs(values) {
+    const present = values
+      .map(value => String(value ?? "").trim())
+      .filter(Boolean);
+
+    if (!present.length) return null;
+
+    return present.filter(value => ClientId.isValid(value)).length * 2 > present.length;
+  }
+
+  /**
    * Works out which rows need an id, and hands one to each.
    *
    * Two cases need fixing and both happen in the wild. A row with no id

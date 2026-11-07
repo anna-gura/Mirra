@@ -1,6 +1,8 @@
 import { t } from "../locales/t.js";
 import { config } from "../config.js";
 import { ColumnOrder } from "../domain/client/ColumnOrder.js";
+import { ClientSchema } from "../domain/client/ClientSchema.js";
+import { ClientId } from "../domain/client/ClientId.js";
 
 /**
  * SheetLook — offering to bring an older sheet up to how Mirra now
@@ -65,9 +67,36 @@ export class SheetLook {
     return SheetLook.version > (Number(this.#saved.lookVersion) || 0);
   }
 
-  /** @returns {boolean} whether this is a sheet Mirra made */
+  /**
+   * Whether this is a sheet Mirra made.
+   *
+   * The flag written when a sheet is created answers it outright, but
+   * it cannot be the only answer: a sheet Mirra built and then had to
+   * be chosen again through the Picker — a new phone, or "Інша
+   * таблиця" — arrives looking like a stranger's file, because Google
+   * hands over the file and nothing about where it came from. Judging
+   * by the flag alone had Mirra telling people their own sheet was not
+   * theirs, and declining to tidy a layout it had laid out itself.
+   *
+   * So the sheet is asked instead, and three things have to agree:
+   * every column Mirra knows is there, no column it does not know is,
+   * and the ids are in Mirra's own format. A sheet somebody kept for
+   * years fails at least one of those — nearly always all three — and
+   * failing is the safe side: it still gets the colours, just not the
+   * bold heading or the offer to move its columns.
+   *
+   * @returns {boolean}
+   */
   get isOwn() {
-    return this.#saved.managed === true;
+    if (this.#saved.managed === true) return true;
+
+    const schema = new ClientSchema(this.#snapshot.headers);
+    if (schema.missing().length || schema.extraColumns.length) return false;
+
+    const column = schema.indexOf("id");
+    if (column < 0) return false;
+
+    return ClientId.areOurs(this.#snapshot.rows.map(row => row[column])) === true;
   }
 
   /**
