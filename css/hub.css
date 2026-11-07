@@ -245,15 +245,36 @@
 }
 
 /* ---------------- note ---------------- */
-.hub-note{
+/* A pointer to the page about assistants. Styled like the install
+   offer — grey, centred, with a touch target big enough to hit —
+   because it asks for the same amount of attention: useful to some
+   people, ignorable by everyone else. */
+.hub-link{
+  display:block;
+  max-width:300px;
+  /* A little more air than it had under the tiles, now that it closes
+     the screen instead of sitting above a remark. */
+  margin:24px auto 0;
+  padding:11px 16px;
   font-family:Karla,sans-serif;
   font-weight:300;
   font-size:13px;
-  line-height:1.55;
-  color:var(--soft);
+  line-height:1.5;
   text-align:center;
-  margin:28px 0 0;
+  color:var(--soft);
+  border-radius:14px;
+  transition:color .25s;
+
+  /* Underlined, because grey text in the middle of a screen full of
+     tappable things reads as a caption and gets ignored. Thin and
+     held off the baseline so it still looks like a quiet remark
+     rather than a button. */
+  text-decoration:underline;
+  text-decoration-thickness:1px;
+  text-underline-offset:3px;
 }
+.hub-link:hover,
+.hub-link:focus-visible{ color:var(--ink); }
 
 .hub-foot{
   display:flex;

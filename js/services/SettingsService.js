@@ -27,7 +27,12 @@ import { DateValue } from "../domain/values/DateValue.js";
 export class SettingsService {
   static FOLDER_NAME = "Mirra";
   static FILE_NAME   = "mirra.json";
-  static VERSION     = 1;
+
+  /**
+   * The shape of this file. Raised to 2 when `schema` became an object
+   * holding a number per sheet, and `ai` arrived beside it.
+   */
+  static VERSION     = 2;
   static SECTIONS    = Object.freeze(["clients", "bookings", "other"]);
 
   #drive;
@@ -200,6 +205,67 @@ export class SettingsService {
   }
 
   /**
+   * The schema version recorded for one kind of sheet.
+   *
+   * @param {string} name one of SettingsService.SECTIONS
+   * @returns {number} 0 when nothing has been recorded yet
+   */
+  schemaOf(name) {
+    return Number(this.#data?.schema?.[name]) || 0;
+  }
+
+  /**
+   * Records which schema version a sheet is at.
+   *
+   * Written together with the instructions on Drive and by nothing
+   * else, so the number in mirra.json and the number inside ai.md are
+   * always two halves of the same write. An assistant that finds them
+   * differing has learnt something true: Mirra has moved on since those
+   * instructions were written, and it should stop rather than guess.
+   *
+   * @param {string} name one of SettingsService.SECTIONS
+   * @param {number} version
+   */
+  async setSchema(name, version) {
+    if (!this.#data || !SettingsService.SECTIONS.includes(name)) return this;
+    if (this.#data.schema[name] === version) return this;
+
+    this.#data.schema[name] = version;
+    this.#data.updatedAt = new Date().toISOString();
+    await this.save();
+    return this;
+  }
+
+  /**
+   * What the instructions on Drive were last written for.
+   *
+   * Kept as readable text rather than as a hash on purpose: somebody
+   * opening mirra.json and wondering why ai.md changed yesterday
+   * should be able to read the answer, not identify it.
+   *
+   * @returns {{describes: string, sheet: string, tab: string}|null}
+   */
+  get guide() {
+    return this.#data?.ai ?? null;
+  }
+
+  /**
+   * @param {{describes: string, sheet: string, tab: string}} stamp
+   */
+  async setGuide(stamp) {
+    if (!this.#data) return this;
+
+    this.#data.ai = {
+      file: config.AI_GUIDE.fileName,
+      ...stamp,
+      updatedAt: new Date().toISOString(),
+    };
+    this.#data.updatedAt = this.#data.ai.updatedAt;
+    await this.save();
+    return this;
+  }
+
+  /**
    * Stops the value check mentioning this sheet for a while.
    *
    * "Not now" is a real answer to a problem somebody cannot fix this
@@ -262,13 +328,22 @@ export class SettingsService {
 
   #defaults() {
     return {
-      /* The shape of this file, not the app. They are separate numbers
-         because the file changes far less often than Mirra does. */
-      schema: SettingsService.VERSION,
+      /* The shape of this file, and the shape of each sheet. All of
+         them are separate numbers because they move independently:
+         this file changes far less often than Mirra does, and a sheet
+         of bookings arriving changes nothing about a client row.
+
+         file is the one Mirra keeps for itself. The rest are there for
+         whatever assistant the person works through — see config.SCHEMA
+         and ai.md. */
+      schema: { file: SettingsService.VERSION },
       version: "",
       language: "",
       dateFormat: config.DEFAULT_DATE_FORMAT,
       sections: Object.fromEntries(SettingsService.SECTIONS.map(name => [name, null])),
+      /* What the instructions on Drive were written for. Absent until
+         they have been written once. */
+      ai: null,
       updatedAt: new Date().toISOString(),
     };
   }
@@ -298,6 +373,31 @@ export class SettingsService {
 
     if (typeof raw.version === "string") safe.version = raw.version;
     if (typeof raw.language === "string") safe.language = raw.language;
+
+    /* Files written before version 2 hold a bare number here: the shape
+       of this file and nothing else. There is nothing to carry over —
+       the file is about to be written in the new shape, and the number
+       replacing it means something different. */
+    if (raw.schema && typeof raw.schema === "object") {
+      for (const name of SettingsService.SECTIONS) {
+        const version = Number(raw.schema[name]);
+        if (version > 0) safe.schema[name] = version;
+      }
+    }
+
+    /* Only the fields Mirra put there, and all of them text: this one
+       is written for a person to read and for a string comparison, so
+       anything that arrived in it by hand can be dropped without
+       losing information Mirra needs. */
+    if (raw.ai && typeof raw.ai === "object") {
+      safe.ai = {
+        file: config.AI_GUIDE.fileName,
+        describes: String(raw.ai.describes ?? ""),
+        sheet: String(raw.ai.sheet ?? ""),
+        tab: String(raw.ai.tab ?? ""),
+        updatedAt: String(raw.ai.updatedAt ?? ""),
+      };
+    }
 
     for (const name of SettingsService.SECTIONS) {
       const value = raw.sections?.[name];

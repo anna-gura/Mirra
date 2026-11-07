@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Mirra and AI assistants</title>
+  <meta name="description" content="Keeping Mirra records through an AI assistant: a prompt to start with, what an assistant can do, what it must not do, and what to check afterwards.">
+  <script src="../js/boot.js"></script>
+
+  <link rel="icon" href="../favicon.ico" sizes="any">
+  <link rel="icon" href="../assets/logo-120.png" type="image/png">
+  <!-- Written out rather than generated at runtime. Google's search
+       crawler executes JavaScript, but the one that reviews an OAuth
+       consent screen appears not to — and a verifier that cannot see
+       the app's own name reports that the name does not match. -->
+  <link rel="alternate" hreflang="uk" href="https://mirra.day/ai.html">
+  <link rel="alternate" hreflang="en" href="https://mirra.day/en/ai.html">
+  <link rel="alternate" hreflang="x-default" href="https://mirra.day/ai.html">
+  <link rel="canonical" href="https://mirra.day/en/ai.html">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Mirra">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:title" content="Mirra and AI assistants">
+  <meta property="og:description" content="Mirra leaves a set of rules next to your data for whatever assistant you use. Here is how to work with it — and what the risks are.">
+  <meta property="og:url" content="https://mirra.day/en/ai.html">
+  <meta property="og:image" content="https://mirra.day/assets/social-preview.png">
+  <meta property="og:image:width" content="1280">
+  <meta property="og:image:height" content="640">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Mirra and AI assistants">
+  <meta name="twitter:description" content="Mirra leaves a set of rules next to your data for whatever assistant you use. Here is how to work with it — and what the risks are.">
+  <meta name="twitter:image" content="https://mirra.day/assets/social-preview.png">
+
+  <meta name="application-name" content="Mirra">
+  <meta name="author" content="Anna Gura">
+
+  <!-- The faces are declared in css/tokens.css and served from
+       assets/fonts: no request leaves the site to fetch them. -->
+  <link rel="stylesheet" href="../css/page.css">
+</head>
+<body class="doc">
+<div class="wrap">
+
+  <header>
+    <a class="back" href="../index.html">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5 8 12l6.5 7"/></svg>
+      Home
+    </a>
+    <a class="theme lang" href="../ai.html" aria-label="Українська" title="Українська">
+      <span>UA</span>
+    </a>
+    <button class="theme" type="button" data-theme-toggle aria-label="Change theme">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path class="moon" d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/>
+        <g class="sun">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/>
+        </g>
+      </svg>
+    </button>
+  </header>
+
+  <div class="doc-title">
+    <h1>Mirra and AI assistants</h1>
+    <p class="stamp">For anyone keeping their records through ChatGPT, Gemini or another assistant</p>
+  </div>
+
+  <p>Your records live in your own Google Sheet, which means Mirra is not the only thing that can read and change them. Plenty of people already dictate a new client to an assistant instead of filling in a form — in a queue, between clients, in the car. It works.</p>
+
+  <p>It works as long as the assistant knows the rules. A Mirra sheet looks like an ordinary table, but parts of it break quietly: the markers that identify a client, the links between people, phone numbers that have to be stored as text. An assistant that does not know this will do damage with the best of intentions.</p>
+
+  <p>So Mirra puts the rules next to the data, in your own folder on Drive.</p>
+
+  <section>
+    <h2>A prompt to start with</h2>
+
+    <p>Give your assistant access to the <b>Mirra</b> folder on your Google Drive and send it this:</p>
+
+    <div class="prompt">
+<pre id="ai-prompt">I keep my client records in an app called Mirra. My Google Drive has a folder named "Mirra" with a file called ai.md in it — those are instructions written for you.
+
+Read ai.md in full before doing anything, then follow it exactly: it describes my sheet, its columns and the rules you must not break.
+
+Re-read ai.md before every change you make to the sheet, not only at the start of our conversation: in a long conversation earlier instructions slip away, and the rules in that file are the ones whose breaking does not show.
+
+If something is not covered there, ask me rather than guessing. Before writing anything, show me what you are about to write and which row it goes in.</pre>
+    </div>
+
+    <p>
+      <button class="cta cta-copy" type="button" data-copy="#ai-prompt">Copy the prompt</button>
+    </p>
+    <p class="stamp" data-copy-status role="status"></p>
+
+    <p class="aside">If your assistant can keep standing instructions, save this there and you will not have to send it again.</p>
+  </section>
+
+  <section>
+    <h2>What <code>ai.md</code> is</h2>
+
+    <p>It is a file Mirra creates in your folder and rewrites whenever something it describes has changed. It is not written for you — it is written for the assistant, and it is very specific: the real names of your columns (whether that is "DOB" or "День народження"), your date format, the ids of your files, which columns your sheet does not have, and which columns are your own and none of Mirra's business.</p>
+
+    <p class="claim">That is why it sits on Drive rather than on this site.</p>
+
+    <p>Instructions on a website would describe the Mirra that was released, not your sheet as it actually is. If you have not opened the app since Friday, you have Friday's sheet — and the file beside it says so. It also carries a version number: if Mirra has moved on and the file has not, the assistant sees that and stops instead of writing blind.</p>
+
+    <p>The file is in English, because assistants follow instructions most reliably in English. It will still talk to you in your own language: the file says so twice.</p>
+
+    <p class="aside">Do not edit <code>ai.md</code> — Mirra rewrites it and your changes would be lost. If something in it is wrong, say so on <a href="https://github.com/anna-gura/mirra/issues" target="_blank" rel="noopener">GitHub</a>: that fixes the file for everybody, not only for you.</p>
+  </section>
+
+  <section>
+    <h2>What an assistant can do</h2>
+
+    <ul class="rows">
+      <li>
+        <b>Add a client from a conversation</b>
+        <span>"Write this down: Olena, 067 123 45 67, came on Marta's recommendation, colouring" — and the row appears in the sheet.</span>
+      </li>
+      <li>
+        <b>Update what has changed</b>
+        <span>A new number, the date of a visit, a note, a tag.</span>
+      </li>
+      <li>
+        <b>Find things and count them</b>
+        <span>Who has not been in for a while, whose birthday falls this month, how many clients carry a tag.</span>
+      </li>
+      <li>
+        <b>Tidy up notes</b>
+        <span>Pull scattered remarks about one person together without touching anything else.</span>
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>What it will not do</h2>
+
+    <p>These are forbidden in the instructions it reads:</p>
+
+    <ul class="rows">
+      <li>
+        <b>Delete rows</b>
+        <span>Removing a client also removes the other half of every relationship pointing at them. A row deleted from the sheet leaves those pointing at nobody. Deleting happens in Mirra.</span>
+      </li>
+      <li>
+        <b>Touch the ID column</b>
+        <span>Those markers are how Mirra recognises a person. On a new row the assistant leaves the cell empty, and Mirra fills it in the next time you open your clients.</span>
+      </li>
+      <li>
+        <b>Fill in "Links"</b>
+        <span>A relationship has two halves and Mirra keeps them together. A half written by hand is left without its pair.</span>
+      </li>
+      <li>
+        <b>Edit <code>mirra.json</code> or <code>ai.md</code> itself</b>
+        <span>Those are the app's own files. An assistant that can relax its own rules has no rules.</span>
+      </li>
+      <li>
+        <b>Invent anything</b>
+        <span>A birth year you never mentioned, a date that means "sometime in spring", a phone number from memory — none of that should reach the sheet.</span>
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>What the risks are</h2>
+
+    <p class="claim">A set of instructions is not a guarantee.</p>
+
+    <p>They sit beside the data, written carefully and unambiguously, but they are carried out by software we do not control. It can misread a rule, skip one, or be working from an old copy of the file. Before you give an assistant access, this is worth knowing.</p>
+
+    <ul class="rows">
+      <li>
+        <b>It is wrong confidently</b>
+        <span>An assistant does not say "I am not sure" — it writes. A wrong column, the wrong row, an invented detail all look exactly as calm as a correct entry.</span>
+      </li>
+      <li>
+        <b>Your data goes to a third party</b>
+        <span>Everything the assistant reads in your folder reaches its owner's servers — OpenAI, Google, Anthropic or another. Their rules on retention and training apply there, not ours and not your arrangement with Google. Mirra is no part of that exchange.</span>
+      </li>
+      <li>
+        <b>It is not only your data</b>
+        <span>The numbers, birthdays and notes belong to your clients. They trusted them to you, not to your assistant, and passing them on is your decision and your responsibility towards them.</span>
+      </li>
+      <li>
+        <b>Access is wider than it looks</b>
+        <span>Access to all of Drive is all of Drive, not only Mirra. Grant it to the Mirra folder alone, and only for as long as it is needed.</span>
+      </li>
+      <li>
+        <b>Some damage does not undo</b>
+        <span>If a phone number was stored as a number, the lost digits do not come back from anywhere — you will have to ask the client again.</span>
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>How to make it safer</h2>
+
+    <ul class="rows">
+      <li>
+        <b>Make it show you first</b>
+        <span>It is already in the prompt above: show what goes where, then write. One sentence that catches most mistakes.</span>
+      </li>
+      <li>
+        <b>Open Mirra afterwards</b>
+        <span>It checks the markers and the values every time, and tells you if something is damaged or a row arrived without a marker.</span>
+      </li>
+      <li>
+        <b>Remember version history</b>
+        <span>Google Sheets keeps every change: File → Version history. You can go back, and it is the most reliable safety net there is.</span>
+      </li>
+      <li>
+        <b>Think about what you dictate</b>
+        <span>A note saying someone is afraid of needles, or going through a divorce, is data about a person too — and it goes wherever the rest of it goes.</span>
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>What Mirra is and is not responsible for</h2>
+
+    <div class="note">
+      <p>Mirra does not control your assistant, takes no part in your conversation with it, and does not know what it did. All we can do is put the rules next to the data and write them as precisely as we can. We have done that.</p>
+
+      <p>But the decision to give outside software access to your files is yours, and so are its consequences. Mirra is not responsible for what an AI assistant does — for what it wrote, changed or passed on, or for your clients' data once it is in its hands. That is exactly what the <a href="terms.html">Terms of use</a> say: the app is provided as is.</p>
+
+      <p>If that sounds like too much risk, do not use an assistant. Mirra works perfectly well without one and loses nothing.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>If an assistant has already broken something</h2>
+
+    <p>Open Mirra. It checks the sheet every time you open your client list and will offer to repair what can be repaired: restoring the technical markers, adding them to new rows, clearing damaged values.</p>
+
+    <p>What it cannot bring back: the links between clients whose markers were lost — those have to be made again on the card; and the digits of a phone number stored as a number. For everything else, the quickest route is version history in Google Sheets.</p>
+  </section>
+
+  <section>
+    <p class="pull">An assistant is convenient. Checking its work is not optional.</p>
+    <a class="cta" href="../index.html">Open Mirra →</a>
+  </section>
+
+  <footer>
+    <a href="about.html">About Mirra</a> ·
+    <a href="roadmap.html">Roadmap</a> ·
+    <a href="privacy.html">Privacy policy</a> ·
+    <a href="terms.html">Terms of use</a> ·
+    <a href="https://github.com/anna-gura/Mirra#readme" target="_blank" rel="noopener">Technical notes</a>
+    <br>
+    Mirra · Anna Gura · <a href="mailto:paintedfox.studio@gmail.com">paintedfox.studio@gmail.com</a>
+  </footer>
+
+</div>
+
+<script type="module" src="../js/page.js"></script>
+</body>
+</html>

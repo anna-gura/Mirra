@@ -51,8 +51,8 @@ export const dictionary = {
   "Інша таблиця": "Another sheet",
   "Інша": "Other",
   "Вибрати іншу таблицю": "Choose another sheet",
-  "Mirra зараз в активній розробці. З часом можливостей стане більше.":
-    "Mirra is under active development. More will come with time.",
+  "Ведете записи через ChatGPT? Як робити це безпечно":
+    "Keeping your records through ChatGPT? How to do it safely",
   "Вийти": "Sign out",
   "Про Mirra": "About Mirra",
   "Змінити тему": "Change theme",
@@ -235,6 +235,12 @@ export const dictionary = {
     "The ID column holds the markers Mirra uses to recognise clients in links between them. It looks as though they were changed or deleted outside Mirra. Restore them? Nothing else changes, but links pointing at the damaged rows will have to be made again.",
   "Не чіпати": "Leave it alone",
   "Технічні позначки відновлено.": "The technical markers have been restored.",
+  "Нові записи в таблиці": "New records in the sheet",
+  "{} {} без позначки": "{} {} without a marker",
+  "Mirra позначає кожного клієнта службовим кодом у стовпці ID — за ним вона впізнає людину у зв'язках між клієнтами. Ці записи додали поза Mirra: у Google Таблицях або через АІ-помічника. Дописати позначки? Інші дані не зміняться.":
+    "Mirra marks every client with a short code in the ID column, which is how it recognises a person in links between clients. These rows were added outside Mirra: in Google Sheets, or through an AI assistant. Add the markers? Nothing else changes.",
+  "Дописати": "Add them",
+  "Позначки дописано.": "The markers have been added.",
   "запис": "record",
   "записи": "records",
   "записів": "records",
@@ -282,6 +288,18 @@ export const dictionary = {
   "Оновити вигляд": "Update the look",
   "Вигляд таблиці оновлено.": "The sheet's appearance has been updated.",
   "Не вдалося оновити вигляд таблиці.": "The sheet's appearance could not be updated.",
+
+  /* ---------------- instructions for assistants ---------------- */
+  /* The notice at the top of ai.md. The rest of that file is in English
+     for every language, because it is read by machines; this part is
+     addressed to the person, so it is translated like anything else. */
+  "Цей файл Мірра написала не для вас, а для штучного інтелекту.":
+    "Mirra wrote this file for an AI assistant, not for you.",
+  "Він англійською, бо такі інструкції помічники читають найточніше, і описує саме вашу таблицю: її заголовки, формат дат і де шукати файли. Якщо дати помічникові доступ до теки Mirra, він знайде цей файл сам.":
+    "It is in English because assistants follow instructions most reliably in English, and it describes your sheet in particular: its headings, its date format, where its files are. Give an assistant access to your Mirra folder and it will find this file by itself.",
+  "Не редагуйте його: Мірра перезаписує файл, щойно в таблиці щось змінюється, і ваші правки зникнуть. Що помічник може зробити з вашими записами — і чого не може — описано тут: {}":
+    "Do not edit it: Mirra rewrites the file whenever anything about the sheet changes, and your edits would be lost. What an assistant can and cannot do with your records is explained here: {}",
+  "Оновлено {} · Мірра {}": "Updated {} · Mirra {}",
 
   /* ---------------- installing ---------------- */
   "Додати на головний екран": "Add to home screen",

@@ -12,7 +12,7 @@
  * replayed from one would fail in a way nobody could diagnose.
  */
 
-const VERSION = "mirra-v40";
+const VERSION = "mirra-v41";
 
 /**
  * Files the app is made of. Listed rather than discovered, because a
@@ -26,11 +26,13 @@ const SHELL = [
   "./roadmap.html",
   "./privacy.html",
   "./terms.html",
+  "./ai.html",
   "./manifest.webmanifest",
   "./en/about.html",
   "./en/privacy.html",
   "./en/terms.html",
   "./en/roadmap.html",
+  "./en/ai.html",
   "./sitemap.xml",
   "./robots.txt",
   "./css/tokens.css",
@@ -57,6 +59,7 @@ const SHELL = [
   "./assets/fonts/karla-latin-400-normal.woff2",
   "./assets/fonts/karla-latin-500-normal.woff2",
   "./assets/fonts/marcellus-latin-400-normal.woff2",
+  "./assets/ai-guide.md",
   "./assets/logo-120.png",
   "./assets/icon-192.png",
   "./assets/icon-512.png",
@@ -94,6 +97,7 @@ const SHELL = [
   "./js/locales/pageLink.js",
   "./js/locales/en.js",
   "./js/page.js",
+  "./js/services/AiGuide.js",
   "./js/services/DriveRepository.js",
   "./js/services/GoogleApiClient.js",
   "./js/services/InstallService.js",

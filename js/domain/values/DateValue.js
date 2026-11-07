@@ -95,11 +95,17 @@ export class DateValue {
 
     /* Written back exactly as short as it was given: a birthday entered
        as 15.03 must not come out of the sheet as 15.03.2026, which would
-       be a year nobody chose. */
+       be a year nobody chose.
+
+       Dropping the year must not also flip the order. Only dd/mm keeps
+       the day first; mm/dd and yyyy-mm-dd both put the month before the
+       day, so both shorten to month-day. Writing 16-05 in a column
+       where every full date reads 1998-05-16 would be a third
+       convention in a column that already has one. */
     if (!this.#hasYear) {
-      return shape.order === "mdy"
-        ? [month, day].join(shape.separator)
-        : [day, month].join(shape.separator);
+      return shape.order === "dmy"
+        ? [day, month].join(shape.separator)
+        : [month, day].join(shape.separator);
     }
 
     const parts = shape.order === "ymd" ? [year, month, day]
@@ -307,14 +313,16 @@ export class DateValue {
    *
    * Anything above twelve can only be a day, and that settles most
    * real dates without reference to any convention. The rest fall back
-   * to the format the user picked.
+   * to the format the user picked — and only dd/mm puts the day first.
+   * Someone on yyyy-mm-dd who types 05-03 means the third of May, the
+   * same way they would have written 2026-05-03.
    */
   #resolveOrder(a, b, format) {
     if (a > 12) return { day: a, month: b };
     if (b > 12) return { day: b, month: a };
 
     const shape = DateValue.FORMATS[format] ?? DateValue.FORMATS[DateValue.DEFAULT_FORMAT];
-    return shape.order === "mdy" ? { day: b, month: a } : { day: a, month: b };
+    return shape.order === "dmy" ? { day: a, month: b } : { day: b, month: a };
   }
 
   #assign(year, month, day) {

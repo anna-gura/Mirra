@@ -53,7 +53,39 @@ export class SchemaUpgrade {
     const column = this.#schema.indexOf("id");
     if (column < 0) return new Map();
 
-    return ClientId.repair(this.#snapshot.rows.map(row => row[column] ?? ""));
+    const fixes = ClientId.repair(this.#snapshot.rows.map(row => row[column] ?? ""));
+
+    /* A row somebody emptied in Sheets is not a client waiting for a
+       reference. Writing one into it would turn a blank line into a
+       person with no name, who then has to be deleted in Mirra to get
+       rid of — and who was never there in the first place. */
+    for (const index of fixes.keys()) {
+      if (this.#isBlankRow(index)) fixes.delete(index);
+    }
+
+    return fixes;
+  }
+
+  /**
+   * Rows that have a mark and it is wrong — cleared, overwritten, or
+   * shared with another row after a copy and paste.
+   *
+   * Told apart from rows that simply never had one, because they are
+   * not the same news. A missing mark on a new row is routine: a person
+   * typed the row into Sheets on their laptop, or dictated it to an
+   * assistant, and ai.md tells assistants to leave that cell empty for
+   * exactly this reason. A mark that is present and wrong means
+   * something happened to a row that already existed, and that is worth
+   * saying out loud.
+   *
+   * @returns {number[]} row indexes
+   */
+  get damagedRows() {
+    const column = this.#schema.indexOf("id");
+    if (column < 0) return [];
+
+    return [...this.idFixes.keys()]
+      .filter(index => String(this.#snapshot.rows[index]?.[column] ?? "").trim());
   }
 
   /** @returns {boolean} whether anything at all needs doing */
@@ -106,6 +138,24 @@ export class SchemaUpgrade {
     }
 
     const count = this.idFixes.size;
+
+    /* Nothing was damaged: these rows arrived without a mark, which is
+       what a row added outside Mirra looks like. Saying "пошкоджено" to
+       somebody whose assistant has just added a client would be a
+       fright over something that went exactly as intended. */
+    if (!this.damagedRows.length) {
+      return {
+        title: "Нові записи в таблиці",
+        message: t("{} {} без позначки", count,
+                    plural(count, ["запис", "записи", "записів"])),
+        note: "Mirra позначає кожного клієнта службовим кодом у стовпці ID — за ним "
+            + "вона впізнає людину у зв'язках між клієнтами. Ці записи додали поза "
+            + "Mirra: у Google Таблицях або через АІ-помічника. Дописати позначки? "
+            + "Інші дані не зміняться.",
+        confirmLabel: "Дописати",
+        cancelLabel: "Не зараз",
+      };
+    }
 
     return {
       title: "Технічні позначки пошкоджено",
@@ -195,5 +245,12 @@ export class SchemaUpgrade {
     if (a !== x) return a > x;
     if (b !== y) return b > y;
     return c > z;
+  }
+
+  /* ---------------- private ---------------- */
+
+  /** @param {number} index into snapshot.rows */
+  #isBlankRow(index) {
+    return (this.#snapshot.rows[index] ?? []).every(cell => !String(cell ?? "").trim());
   }
 }

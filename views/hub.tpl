@@ -80,7 +80,12 @@
         Додати на головний екран
       </button>
 
-      <p class="hub-note">Mirra зараз в активній розробці. З часом можливостей стане більше.</p>
+      <!-- Here rather than beside the "about" icon at the top, because
+           it is not background reading: somebody dictating clients to
+           an assistant is doing it to their real data today, and the
+           page says what can go wrong. Quiet enough to step past if
+           that is not you. -->
+      <a class="hub-link" href="ai.html" data-page-link="ai.html">Ведете записи через ChatGPT? Як робити це безпечно</a>
     </div>
   </div>
 
