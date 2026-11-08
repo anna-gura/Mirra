@@ -72,6 +72,12 @@
 
 /* ---------------- LIGHT ---------------- */
 [data-theme="light"]{
+  /* What the browser draws for itself: the list a <select> opens, the
+     clock behind a time field, the little arrows on a number field,
+     scrollbars. None of those are Mirra's to paint, and without this
+     line the browser paints them for a light page — black glyphs that
+     vanish against a dark one. */
+  color-scheme: light;
   --bg:        #F1F1F0;
   --bg-deep:   #EAE4D8;
   --ink:       #151514;
@@ -139,6 +145,36 @@
   /* Destructive actions. Muted on purpose: red here has to say "this
      one is different" without turning the corner of a card into a
      warning sign. */
+  /* The month grid. Its own tokens rather than the notice colours it
+     started with: a notice sits alone on a white screen and can be a
+     whisper, while forty squares in a grid have to be told apart at a
+     glance and from across a table. */
+  --cell-free-bg:   #C9E3D3;
+  --cell-free-line: #6CA583;
+  /* Darker than the green used for a line of notice text: a notice
+     is read once, a grid is scanned, and forty numbers at arm's
+     length need more contrast than one sentence at reading distance. */
+  --cell-free-ink:  #214430;
+  --cell-full-bg:   #F4DFB4;
+  --cell-full-line: #B08E4D;
+  --cell-full-ink:  #5C3D09;
+  /* A day off: plain grey. It needed no second colour of its own
+     once the days that have passed kept theirs — grey now means one
+     thing only, and it means nobody works. */
+  --cell-rest-bg:   #EAEAE8;
+  --cell-rest-line: #C4C4BF;
+  --cell-rest-ink:  #65655F;
+
+  /* A working day that has passed. Not the grey of a day off — that
+     one says "nobody works today" — but the ordinary card, dimmed:
+     this was a working day, and it is behind us. */
+  --cell-past-free-bg:   #DEEAE2;
+  --cell-past-free-line: #A9BFB1;
+  --cell-past-free-ink:  #4E5A52;
+  --cell-past-full-bg:   #EFE6D4;
+  --cell-past-full-line: #C4B597;
+  --cell-past-full-ink:  #5E564A;
+
   --danger:      #A85A5A;
   --danger-line: #DEC4C4;
   --danger-bg:   #F5EAEA;
@@ -146,14 +182,21 @@
 
 /* ---------------- DARK ---------------- */
 [data-theme="dark"]{
-  --bg:        #121212;
-  --bg-deep:   #090909;
-  --ink:       #F0F0EE;
-  --soft:      #7E7E7A;
-  --line:      #212120;
-  --faint:     #5E5E5A;
-  --btn:       #1A1A19;
-  --surface:   #191918;
+  color-scheme: dark;
+
+  /* Reviewed as a whole rather than colour by colour: the theme read
+     as a dark fog because every surface sat within a hair of every
+     other and the secondary text was barely above the background.
+     Cards are now told apart by their edge, which carries 2.5:1, and
+     every piece of text clears 4.5:1 on whatever it sits on. */
+  --bg:        #131312;
+  --bg-deep:   #0B0B0A;
+  --ink:       #F2F2F0;
+  --soft:      #A8A8A2;
+  --line:      #57574F;
+  --faint:     #96968F;
+  --btn:       #353533;
+  --surface:   #272726;
 
   /* aurora — plain white */
   --glow:      255,255,255;
@@ -172,27 +215,44 @@
   --grid:       .055;
   --grid-c:     206,228,250,.8;
 
-  --note:       #DCDCD8;
-  --note-bg:    #232322;
-  --note-line:  #33332F;
+  --note:       #E6E6E2;
+  --note-bg:    #2A2A28;
+  --note-line:  #44443F;
 
-  --ok:         #9FCBB2;
-  --ok-bg:      #1A2420;
-  --ok-line:    #2C3D34;
+  --ok:         #A8D8BC;
+  --ok-bg:      #1E2E27;
+  --ok-line:    #4A7E62;
 
-  --alert:      #E2A0A0;
-  --alert-bg:   #2A1A1A;
-  --alert-line: #3D2828;
+  --alert:      #E8A8A8;
+  --alert-bg:   #2D2020;
+  --alert-line: #6E4545;
 
   /* 8.7:1 on its own background, as light tones need to be in a dark
      theme to read as text rather than as a glow. */
-  --warn:       #E0BC84;
-  --warn-bg:    #2A2317;
-  --warn-line:  #3E3424;
+  --warn:       #E6C390;
+  --warn-bg:    #2E271A;
+  --warn-line:  #7A6335;
 
-  --accent:      #D4B483;
+  --accent:      #DCC094;
 
-  --danger:      #C98F8F;
-  --danger-line: #4A3535;
-  --danger-bg:   #271D1D;
+  --cell-free-bg:   #213429;
+  --cell-free-line: #4E8164;
+  --cell-free-ink:  #C2E6D2;
+  --cell-full-bg:   #342C1A;
+  --cell-full-line: #8A7038;
+  --cell-full-ink:  #F0D3A4;
+  --cell-rest-bg:   #2B2B29;
+  --cell-rest-line: #585852;
+  --cell-rest-ink:  #BDBDB6;
+
+  --cell-past-free-bg:   #222B27;
+  --cell-past-free-line: #4A5F53;
+  --cell-past-free-ink:  #B6CCBE;
+  --cell-past-full-bg:   #2C2722;
+  --cell-past-full-line: #5E5441;
+  --cell-past-full-ink:  #D4C7A8;
+
+  --danger:      #E09B9B;
+  --danger-line: #8A5757;
+  --danger-bg:   #2D2020;
 }

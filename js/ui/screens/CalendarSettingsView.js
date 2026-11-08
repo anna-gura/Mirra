@@ -1,5 +1,7 @@
 import { t } from "../../locales/t.js";
 import { config } from "../../config.js";
+import { DayPlan } from "../../domain/calendar/DayPlan.js";
+import { Zone } from "../../domain/calendar/Zone.js";
 
 /**
  * CalendarSettingsView — the screen that makes the calendar, and the
@@ -45,7 +47,7 @@ export class CalendarSettingsView {
       gap:      find("gap"),
       days:     find("days"),
       state:    find("state"),
-      id:       find("id"),
+      example:  find("example"),
     };
 
     this.#fields.save = this.#root.querySelector("[data-save-calendar]");
@@ -53,6 +55,13 @@ export class CalendarSettingsView {
 
     this.#buildDays();
     this.#buildZones();
+
+    /* The example under the two numbers is the explanation: nothing
+       describes what a gap does as well as watching the slots move
+       while you change it. */
+    for (const field of ["duration", "gap", "from", "to"]) {
+      this.#fields[field]?.addEventListener("input", () => this.#example());
+    }
 
     return this;
   }
@@ -93,11 +102,36 @@ export class CalendarSettingsView {
 
     this.state(calendar, presence);
 
+    this.#example();
+
     if (lead) {
       lead.textContent = isNew
         ? t("Mirra створить у вашому Google Календарі окремий календар і бачитиме тільки його. Усе інше у вашому календарі лишиться їй невидимим.")
         : t("Цей календар створила Mirra. Вона бачить тільки його — решта вашого Google Календаря їй невидима.");
     }
+
+    return this;
+  }
+
+  /**
+   * Rebuilds what Intl wrote, after the language has changed.
+   *
+   * The weekday chips and the example under the fields are the two
+   * things on this screen that no dictionary can translate — they
+   * are built from the browser's own idea of what Tuesday is called
+   * and what half past nine looks like on a clock. Everything a
+   * person has typed or chosen is kept.
+   *
+   * @returns {this}
+   */
+  relabel() {
+    const chosen = this.#days
+      .filter(day => day.getAttribute("aria-pressed") === "true")
+      .map(day => Number(day.dataset.day));
+
+    this.#buildDays();
+    this.#showDays(chosen);
+    this.#example();
 
     return this;
   }
@@ -118,7 +152,7 @@ export class CalendarSettingsView {
    * @returns {this}
    */
   state(calendar, presence = "unknown") {
-    const { save, state, id } = this.#fields;
+    const { save, state } = this.#fields;
     const isNew = !calendar;
 
     /* Saving is offered only when there is something to save to. The
@@ -140,14 +174,14 @@ export class CalendarSettingsView {
       state.toggleAttribute("data-missing", isNew || presence === "unlisted");
     }
 
-    /* Shown whole, and selectable with one click: it is the only way
-       to tell two calendars of the same name apart, and comparing it
-       with what Google Calendar shows is sometimes the only way to
-       find out which one somebody actually deleted. */
-    if (id) {
-      id.textContent = isNew ? "" : calendar.id;
-      id.hidden = isNew;
-    }
+    /* The identifier used to be shown here, from the week it took to
+       find out that a calendar can exist and be absent from somebody's
+       list. It told that story and nothing else: a person cannot act
+       on forty characters of hexadecimal, and the one screen that
+       needs it — Google's own "subscribe by id" — is not reachable
+       from here anyway. The console still prints it when something
+       goes wrong, which is who it was ever for.
+    */
 
     return this;
   }
@@ -184,6 +218,30 @@ export class CalendarSettingsView {
   }
 
   /* ---------------- private ---------------- */
+
+  /**
+   * What the day will actually look like, in four times.
+   *
+   * Built through DayPlan rather than by multiplying here, so the
+   * preview cannot disagree with the day it is previewing — which is
+   * the whole point of showing it.
+   */
+  #example() {
+    const host = this.#fields.example;
+    if (!host) return;
+
+    const language = document.documentElement.lang || "uk";
+
+    const { cards } = DayPlan.of({ setup: this.values, events: [], working: true });
+    const starts = cards
+      .filter(card => card.kind === "slot" && card.fit === "full")
+      .slice(0, 4)
+      .map(card => Zone.clock(card.from, language));
+
+    host.textContent = starts.length
+      ? t("Слоти виходитимуть такі: {}…", starts.join(", "))
+      : t("За таких налаштувань у дні не вміщається жоден візит.");
+  }
 
   /**
    * The one line that says where things stand.

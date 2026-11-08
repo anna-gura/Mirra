@@ -10,6 +10,9 @@ import { GoogleApiClient }      from "./services/GoogleApiClient.js";
 import { DriveRepository }      from "./services/DriveRepository.js";
 import { SheetsRepository }     from "./services/SheetsRepository.js";
 import { CalendarRepository }   from "./services/CalendarRepository.js";
+import { DayPlan }              from "./domain/calendar/DayPlan.js";
+import { MonthPlan }            from "./domain/calendar/MonthPlan.js";
+import { Zone }                 from "./domain/calendar/Zone.js";
 import { SettingsService }      from "./services/SettingsService.js";
 import { PickerService }        from "./services/PickerService.js";
 import { InstallService }       from "./services/InstallService.js";
@@ -20,6 +23,8 @@ import { ClientListView }       from "./ui/screens/ClientListView.js";
 import { ClientCardView }       from "./ui/screens/ClientCardView.js";
 import { ClientFormView }       from "./ui/screens/ClientFormView.js";
 import { CalendarSettingsView } from "./ui/screens/CalendarSettingsView.js";
+import { CalendarDayView }      from "./ui/screens/CalendarDayView.js";
+import { CalendarMonthView }    from "./ui/screens/CalendarMonthView.js";
 import { ClientDraft }          from "./domain/client/ClientDraft.js";
 import { ClientSchema }         from "./domain/client/ClientSchema.js";
 import { ClientList }           from "./domain/client/ClientList.js";
@@ -70,7 +75,7 @@ class MirraApp {
    */
   static QUIET_DAYS = 7;
   static VIEWS = ["loading", "hub", "chooser", "clients", "client", "client-form",
-                  "calendar-settings"];
+                  "calendar-settings", "calendar-day", "calendar-month"];
 
   #theme;
   #translator;
@@ -84,6 +89,15 @@ class MirraApp {
   #sheets;
   #calendars;
   #calendarSettings;
+  #calendarDay;
+  #calendarMonth;
+  #day = "";
+  #month = "";
+  #weekStart = null;
+  #calendarOrigin = "hub";
+  #dayDrawn = null;
+  #monthDrawn = null;
+  #presenceSeen = "unknown";
   #settings;
   #guide;
   #picker;
@@ -152,6 +166,8 @@ class MirraApp {
     this.#card    = new ClientCardView().init();
     this.#form    = new ClientFormView().init();
     this.#calendarSettings = new CalendarSettingsView().init();
+    this.#calendarDay = new CalendarDayView().init();
+    this.#calendarMonth = new CalendarMonthView().init();
     this.#theme.refresh();
 
     this.#auth     = AuthServiceFactory.create();
@@ -274,6 +290,42 @@ class MirraApp {
 
     if (this.#snapshot) this.#clients.render(this.#snapshot);
     if (this.#card.client) this.#card.render(this.#card.client);
+
+    this.#retranslateCalendar();
+  }
+
+  /**
+   * The calendar in the other language.
+   *
+   * Its words do not come from the templates: the name of the month,
+   * the column headings, "субота, 9 листопада" and whether half past
+   * two is written 14:30 or 2:30 PM all come from Intl at the moment
+   * of drawing. Re-translating the markup leaves every one of them
+   * in the language they were drawn in — which is the whole reason
+   * the language button is on these screens at all.
+   *
+   * Drawn again from what was already fetched rather than asked of
+   * Google a second time: nothing about the day has changed, only
+   * the words for it.
+   */
+  #retranslateCalendar() {
+    const screen = this.#screens?.current;
+
+    if (screen === "calendar-month" && this.#monthDrawn) {
+      this.#calendarMonth.show(this.#monthDrawn);
+      return;
+    }
+
+    if (screen === "calendar-day" && this.#dayDrawn) {
+      this.#calendarDay.show(this.#dayDrawn);
+      return;
+    }
+
+    if (screen === "calendar-settings") {
+      /* The weekday chips are built by Intl once, when the screen is
+         created, so they need building again rather than redrawing. */
+      this.#calendarSettings.relabel().state(this.#settings.calendar, this.#presenceSeen);
+    }
   }
 
   /** Shows which language is current, in two letters. */
@@ -296,6 +348,25 @@ class MirraApp {
 
   /** @returns {ClientListView} */
   get clients() { return this.#clients; }
+
+  /**
+   * One month forward or back, as "YYYY-MM".
+   *
+   * Done on the numbers rather than through a Date, which would need
+   * a day of the month to exist — and the thirty-first of January
+   * plus one month is a question with no good answer.
+   *
+   * @param {string} month
+   * @param {number} step
+   * @returns {string}
+   */
+  static #shiftMonth(month, step) {
+    const year = Number(month.slice(0, 4));
+    const number = Number(month.slice(5, 7)) + step;
+
+    const moved = new Date(Date.UTC(year, number - 1, 1));
+    return `${moved.getUTCFullYear()}-${String(moved.getUTCMonth() + 1).padStart(2, "0")}`;
+  }
 
   /** @returns {ClientCardView} */
   get card() { return this.#card; }
@@ -325,6 +396,20 @@ class MirraApp {
       .set("data-save-calendar", button => this.#saveCalendar(button))
       .set("data-create-calendar", button => this.#createCalendar(button))
       .set("data-check-calendar", button => this.#checkCalendar(button))
+      .set("data-calendar-settings", button => this.#openCalendarSettings(button))
+      .set("data-calendar-back", () => this.#leaveCalendarSettings())
+      .set("data-month-prev",    () => this.#stepMonth(-1))
+      .set("data-month-next",    () => this.#stepMonth(1))
+      .set("data-month-today",   () => this.#stepMonth(0))
+      .set("data-open-month",    () => this.#backToMonth())
+      .set("data-date",          button => this.#openDay(button.dataset.date))
+      .set("data-day-prev",      () => this.#stepDay(-1))
+      .set("data-day-next",      () => this.#stepDay(1))
+      .set("data-day-today",     () => this.#stepDay(0))
+      .set("data-book",          () => this.#bookingSoon())
+      .set("data-book-edge",     () => this.#bookingSoon())
+      .set("data-align",         () => this.#bookingSoon())
+      .set("data-event",         () => this.#bookingSoon())
       .set("data-open-existing", button => this.#openExisting(button))
       .set("data-create-sheet",  button => this.#createNew(button))
       .set("data-reload",        button => this.#reload(button))
@@ -474,10 +559,283 @@ class MirraApp {
 
       const { calendar, presence } = await this.#findCalendar();
 
+      /* No calendar yet, so the only useful screen is the one that
+         makes one. Once there is one, the hub leads to the day —
+         settings are a thing you visit twice a year, and putting
+         them in the way of the calendar every time would be like
+         opening a notebook at the inside cover. */
+      if (!calendar?.id) {
+        this.#presenceSeen = presence;
+        this.#calendarSettings.show(calendar, presence);
+        this.#screens.show("calendar-settings");
+        this.#dom.apply();
+        return;
+      }
+
+      await this.#goToMonth(Zone.today(this.#zone()).slice(0, 7));
+    });
+  }
+
+  /**
+   * The gear on the day screen.
+   *
+   * Asks Google about the calendar on the way in, like every other
+   * path to these settings: arriving at a screen that says "connected"
+   * about a calendar deleted an hour ago is the bug this whole step
+   * was spent on.
+   *
+   * @param {HTMLElement|null} button
+   */
+  async #openCalendarSettings(button) {
+    await this.#run(button, async () => {
+      const { calendar, presence } = await this.#findCalendar();
+
+      this.#presenceSeen = presence;
       this.#calendarSettings.show(calendar, presence);
       this.#screens.show("calendar-settings");
       this.#dom.apply();
     });
+  }
+
+  /**
+   * Out of the settings, back to whatever was on screen before them.
+   *
+   * And redrawn rather than restored: the hours, the working days or
+   * the length of a visit may have just changed, and a day rebuilt
+   * from the old numbers would be wrong in exactly the way somebody
+   * had just finished correcting.
+   */
+  #leaveCalendarSettings() {
+    if (this.#calendarOrigin === "calendar-day" && this.#day) {
+      this.#goToDay(this.#day).catch(error => this.#report(error));
+      return;
+    }
+
+    if (this.#calendarOrigin === "calendar-month" && this.#month) {
+      this.#goToMonth(this.#month).catch(error => this.#report(error));
+      return;
+    }
+
+    this.#toHub();
+  }
+
+  /**
+   * The calendar's own time zone, or the device's when it has none.
+   *
+   * Everything about a day is measured in it: which date it is now,
+   * when the day begins, where an appointment falls. Reading it from
+   * the device instead would put somebody travelling an ocean away
+   * into a different day from their own calendar.
+   *
+   * @returns {string}
+   */
+  #zone() {
+    const saved = this.#settings.calendar?.timeZone;
+    if (Zone.known(saved)) return saved;
+
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  }
+
+  /**
+   * Shows a month, and reads it from Google.
+   *
+   * @param {string} month "YYYY-MM"
+   */
+  async #goToMonth(month) {
+    this.#month = month;
+    this.#calendarOrigin = "calendar-month";
+
+    this.#screens.show("calendar-month");
+    this.#dom.apply();
+
+    await this.#drawMonth();
+  }
+
+  /** @param {number} months 0 for the month it is now */
+  #stepMonth(months) {
+    const zone = this.#zone();
+
+    const month = months === 0
+      ? Zone.today(zone).slice(0, 7)
+      : MirraApp.#shiftMonth(this.#month, months);
+
+    this.#goToMonth(month).catch(error => this.#report(error));
+  }
+
+  /** Back from a day to the month it belongs to. */
+  #backToMonth() {
+    const month = (this.#day || Zone.today(this.#zone())).slice(0, 7);
+    this.#goToMonth(month).catch(error => this.#report(error));
+  }
+
+  /** A square in the month grid. @param {string} date */
+  #openDay(date) {
+    if (!date) return;
+    this.#goToDay(date).catch(error => this.#report(error));
+  }
+
+  /**
+   * Draws the month, counters and all.
+   *
+   * One request covers the whole grid, the few days of the
+   * neighbouring months included: those squares carry numbers like
+   * any other, and a number with nothing behind it is the kind of
+   * small lie that is noticed on the first of the month.
+   */
+  async #drawMonth() {
+    const calendar = this.#settings.calendar;
+    if (!calendar?.id || !this.#month) return;
+
+    const zone = this.#zone();
+    const today = Zone.today(zone);
+
+    this.#calendarMonth.busy(true);
+
+    try {
+      const weekStart = await this.#weekStartValue();
+      const { first, last } = MonthPlan.range(this.#month, weekStart);
+
+      const events = await this.#calendars.events({
+        calendarId: calendar.id,
+        from: Zone.bounds(first, zone).from,
+        to: Zone.bounds(last, zone).to,
+      });
+
+      const plan = MonthPlan.of({
+        month: this.#month,
+        zone,
+        setup: calendar,
+        events,
+        weekStart,
+        today,
+        now: Zone.nowMinutes(zone),
+      });
+
+      this.#monthDrawn = { ...plan, current: today.startsWith(`${this.#month}-`) };
+      this.#calendarMonth.show(this.#monthDrawn);
+      this.#dom.apply();
+    } catch (error) {
+      this.#report(error);
+    } finally {
+      this.#calendarMonth.busy(false);
+    }
+  }
+
+  /**
+   * Which day the week starts on, asked once and kept.
+   *
+   * It is a preference somebody set years ago, not a thing that
+   * changes while an app is open, so asking Google on every month
+   * would be a request spent on nothing. Monday stands in until the
+   * answer arrives, and if it never does, Monday stays.
+   *
+   * @returns {Promise<number>}
+   */
+  async #weekStartValue() {
+    if (this.#weekStart !== null) return this.#weekStart;
+
+    this.#weekStart = (await this.#calendars.weekStart()) ?? 1;
+    return this.#weekStart;
+  }
+
+  /**
+   * Shows a date, and reads it from Google.
+   *
+   * @param {string} date "YYYY-MM-DD"
+   */
+  async #goToDay(date) {
+    this.#day = date;
+    this.#calendarOrigin = "calendar-day";
+
+    this.#screens.show("calendar-day");
+    this.#dom.apply();
+
+    await this.#drawDay();
+  }
+
+  /**
+   * One step forward, one back, or home to today.
+   *
+   * Not through #run: the arrows have no spinner of their own, and
+   * the list dims while the answer is on its way, which says the same
+   * thing without a button that freezes.
+   *
+   * @param {number} days 0 for today
+   */
+  #stepDay(days) {
+    const zone = this.#zone();
+    const date = days === 0 ? Zone.today(zone) : Zone.shift(this.#day, days);
+
+    this.#goToDay(date).catch(error => this.#report(error));
+  }
+
+  /**
+   * Reads the day from Google and hands it to the planner.
+   *
+   * Every visit to a date asks again rather than keeping what it saw
+   * last time. A calendar is the one thing in Mirra that somebody
+   * else — a phone, a husband, an assistant — changes while the app
+   * is open, and a day drawn from memory is a day that is quietly
+   * wrong.
+   */
+  async #drawDay() {
+    const calendar = this.#settings.calendar;
+    if (!calendar?.id || !this.#day) return;
+
+    const zone = this.#zone();
+    const today = Zone.today(zone);
+    const { from, to } = Zone.bounds(this.#day, zone);
+
+    this.#calendarDay.busy(true);
+
+    try {
+      const events = await this.#calendars.events({ calendarId: calendar.id, from, to });
+
+      const plan = DayPlan.of({
+        setup: calendar,
+        working: (calendar.days ?? []).includes(Zone.weekday(this.#day)),
+        /* The line that says where the day has got to belongs only on
+           the day it is. On any other date there is no "now" to draw. */
+        now: this.#day === today ? Zone.nowMinutes(zone) : null,
+        events: events
+          /* An all-day entry — a birthday, a holiday, a note to
+             self — has no hours to occupy and must not block a slot.
+             Its place is above the day, which comes with the holidays. */
+          .filter(event => !event.allDay)
+          .map(event => ({
+            id: event.id,
+            title: event.title,
+            kind: event.kind,
+            allowOverlap: event.allowOverlap,
+            from: Zone.minutesOn(event.start, this.#day, zone),
+            to: Zone.minutesOn(event.end, this.#day, zone),
+          })),
+      });
+
+      this.#dayDrawn = {
+        date: this.#day,
+        today: this.#day === today,
+        cards: plan.cards,
+        counts: plan.counts,
+      };
+
+      this.#calendarDay.show(this.#dayDrawn);
+
+      this.#dom.apply();
+    } catch (error) {
+      this.#report(error);
+    } finally {
+      this.#calendarDay.busy(false);
+    }
+  }
+
+  /**
+   * Temporary, and honest about it: the plus works, the form behind
+   * it is the next step. Saying so is better than a button that
+   * appears broken.
+   */
+  #bookingSoon() {
+    this.#notice.warn("Форма запису — наступний крок. Поки що календар тільки показує день.");
   }
 
   /**

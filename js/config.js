@@ -79,6 +79,18 @@ const SCOPES = Object.freeze({
    * wrote itself.
    */
   CALENDAR_LIST: "https://www.googleapis.com/auth/calendar.calendarlist.readonly",
+
+  /**
+   * The calendar's own preferences — of which Mirra reads exactly
+   * one: which day the week starts on.
+   *
+   * Worth a scope because the answer is already somewhere, and
+   * somewhere right: a person who set Google to start the week on
+   * Sunday did so once and should not have to say it again here. The
+   * alternative is a setting of Mirra's own that disagrees with the
+   * calendar beside it.
+   */
+  CALENDAR_SETTINGS: "https://www.googleapis.com/auth/calendar.settings.readonly",
 });
 
 export const config = Object.freeze({
@@ -103,7 +115,8 @@ export const config = Object.freeze({
   SCOPE: SCOPES.FILES,
 
   /** Asked for together, so the calendar costs one consent and not two. */
-  CALENDAR_SCOPES: Object.freeze([SCOPES.CALENDAR, SCOPES.HOLIDAYS, SCOPES.CALENDAR_LIST]),
+  CALENDAR_SCOPES: Object.freeze([SCOPES.CALENDAR, SCOPES.HOLIDAYS,
+                                 SCOPES.CALENDAR_LIST, SCOPES.CALENDAR_SETTINGS]),
 
   /**
    * Sign-in strategy: "popup" or "redirect".
@@ -233,12 +246,20 @@ export const config = Object.freeze({
     title: Object.freeze({ uk: "Mirra — Робота", en: "Mirra — Work" }),
 
     /* What a new appointment starts as, until services with durations
-       of their own arrive. Minutes. */
-    duration: 60,
+       of their own arrive. Minutes.
 
-    /* Breathing room between one client and the next. Offered when
-       booking rather than enforced. */
-    gap: 15,
+       Fifty-five and five rather than sixty and fifteen, and the five
+       minutes of difference matter more than they look: a visit plus
+       its gap comes to a round hour, so the day falls on 09:00,
+       10:00, 11:00 — times that can be said to a client without
+       thinking. At sixty and fifteen the fourth appointment of the
+       day lands at 12:45. */
+    duration: 55,
+
+    /* Breathing room between one client and the next: tidying up,
+       catching a breath, getting ready. Offered when booking rather
+       than enforced. */
+    gap: 5,
 
     /* Working days as ISO numbers: 1 is Monday, 7 is Sunday. ISO
        rather than JavaScript's own 0-for-Sunday, because a number

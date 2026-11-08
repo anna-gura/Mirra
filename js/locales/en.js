@@ -26,6 +26,7 @@ export const plurals = {
   "рік":    n => (n === 1 ? "year" : "years"),
   "запис":  n => (n === 1 ? "record" : "records"),
   "день":   n => (n === 1 ? "day" : "days"),
+  "візит":  n => (n === 1 ? "visit" : "visits"),
   "номер":  n => (n === 1 ? "number" : "numbers"),
   "значення": n => (n === 1 ? "value" : "values"),
 };
@@ -320,7 +321,12 @@ export const dictionary = {
   "Поза цими годинами записувати можна — вони просто показані тьмянішими, щоб день читався з першого погляду.":
     "You can still book outside these hours — they are simply shown dimmer, so a day reads at a glance.",
   "Візит триває, хв": "A visit lasts, min",
-  "Перерва, хв": "Gap, min",
+  "Проміжок, хв": "Gap, min",
+  "Проміжок — це час після візиту: прибрати, перевести дух, підготуватися до наступного. Якщо не потрібно — поставте 0.":
+    "The gap is the time after a visit: tidying up, catching your breath, getting ready for the next one. Set it to 0 if you don't need it.",
+  "Слоти виходитимуть такі: {}…": "The slots come out like this: {}…",
+  "За таких налаштувань у дні не вміщається жоден візит.":
+    "With these settings not a single visit fits in the day.",
   "Цим буде заповнена форма нового запису. Змінити час конкретного візиту можна буде в ній самій.":
     "This is what a new appointment starts as. The time of any one visit can be changed in the form itself.",
   "Створити календар": "Create the calendar",
@@ -374,6 +380,31 @@ export const dictionary = {
   "Виберіть хоча б один робочий день.": "Choose at least one working day.",
   "Без дозволу на календар записи вести не вийде. Усе інше в Mirra працює як раніше.":
     "Without permission for the calendar there is no way to keep appointments. Everything else in Mirra works as before.",
+
+  /* ---------------- the day ---------------- */
+  "є вільні години": "has free hours",
+  "день заповнений": "day is full",
+  "Попередній день": "Previous day",
+  "Наступний день": "Next day",
+  "записати раніше": "book earlier",
+  "записати пізніше": "book later",
+  "зараз": "now",
+  "Записати": "Book someone",
+  "Цей день не робочий": "This day is not a working day",
+  "Додати перерву на {} хв": "Add a {}-minute break",
+  "хв": "min",
+  "{} хв": "{} min",
+  "{} год": "{} h",
+  "{} год {} хв": "{} h {} min",
+  "проміжок {} · до {}": "gap of {} · until {}",
+  "{} · замало для звичайного візиту": "{} · shorter than a usual visit",
+  "менше звичайного": "shorter than usual",
+  "Перерва": "Break",
+  "Без імені": "No name",
+  "Два записи на один час": "Two appointments at the same time",
+  "Вихідний": "Day off",
+  "Форма запису — наступний крок. Поки що календар тільки показує день.":
+    "The booking form is the next step. For now the calendar only shows the day.",
 
   /* ---------------- installing ---------------- */
   "Додати на головний екран": "Add to home screen",

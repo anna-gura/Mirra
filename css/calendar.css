@@ -80,7 +80,10 @@
   font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   font-size:11px;
   line-height:1.5;
-  color:var(--faint);
+  /* --soft rather than --faint: eleven monospace pixels are the
+     smallest text in Mirra, and this is a string somebody has to read
+     character by character to compare with Google. */
+  color:var(--soft);
   overflow-wrap:anywhere;
   user-select:all;
 }
@@ -110,10 +113,21 @@
 /* Two fields that belong together: times, then durations. They stay
    side by side on a phone — each holds four characters, and stacking
    them would push the button below the fold for no gain. */
+/* Two fields side by side whose labels are not the same length: the
+   inputs line up with each other, and the labels grow upwards. A
+   label that wraps used to push its field half a line lower than its
+   neighbour. */
 .cs-pair{
   display:grid;
   grid-template-columns:1fr 1fr;
+  align-items:end;
   gap:12px;
+}
+.cs-pair .field{
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  height:100%;
 }
 
 /* A native select rather than Mirra's own dropdown: this one holds
@@ -127,6 +141,22 @@
   background-repeat:no-repeat;
   background-position:right 12px center;
   background-size:18px 18px;
+}
+
+/* The arrow is a data URL, so its colour cannot follow a variable and
+   has to be swapped by theme. Mid-grey reads on paper and disappears
+   on near-black. */
+[data-theme="dark"] .cs-select{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237E7E7A' stroke-width='1.5'%3E%3Cpath d='M7 10l5 5 5-5'/%3E%3C/svg%3E");
+}
+
+/* The open list belongs to the browser, and color-scheme in tokens.css
+   is what makes it dark. These two lines are the belt to that brace:
+   on some platforms the list takes the field's background and leaves
+   the text at its own default, which is black — on #191918. */
+.cs-select option{
+  color:var(--ink);
+  background:var(--surface);
 }
 
 /* ---------------- working days ---------------- */
@@ -172,3 +202,551 @@
 /* The second of the two buttons. They are different actions rather
    than one choice, so they are not spaced like a pair of options. */
 .cs-second{ margin-top:10px; }
+
+/* ============================================================
+   The day itself.
+
+   Cards of one size in a single column, because the alternative —
+   heights proportional to time, with hours ruled down the side — is
+   readable on a desk and hopeless on a phone, where a thirty-minute
+   visit would be thinner than the finger trying to press it.
+   ============================================================ */
+
+.calday{ display:flex; flex-direction:column; }
+
+/* ---------------- the bar across the top ---------------- */
+
+/* The same column the cards live in. A title stretched across a
+   desktop window puts the arrows half a metre apart, pointing at a
+   list three hundred pixels wide in the middle of the screen. */
+.cd-bar{
+  display:grid;
+  grid-template-columns:44px 1fr 44px;
+  align-items:center;
+  gap:8px;
+  width:100%;
+  max-width:420px;
+  margin:0 auto;
+  padding:14px 20px 0;
+}
+
+.cd-when{ text-align:center; min-width:0; }
+
+.cd-date{
+  font-family:Marcellus,Georgia,serif;
+  font-weight:400;
+  font-size:clamp(19px,5vw,24px);
+  line-height:1.2;
+  margin:0;
+  /* The day's name is long in Ukrainian and the arrows must stay
+     reachable: the title gives way, not the controls. */
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.cd-count{
+  font-family:Karla,sans-serif;
+  font-weight:400;
+  font-size:12.5px;
+  line-height:1.4;
+  margin:4px 0 0;
+  color:var(--soft);
+}
+.cd-count[data-state="free"]{ color:var(--ok); }
+.cd-count[data-state="full"]{ color:var(--warn); }
+.cd-count[data-state="clash"]{ color:var(--danger); }
+.cd-count[data-state="over"]{ color:var(--soft); }
+
+.cd-step{
+  display:grid;
+  place-items:center;
+  width:44px;
+  height:44px;
+  color:var(--soft);
+  background:none;
+  border:none;
+  border-radius:12px;
+  cursor:pointer;
+}
+.cd-step svg{ width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.6;
+              stroke-linecap:round; stroke-linejoin:round; }
+.cd-step:hover{ color:var(--ink); background:var(--btn); }
+.cd-step:focus-visible{ outline:2px solid var(--soft); outline-offset:2px; }
+
+.cd-tools{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  width:100%;
+  max-width:420px;
+  margin:0 auto;
+  padding:10px 20px 0;
+}
+
+.cd-today{
+  padding:7px 14px;
+  font-family:Karla,sans-serif;
+  font-weight:400;
+  font-size:13px;
+  color:var(--soft);
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:99px;
+  cursor:pointer;
+}
+.cd-today:hover{ color:var(--ink); border-color:var(--soft); }
+.cd-today:focus-visible{ outline:2px solid var(--soft); outline-offset:2px; }
+
+/* Hidden rather than disabled on the day it would do nothing: a
+   control that cannot act is noise, and this one is easy to bring
+   back — any other day shows it again. */
+.calday[data-today] .cd-today{ visibility:hidden; }
+
+.cd-gear{
+  display:grid;
+  place-items:center;
+  width:40px;
+  height:40px;
+  color:var(--soft);
+  background:none;
+  border:none;
+  border-radius:12px;
+  cursor:pointer;
+}
+.cd-gear svg{ width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.5;
+              stroke-linecap:round; }
+.cd-gear:hover{ color:var(--ink); background:var(--btn); }
+.cd-gear:focus-visible{ outline:2px solid var(--soft); outline-offset:2px; }
+
+/* ---------------- the list ---------------- */
+
+.cd-body{
+  flex:1 1 auto;
+  overflow-y:auto;
+  padding:16px 20px 40px;
+  -webkit-overflow-scrolling:touch;
+}
+
+.cd-list{
+  width:100%;
+  max-width:420px;
+  margin:0 auto;
+  display:flex;
+  flex-direction:column;
+  /* Close enough to read as one day, far enough apart to tell one
+     card from the next at a glance. */
+  gap:8px;
+}
+
+/* A request in flight dims the day rather than blanking it: the
+   answer is usually the same day with one card changed, and a screen
+   that empties and refills reads as a fault. */
+.calday[data-busy] .cd-list{ opacity:.55; transition:opacity .2s; pointer-events:none; }
+
+.cd-row{ display:flex; align-items:stretch; gap:8px; margin:0; }
+.cd-row .cd-card{ flex:1 1 auto; min-width:0; }
+
+.cd-card{
+  display:grid;
+  margin:0;
+  grid-template-columns:1fr auto;
+  align-items:center;
+  gap:2px 14px;
+  width:100%;
+  min-height:72px;
+  padding:12px 16px;
+  text-align:left;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:14px;
+  cursor:default;
+}
+button.cd-card{ cursor:pointer; }
+button.cd-card:focus-visible{ outline:2px solid var(--soft); outline-offset:2px; }
+
+.cd-time{
+  grid-column:1; grid-row:1;
+  font-family:Karla,sans-serif;
+  font-weight:400;
+  font-size:17px;
+  line-height:1.3;
+  color:var(--ink);
+}
+
+.cd-sub{
+  grid-column:1; grid-row:2;
+  font-family:Karla,sans-serif;
+  font-weight:300;
+  font-size:12.5px;
+  line-height:1.4;
+  color:var(--soft);
+}
+
+.cd-name{
+  grid-column:2; grid-row:1 / span 2;
+  font-family:Karla,sans-serif;
+  font-weight:400;
+  font-size:15px;
+  line-height:1.3;
+  text-align:right;
+  color:var(--ink);
+  overflow-wrap:anywhere;
+}
+
+.cd-plus{
+  grid-column:2; grid-row:1 / span 2;
+  font-family:Karla,sans-serif;
+  font-weight:300;
+  font-size:26px;
+  line-height:1;
+  color:currentColor;
+}
+
+/* ---------------- what each card means ---------------- */
+
+/* Green: a visit of the usual length fits here.
+
+   The same green as a free square in the month, down to the token:
+   a day opened from a green square should be made of the colour
+   that square promised, and two greens a shade apart read as two
+   different meanings. */
+.cd-slot[data-fit="full"]{
+  color:var(--cell-free-ink);
+  background:var(--cell-free-bg);
+  border-color:var(--cell-free-line);
+}
+.cd-slot[data-fit="full"] .cd-time{ color:var(--cell-free-ink); }
+.cd-slot[data-fit="full"] .cd-sub{ color:var(--cell-free-ink); opacity:.85; }
+
+/* Amber: it fits only if the visit is cut short. */
+.cd-slot[data-fit="tight"]{
+  color:var(--cell-full-ink);
+  background:var(--cell-full-bg);
+  border-color:var(--cell-full-line);
+}
+.cd-slot[data-fit="tight"] .cd-time{ color:var(--cell-full-ink); }
+.cd-slot[data-fit="tight"] .cd-sub{ color:var(--cell-full-ink); opacity:.85; }
+
+/* Amber and dashed: too short for the usual visit, which is not the
+   same as useless. Somebody knows their own work — a touch-up, a
+   fringe, a quick consultation — so the plus stays and the card says
+   plainly what it is. It is still not counted as a free slot. */
+.cd-gap{
+  color:var(--cell-full-ink);
+  background:var(--cell-full-bg);
+  border-style:dashed;
+  border-color:var(--cell-full-line);
+}
+.cd-gap .cd-time{ color:var(--cell-full-ink); }
+.cd-gap .cd-sub{ color:var(--cell-full-ink); opacity:.85; }
+
+.cd-break{ background:var(--btn); }
+.cd-break .cd-time{ color:var(--soft); }
+
+.cd-open{ min-height:96px; place-items:center; grid-template-columns:1fr; text-align:center; }
+.cd-open .cd-name{ grid-column:1; grid-row:1; text-align:center; font-size:17px; }
+.cd-open .cd-sub{ grid-column:1; grid-row:2; text-align:center; }
+
+/* Red, and nothing else on this screen is: a full day is a good day,
+   so the colour stays free to mean the thing that is actually wrong. */
+.cd-clash{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:4px;
+  color:var(--danger);
+  background:var(--danger-bg);
+  border-color:var(--danger-line);
+}
+.cd-clash .cd-name{ font-size:15px; color:var(--danger); text-align:left; }
+.cd-clash-line{
+  font-family:Karla,sans-serif;
+  font-weight:300;
+  font-size:13px;
+  line-height:1.5;
+  color:var(--danger);
+}
+
+/* Already happened: still readable, no longer an offer. */
+.cd-card[data-past]{ opacity:.5; }
+.cd-slot[data-past]{ background:none; border-color:var(--line); }
+.cd-slot[data-past] .cd-plus{ display:none; }
+.cd-slot[data-past] .cd-time,
+.cd-slot[data-past] .cd-sub{ color:var(--soft); }
+
+/* The cleanup that belongs to the visit above it. Narrower and set
+   back, so it reads as the tail of that card rather than as a card of
+   its own — the appointment occupies both, and the next client cannot
+   start until the strip ends. */
+.cd-after{
+  width:calc(100% - 24px);
+  margin:-8px auto 0;
+  padding:4px 16px 5px;
+  font-family:Karla,sans-serif;
+  font-weight:300;
+  font-size:11.5px;
+  line-height:1.3;
+  color:var(--soft);
+  background:var(--btn);
+  border:1px solid var(--line);
+  border-top:none;
+  border-radius:0 0 12px 12px;
+}
+.cd-after[data-past]{ opacity:.5; }
+
+/* ---------------- interlocking appointments ---------------- */
+
+/* Two visits that overlap by a little — nearly always the earlier one
+   having run over — are drawn as two cards that step around each
+   other rather than as an error. The corners of the step are square:
+   a concave corner with a radius needs a path built in JS, which
+   comes with the rest of the overlap work. */
+.cd-visit[data-notch="bottom"]{
+  padding-bottom:30px;
+  clip-path:polygon(0 0, 100% 0, 100% 100%, 50% 100%, 50% calc(100% - 18px), 0 calc(100% - 18px));
+}
+.cd-visit[data-notch="top"]{
+  margin-top:-26px;
+  padding-top:30px;
+  clip-path:polygon(0 0, 50% 0, 50% 18px, 100% 18px, 100% 100%, 0 100%);
+}
+
+/* ---------------- the small square beside a slot ---------------- */
+
+/* Offers to even the day out after a visit that finished early, and
+   says how many minutes that takes. Square and quiet: it is a repair,
+   not a thing to do every day. */
+.cd-align{
+  display:grid;
+  place-items:center;
+  align-content:center;
+  gap:0;
+  flex:0 0 auto;
+  width:72px;
+  padding:6px;
+  color:var(--soft);
+  background:var(--btn);
+  border:1px dashed var(--line);
+  border-radius:14px;
+  cursor:pointer;
+}
+.cd-align:hover{ color:var(--ink); border-color:var(--soft); }
+.cd-align:focus-visible{ outline:2px solid var(--soft); outline-offset:2px; }
+.cd-align-n{ font-family:Karla,sans-serif; font-weight:400; font-size:18px; line-height:1.1; }
+.cd-align-u{ font-family:Karla,sans-serif; font-weight:300; font-size:11.5px; }
+
+/* ---------------- edges and now ---------------- */
+
+.cd-edge{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  min-height:44px;
+  font-family:Karla,sans-serif;
+  font-weight:300;
+  font-size:13px;
+  color:var(--faint);
+  background:none;
+  border:1px dashed var(--line);
+  border-radius:12px;
+  cursor:pointer;
+}
+.cd-edge:hover{ color:var(--soft); border-color:var(--soft); }
+.cd-edge:focus-visible{ outline:2px solid var(--soft); outline-offset:2px; }
+.cd-edge .cd-plus{ font-size:18px; }
+
+.cd-now{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin:2px 0;
+  font-family:Karla,sans-serif;
+  font-weight:400;
+  font-size:11.5px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--danger);
+}
+.cd-now::before,
+.cd-now::after{
+  content:"";
+  flex:1 1 auto;
+  height:1px;
+  background:var(--danger-line);
+}
+
+@media(prefers-reduced-motion:reduce){
+  .calday[data-busy] .cd-list{ transition:none; }
+}
+
+/* ============================================================
+   The month.
+
+   Seven columns and as many rows as the month needs. Squares rather
+   than a list, because the question a month answers is spatial — is
+   that Thursday free, is next week solid — and a list of thirty days
+   answers it only after thirty readings.
+   ============================================================ */
+
+.calmonth{ display:flex; flex-direction:column; }
+
+.cm-body{
+  flex:1 1 auto;
+  overflow-y:auto;
+  padding:14px 16px 32px;
+  -webkit-overflow-scrolling:touch;
+}
+
+.cm-sheet{
+  width:100%;
+  max-width:460px;
+  margin:0 auto;
+}
+
+.calmonth[data-busy] .cm-sheet{ opacity:.55; transition:opacity .2s; pointer-events:none; }
+
+.cm-week,
+.cm-grid{
+  display:grid;
+  grid-template-columns:repeat(7, 1fr);
+  gap:6px;
+}
+
+.cm-week{ margin-bottom:6px; }
+
+.cm-wd{
+  font-family:Karla,sans-serif;
+  font-weight:400;
+  font-size:11.5px;
+  line-height:1.4;
+  text-align:center;
+  color:var(--soft);
+  text-transform:lowercase;
+}
+
+/* A square that stays square. aspect-ratio keeps the month from
+   stretching into letterbox cells on a wide phone, and the minimum
+   height keeps the two lines inside legible on a narrow one. */
+.cm-day{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:2px;
+  aspect-ratio:1 / 1;
+  min-height:44px;
+  padding:2px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:12px;
+  cursor:pointer;
+  transition:border-color .15s, background .15s;
+}
+.cm-day:hover{ border-color:var(--soft); }
+.cm-day:focus-visible{ outline:2px solid var(--soft); outline-offset:2px; }
+
+.cm-n{
+  font-family:Karla,sans-serif;
+  font-weight:400;
+  font-size:15px;
+  line-height:1.1;
+  color:var(--ink);
+}
+
+.cm-load{
+  font-family:Karla,sans-serif;
+  font-weight:300;
+  font-size:11px;
+  line-height:1.1;
+  color:var(--soft);
+  min-height:12px;
+}
+
+/* Days from the months either side are shown rather than left blank —
+   a grid with holes in it reads as broken — but quietly. */
+.cm-day[data-outside]{ background:none; border-color:transparent; }
+.cm-day[data-outside] .cm-n{ color:var(--faint); }
+.cm-day[data-outside] .cm-load{ opacity:.6; }
+
+/* Room left today. */
+.cm-day[data-state="free"]{ background:var(--cell-free-bg); border-color:var(--cell-free-line); }
+.cm-day[data-state="free"] .cm-n,
+.cm-day[data-state="free"] .cm-load{ color:var(--cell-free-ink); }
+
+/* Every chair taken — a good day, so amber rather than red. */
+.cm-day[data-state="full"]{ background:var(--cell-full-bg); border-color:var(--cell-full-line); }
+.cm-day[data-state="full"] .cm-n,
+.cm-day[data-state="full"] .cm-load{ color:var(--cell-full-ink); }
+
+/* A day off: grey, and the only grey left in the grid. A fortnight
+   of Sundays should not look like a fortnight of free appointments. */
+.cm-day[data-state="rest"]{ background:var(--cell-rest-bg); border-color:var(--cell-rest-line); }
+.cm-day[data-state="rest"] .cm-n{ color:var(--cell-rest-ink); }
+.cm-day[data-state="rest"] .cm-load{ color:var(--cell-rest-ink); }
+
+/* The one thing that is actually wrong. */
+.cm-day[data-state="clash"]{ background:var(--danger-bg); border-color:var(--danger-line); }
+.cm-day[data-state="clash"] .cm-n,
+.cm-day[data-state="clash"] .cm-load{ color:var(--danger); }
+
+/* A working day that has passed keeps what it was — a quiet day
+   stays the colour of a day with room, a full one the colour of a
+   full day — with the brightness taken out of it. Nothing can be
+   added now, but where the busy weeks were is the main thing a month
+   is read for, and greying that away throws it out. */
+.cm-day[data-past][data-state="free"]{
+  background:var(--cell-past-free-bg);
+  border-color:var(--cell-past-free-line);
+}
+.cm-day[data-past][data-state="free"] .cm-n,
+.cm-day[data-past][data-state="free"] .cm-load{ color:var(--cell-past-free-ink); }
+
+.cm-day[data-past][data-state="full"]{
+  background:var(--cell-past-full-bg);
+  border-color:var(--cell-past-full-line);
+}
+.cm-day[data-past][data-state="full"] .cm-n,
+.cm-day[data-past][data-state="full"] .cm-load{ color:var(--cell-past-full-ink); }
+
+/* Today: a ring rather than a fill, so it can sit on top of any of
+   the states above without arguing with them. Heavy enough to find
+   at a glance among forty squares. */
+.cm-day[data-now]{
+  box-shadow:0 0 0 2.5px var(--ink) inset;
+  border-color:transparent;
+}
+.cm-day[data-now] .cm-n{ font-weight:400; color:var(--ink); }
+
+.cm-key{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:6px 16px;
+  margin:18px 0 0;
+  font-family:Karla,sans-serif;
+  font-weight:300;
+  font-size:11.5px;
+  color:var(--soft);
+}
+
+/* The legend says in words what the colours say in colour, because
+   one in twelve men cannot tell these two apart. */
+.cm-key-item{ display:inline-flex; align-items:center; gap:6px; }
+.cm-key-item::before{
+  content:"";
+  width:10px;
+  height:10px;
+  border-radius:3px;
+  border:1px solid var(--line);
+}
+.cm-key-item[data-state="free"]::before{ background:var(--cell-free-bg); border-color:var(--cell-free-line); }
+.cm-key-item[data-state="full"]::before{ background:var(--cell-full-bg); border-color:var(--cell-full-line); }
+
+@media(prefers-reduced-motion:reduce){
+  .cm-day{ transition:none; }
+  .calmonth[data-busy] .cm-sheet{ transition:none; }
+}

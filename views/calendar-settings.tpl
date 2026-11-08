@@ -6,9 +6,15 @@
 <section class="view calset" data-view="calendar-settings" aria-label="Налаштування календаря">
 
   <div class="cs-top">
-    <button class="back" type="button" data-open-hub>
+    <!-- Back to wherever this was opened from. Settings reached
+         from a Tuesday should return to that Tuesday, not drop
+         somebody at the front door of the app. -->
+    <button class="back" type="button" data-calendar-back>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5 8 12l6.5 7"/></svg>
       Назад
+    </button>
+    <button class="theme lang" type="button" data-lang-toggle aria-label="Змінити мову">
+      <span data-lang-label>UA</span>
     </button>
     <button class="theme" type="button" data-theme-toggle aria-label="Змінити тему">
       <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -25,7 +31,6 @@
     <div class="cs-inner">
       <h2 class="cs-title" data-calendar-title>Календар</h2>
       <p class="cs-state" data-calendar-state></p>
-      <p class="cs-id" data-calendar-id hidden></p>
       <p class="cs-lead" data-calendar-lead>Mirra створить у вашому Google Календарі окремий календар і бачитиме тільки його. Усе інше у вашому календарі лишиться їй невидимим.</p>
 
       <label class="field">
@@ -65,12 +70,16 @@
                  min="5" max="1440" step="5" inputmode="numeric">
         </label>
         <label class="field">
-          <span class="field-label">Перерва, хв</span>
+          <span class="field-label">Проміжок, хв</span>
           <input class="field-input" type="number" data-calendar-gap
                  min="0" max="720" step="5" inputmode="numeric">
         </label>
       </div>
-      <p class="cs-note cs-note-wide">Цим буде заповнена форма нового запису. Змінити час конкретного візиту можна буде в ній самій.</p>
+      <p class="cs-note cs-note-wide">Проміжок — це час після візиту: прибрати, перевести дух, підготуватися до наступного. Якщо не потрібно — поставте 0.</p>
+      <!-- The two numbers above decide what the day looks like, and
+           no wording explains that as well as the result does.
+           Recalculated while somebody types. -->
+      <p class="cs-note cs-note-wide cs-example" data-calendar-example></p>
 
       <!-- Two buttons rather than one that changes its mind. The same
            button meaning "create" or "save" depending on what is in

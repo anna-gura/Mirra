@@ -95,6 +95,75 @@ export class CalendarRepository {
   }
 
   /**
+   * Everything on the calendar between two instants.
+   *
+   * singleEvents is on, so a repeating appointment arrives as the
+   * occurrences it actually has rather than as a rule somebody here
+   * would have to expand — and getting that expansion wrong means
+   * showing a client a time that does not exist.
+   *
+   * Cancelled events come back too when a page token is followed, and
+   * they are dropped here: Google keeps them as tombstones for clients
+   * doing incremental sync, which this is not.
+   *
+   * @param {object} query
+   * @param {string} query.calendarId
+   * @param {string} query.from RFC3339 instant
+   * @param {string} query.to   RFC3339 instant
+   * @returns {Promise<object[]>}
+   */
+  async events({ calendarId, from, to }) {
+    const base = `${config.CALENDAR_API}/calendars/${encodeURIComponent(calendarId)}/events`
+      + `?singleEvents=true&orderBy=startTime&maxResults=250`
+      + `&timeMin=${encodeURIComponent(from)}&timeMax=${encodeURIComponent(to)}`;
+
+    const found = [];
+    let token = "";
+
+    /* A month of a busy calendar can pass 250. The loop is bounded
+       rather than "while there is a token": a server that keeps
+       handing back the same token would otherwise spin here forever. */
+    for (let page = 0; page < 10; page += 1) {
+      const url = token ? `${base}&pageToken=${encodeURIComponent(token)}` : base;
+      const answer = await this.#api.get(url);
+
+      for (const item of answer?.items ?? []) {
+        if (item?.status === "cancelled") continue;
+        found.push(CalendarRepository.#event(item));
+      }
+
+      token = answer?.nextPageToken ?? "";
+      if (!token) break;
+    }
+
+    return found;
+  }
+
+  /**
+   * Which day this account's week starts on.
+   *
+   * Google's own numbering comes back as a string: "0" Sunday, "1"
+   * Monday, "6" Saturday. Asked rather than assumed, and never
+   * insisted on — a month grid starting on the wrong day is a small
+   * ugliness, while a failed request that stops the calendar opening
+   * is not. So anything other than an answer means null, and the
+   * caller keeps its own default.
+   *
+   * @returns {Promise<number|null>}
+   */
+  async weekStart() {
+    try {
+      const setting = await this.#api.get(`${config.CALENDAR_API}/users/me/settings/weekStart`);
+      const value = Number(setting?.value);
+
+      return [0, 1, 6].includes(value) ? value : null;
+    } catch (error) {
+      console.info("Mirra: could not read the week start from Google, keeping Monday", error);
+      return null;
+    }
+  }
+
+  /**
    * Whether the calendar is on this account's own list of calendars.
    *
    * A different question from get(), and the difference is the whole
@@ -183,6 +252,34 @@ export class CalendarRepository {
    * Mirra building a second calendar because the first was busy.
    */
   static GONE = Object.freeze([403, 404, 410]);
+
+  /**
+   * One event, reduced to what the calendar screens use.
+   *
+   * An all-day event has a date and no time — a birthday, a holiday,
+   * somebody's note to themselves. It is kept and marked rather than
+   * dropped: it belongs at the top of the day, not in the hours.
+   *
+   * What Mirra itself wrote lives in extendedProperties.private, where
+   * only this application can see it. That is where a break says it is
+   * a break, and where an appointment remembers which client it is
+   * for and which sheet that client lives in.
+   */
+  static #event(raw) {
+    const mine = raw?.extendedProperties?.private ?? {};
+
+    return {
+      id: raw?.id ?? "",
+      title: raw?.summary ?? "",
+      start: raw?.start?.dateTime ?? raw?.start?.date ?? "",
+      end: raw?.end?.dateTime ?? raw?.end?.date ?? "",
+      allDay: !raw?.start?.dateTime,
+      kind: mine.kind === "break" ? "break" : "visit",
+      clientId: mine.client ?? "",
+      sheetId: mine.sheet ?? "",
+      allowOverlap: mine.overlap === "allowed",
+    };
+  }
 
   static #record(raw) {
     return {
