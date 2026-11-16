@@ -42,6 +42,19 @@ export class DayPlan {
   static TIGHT = 0.75;
 
   /**
+   * Half a visit. At or under it, the hour is not short — it is a
+   * different kind of appointment.
+   *
+   * The day does not use this: a stretch this small is a break there,
+   * and a break is already drawn as one. It lives here because this
+   * is where Mirra keeps what counts as long enough, and the booking
+   * form asks the same question about an hour somebody typed in by
+   * hand — where nothing stops them putting twenty minutes against a
+   * two-hour visit.
+   */
+  static HALF = 0.5;
+
+  /**
    * How much two appointments may overlap before it is called a clash.
    *
    * A few minutes nearly always means the earlier visit ran over and
@@ -126,7 +139,15 @@ export class DayPlan {
            appointment backwards, so the slot it offers sits against
            the client who is already coming. */
         const anchored = cards.length === 0 ? "end" : "start";
-        cards.push(...DayPlan.#fill(cursor, cluster.from, { duration, gap, step, anchored }));
+
+        /* trailing: somebody is coming at the end of this stretch, so
+           the last slot in it owes them the gap. Without that the
+           hour offered ran right up to the appointment — one client
+           leaving as the next arrives — and the minutes that should
+           have been the gap were left over as a card of their own at
+           the far end of the day. */
+        cards.push(...DayPlan.#fill(cursor, cluster.from,
+          { duration, gap, step, anchored, trailing: true }));
       }
 
       cards.push(...DayPlan.#cards(cluster));
@@ -135,9 +156,10 @@ export class DayPlan {
          day: nobody else can be in the chair during it. Carried on
          the card so the screen can show it as the tail of the
          appointment rather than as a mysterious hole. */
-      if (gap > 0 && cards.at(-1).kind === "visit") cards.at(-1).after = gap;
+      const held = DayPlan.#gapOf(cluster, gap);
+      if (held > 0 && cards.at(-1).kind === "visit") cards.at(-1).after = held;
 
-      cursor = cluster.to + gap;
+      cursor = cluster.to + held;
 
       /* An appointment that finished early leaves the rest of the day
          shifted off the hour. The next card carries the offer to even
@@ -148,7 +170,9 @@ export class DayPlan {
     }
 
     if (cursor < end) {
-      cards.push(...DayPlan.#fill(cursor, end, { duration, gap, step, anchored: "start" }));
+      /* Nothing after the day's close, so the last slot owes no gap. */
+      cards.push(...DayPlan.#fill(cursor, end,
+        { duration, gap, step, anchored: "start", trailing: false }));
     }
 
     DayPlan.#carryAlign(cards);
@@ -174,6 +198,34 @@ export class DayPlan {
     return cards;
   }
 
+  /**
+   * Whether a day runs past the hours it was planned for.
+   *
+   * Two ways that happens. More people than the day has room for —
+   * six clients where the schedule makes four — and an appointment
+   * that sits mostly outside the working hours: a client at half past
+   * five on a day that closes at six is a late finish, not a late
+   * start, and half the visit is the line between the two.
+   *
+   * Only on a working day. A day off that somebody opened for one
+   * client is outside the schedule by definition, and outlining every
+   * one of them would make the outline mean nothing.
+   */
+  static #beyond({ busy, working, booked, capacity, open, close }) {
+    if (!working) return false;
+    if (capacity > 0 && booked > capacity) return true;
+
+    return busy.some(event => {
+      if (event.kind === "break") return false;
+
+      const length = event.to - event.from;
+      if (length <= 0) return false;
+
+      const inside = Math.max(0, Math.min(event.to, close) - Math.max(event.from, open));
+      return (length - inside) / length >= DayPlan.HALF;
+    });
+  }
+
   /* ---------------- free time ---------------- */
 
   /**
@@ -191,22 +243,22 @@ export class DayPlan {
    * @param {"start"|"end"} options.anchored which end the slots are
    *        measured from — the end that touches an appointment
    */
-  static #fill(from, to, { duration, gap, step, anchored }) {
+  static #fill(from, to, { duration, gap, step, anchored, trailing = false }) {
     const room = to - from;
     if (room <= 0) return [];
 
-    /* How many whole visits fit, counting the gap that each one needs
-       after it except the last. */
-    const whole = Math.max(0, Math.floor((room + gap) / step));
-    const used = whole === 0 ? 0 : whole * step - gap;
-    const left = room - used;
+    /* How many whole visits fit. Each one needs the gap after it —
+       except the last, and only when there is nobody waiting at the
+       end of the stretch for that gap to be made of. */
+    const owed = trailing ? 0 : gap;
 
+    const whole = Math.max(0, Math.floor((room + owed) / step));
     const slots = [];
 
     for (let n = 0; n < whole; n += 1) {
       const at = anchored === "start"
         ? from + n * step
-        : to - (whole - n) * step + gap;
+        : to - (whole - n) * step + owed;
 
       /* Two times, because people hold two different ones in their
          head. `to` is when the client leaves, and it is what gets
@@ -223,13 +275,28 @@ export class DayPlan {
       });
     }
 
+    /* What is left is whatever the slots do not cover — measured from
+       the slots themselves rather than worked out a second time.
+
+       It used to be worked out a second time, and the two answers
+       disagreed by exactly one gap at the end of a day: the last slot
+       of a stretch is charged no gap after it, because nobody is
+       coming, but it is still drawn holding its whole block. So the
+       day ended with a ten-minute card sitting on top of the last
+       slot, offering a visit in minutes that slot had already taken.
+
+       The leftover sits at the far end from the anchor: against the
+       start of the day when the slots were measured backwards from an
+       appointment, and at the end of the stretch otherwise. */
+    const edge = whole === 0
+      ? { from, to }
+      : anchored === "start"
+        ? { from: slots.at(-1).block, to }
+        : { from, to: slots[0].from };
+
+    const left = edge.to - edge.from;
+
     if (left > 0) {
-      /* The leftover sits at the far end from the anchor: against the
-         start of the day when the slots were measured backwards from
-         an appointment, and at the end of the stretch otherwise. */
-      const edge = anchored === "start"
-        ? { from: to - left, to }
-        : { from, to: from + left };
 
       /* Measured against the visit alone. The gap matters between two
          clients; it has nothing to do with whether one more client
@@ -314,6 +381,18 @@ export class DayPlan {
     }
 
     return true;
+  }
+
+  /**
+   * The minutes held after an appointment.
+   *
+   * The visit's own number when it has one — and the setting only
+   * for appointments made before Mirra started recording it, or for
+   * ones somebody added by hand in Google.
+   */
+  static #gapOf(cluster, fallback) {
+    const last = cluster.events.at(-1);
+    return Number.isFinite(last?.gap) ? last.gap : fallback;
   }
 
   /**
@@ -442,16 +521,26 @@ export class DayPlan {
       clashes,
       /* Four states, and none of them red for a full day: a day with
          every chair taken is a good day, not a problem. Red is kept
-         for the one case that is actually wrong. A day off says so
-         rather than reporting itself as full, which would paint half
-         the month in the colour of a busy week. */
+         for the one case that is actually wrong.
+
+         A day off with somebody in it reports itself as full rather
+         than as a day off: it is a working day now, however it was
+         planned, and a grey square would say the opposite. Empty, it
+         is still a day off. */
       state: clashes > 0 ? "clash"
-        : !working ? "rest"
+        : !working ? (booked > 0 ? "full" : "rest")
         : free > 0 ? "free"
         : over ? "over"
         : "full",
-      /* Shown as "5/7" only while the fraction means something. */
-      fraction: capacity > 0 && booked <= capacity,
+      /* Whether the day runs past what it was planned for.
+         Deliberately not a state: states say how full a day is, and
+         this says something else about it — so it rides alongside as
+         an outline rather than taking the square's colour away from
+         the question everybody is actually asking. */
+      beyond: DayPlan.#beyond({ busy, working, booked, capacity, open, close }),
+      /* "5/7" — and "5/4" too. The fraction used to switch itself off
+         at exactly the moment it had the most to say. */
+      fraction: capacity > 0,
     };
   }
 
@@ -475,6 +564,13 @@ export class DayPlan {
         title: event.title ?? "",
         kind: event.kind === "break" ? "break" : "visit",
         allowOverlap: event.allowOverlap === true,
+        /* Minutes this visit holds after itself. Written when it was
+           booked, so changing the setting later does not redraw
+           everything anybody has already arranged. */
+        gap: Number.isFinite(event.gap) ? Math.max(0, Math.round(event.gap)) : null,
+        /* Carried through so a form can say "this person is already
+           booked today" without fetching the day a second time. */
+        clients: Array.isArray(event.clients) ? [...event.clients] : [],
       }))
       .sort((a, b) => a.from - b.from || a.to - b.to);
   }

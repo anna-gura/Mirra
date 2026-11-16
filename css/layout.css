@@ -7,17 +7,18 @@
    ============================================================ */
 
 /* ---------------- view switching ---------------- */
+/* Screens change at once. They used to cross-fade over half a second,
+   and for that half second both were on the glass — which is why a
+   button from the screen being left showed through the one arriving. */
 .view{
   position:fixed;
   inset:0;
   opacity:0;
   visibility:hidden;
-  transition:opacity var(--t-view) ease, visibility 0s linear var(--t-view);
 }
 .view.is-visible{
   opacity:1;
   visibility:visible;
-  transition:opacity var(--t-view) ease, visibility 0s;
 }
 
 /* ---------------- landing ---------------- */

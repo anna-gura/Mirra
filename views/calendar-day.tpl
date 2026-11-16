@@ -8,12 +8,12 @@
 <section class="view calday" data-view="calendar-day" aria-label="Календар">
 
   <div class="cs-top">
-    <!-- Back to the month rather than to the hub: a day was opened
-         from a square in the grid, and that is where the eye expects
-         to return to carry on looking. -->
-    <button class="back" type="button" data-open-month>
+    <!-- One screen back, whichever that was. The arrow is a promise
+         about where somebody came from, not a shortcut chosen for
+         them. -->
+    <button class="back" type="button" data-back>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5 8 12l6.5 7"/></svg>
-      Місяць
+      Назад
     </button>
     <button class="theme lang" type="button" data-lang-toggle aria-label="Змінити мову">
       <span data-lang-label>UA</span>
@@ -29,24 +29,24 @@
     </button>
   </div>
 
-  <div class="cd-bar">
-    <button class="cd-step" type="button" data-day-prev aria-label="Попередній день">
+  <div class="cday-bar">
+    <button class="cday-step" type="button" data-day-prev aria-label="Попередній день">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5 8 12l6.5 7"/></svg>
     </button>
 
-    <div class="cd-when">
-      <h2 class="cd-date" data-day-title>Календар</h2>
-      <p class="cd-count" data-day-count></p>
+    <div class="cday-when">
+      <h2 class="cday-date" data-day-title>Календар</h2>
+      <p class="cday-count" data-day-count></p>
     </div>
 
-    <button class="cd-step" type="button" data-day-next aria-label="Наступний день">
+    <button class="cday-step" type="button" data-day-next aria-label="Наступний день">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 5 16 12l-6.5 7"/></svg>
     </button>
   </div>
 
-  <div class="cd-tools">
-    <button class="cd-today" type="button" data-day-today>Сьогодні</button>
-    <button class="cd-gear" type="button" data-calendar-settings aria-label="Налаштування календаря">
+  <div class="cday-tools">
+    <button class="cday-today" type="button" data-day-today>Сьогодні</button>
+    <button class="cday-gear" type="button" data-calendar-settings aria-label="Налаштування календаря">
       <!-- Eight teeth drawn as one outline rather than a circle with
            spokes around it: the spokes read as a sun, and a sun is
            not what anybody is looking for when they want settings. -->
@@ -57,8 +57,17 @@
     </button>
   </div>
 
-  <div class="cd-body" data-scroll>
-    <div class="cd-list" data-day-cards aria-live="polite"></div>
+  <div class="cday-body" data-scroll>
+    <div class="cday-list" data-day-cards aria-live="polite"></div>
+  </div>
+
+  <!-- The one place Mirra asks Google again on purpose. Reading the
+       calendar costs a request, so it happens when a month is opened
+       and when an appointment is confirmed — not on a timer. This is
+       for the other case: something changed in Google Calendar while
+       Mirra was open, and she is the one who knows it. -->
+  <div class="cday-foot">
+    <button class="quiet" type="button" data-calendar-reload>Оновити</button>
   </div>
 
 </section>

@@ -6,10 +6,7 @@
 <section class="view calset" data-view="calendar-settings" aria-label="Налаштування календаря">
 
   <div class="cs-top">
-    <!-- Back to wherever this was opened from. Settings reached
-         from a Tuesday should return to that Tuesday, not drop
-         somebody at the front door of the app. -->
-    <button class="back" type="button" data-calendar-back>
+    <button class="back" type="button" data-back>
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5 8 12l6.5 7"/></svg>
       Назад
     </button>

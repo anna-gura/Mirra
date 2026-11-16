@@ -164,6 +164,69 @@ export class CalendarRepository {
   }
 
   /**
+   * Writes an appointment.
+   *
+   * Everything Mirra needs to read it back later goes into
+   * extendedProperties.private, where only this application can see
+   * it. Two of those fields are there because of a lesson rather than
+   * a feature: the gap after the visit and the mark saying the day
+   * was not a working one are stored with the appointment, not looked
+   * up in the settings. Settings change. An appointment made in March
+   * should still be drawn in April the way it was made.
+   *
+   * @param {object} visit
+   * @param {string} visit.calendarId
+   * @param {string} visit.title     what Google Calendar shows
+   * @param {string} [visit.comment] goes in the description, tags and all
+   * @param {string} visit.from  RFC3339 instant
+   * @param {string} visit.to    RFC3339 instant
+   * @param {string} visit.timeZone
+   * @param {string[]} [visit.clients] client ids — a list from the
+   *        start, so group visits need no rewriting of what people
+   *        have already booked
+   * @param {string} [visit.sheetId]
+   * @param {number} [visit.gap] minutes held after the visit
+   * @param {boolean} [visit.offSchedule] booked on a day off
+   * @returns {Promise<object>}
+   */
+  async addEvent(visit) {
+    const mine = {};
+
+    if (visit.clients?.length) mine.clients = visit.clients.join(",");
+    if (visit.sheetId) mine.sheet = visit.sheetId;
+    if (Number.isFinite(visit.gap)) mine.gap = String(Math.max(0, Math.round(visit.gap)));
+    if (visit.offSchedule) mine.workday = "once";
+
+    const created = await this.#api.post(
+      `${config.CALENDAR_API}/calendars/${encodeURIComponent(visit.calendarId)}/events`,
+      {
+        summary: visit.title,
+        description: visit.comment || undefined,
+        start: { dateTime: visit.from, timeZone: visit.timeZone },
+        end: { dateTime: visit.to, timeZone: visit.timeZone },
+        extendedProperties: { private: mine },
+      }
+    );
+
+    return CalendarRepository.#event(created);
+  }
+
+  /**
+   * Removes an appointment. Cancelling a visit is deleting it: a
+   * calendar full of struck-through entries is a calendar nobody can
+   * read at a glance.
+   *
+   * @param {string} calendarId
+   * @param {string} eventId
+   */
+  async removeEvent(calendarId, eventId) {
+    await this.#api.delete(
+      `${config.CALENDAR_API}/calendars/${encodeURIComponent(calendarId)}`
+      + `/events/${encodeURIComponent(eventId)}`
+    );
+  }
+
+  /**
    * Whether the calendar is on this account's own list of calendars.
    *
    * A different question from get(), and the difference is the whole
@@ -271,12 +334,23 @@ export class CalendarRepository {
     return {
       id: raw?.id ?? "",
       title: raw?.summary ?? "",
+      comment: raw?.description ?? "",
+      /* When Google last touched it. Two reads of the same stretch
+         can be compared on this alone, without looking at a single
+         field inside them. */
+      updated: raw?.updated ?? "",
       start: raw?.start?.dateTime ?? raw?.start?.date ?? "",
       end: raw?.end?.dateTime ?? raw?.end?.date ?? "",
       allDay: !raw?.start?.dateTime,
       kind: mine.kind === "break" ? "break" : "visit",
-      clientId: mine.client ?? "",
+      /* A list from the first version, holding one. */
+      clients: mine.clients ? mine.clients.split(",").filter(Boolean) : [],
       sheetId: mine.sheet ?? "",
+      /* null, not the setting: "this visit never recorded one" and
+         "this visit holds no time after it" are different facts, and
+         only the caller knows what to put in place of the first. */
+      gap: mine.gap === undefined ? null : Number(mine.gap),
+      offSchedule: mine.workday === "once",
       allowOverlap: mine.overlap === "allowed",
     };
   }

@@ -47,7 +47,7 @@ export const dictionary = {
   "Клієнти": "Clients",
   "Ваша база записів": "Your client records",
   "Календар": "Calendar",
-  "Аналітика": "Analytics",
+  "Фінанси": "Finances",
   "Скоро": "Soon",
   "Інша таблиця": "Another sheet",
   "Інша": "Other",
@@ -160,7 +160,6 @@ export const dictionary = {
   "Без року": "No year",
   "Попередній місяць": "Previous month",
   "Наступний місяць": "Next month",
-  "Місяць": "Month",
   "Рік": "Year",
 
   /* ---------------- dropdowns ---------------- */
@@ -375,6 +374,19 @@ export const dictionary = {
     "Mirra sees only the calendar it made itself — the rest of your Google Calendar it does not read. It can no longer find the previous one, so if that still exists somewhere, the appointments in it stay there.",
   "Календар створено.": "The calendar has been created.",
   "Налаштування збережено.": "Your settings have been saved.",
+  "Знайти мій календар": "Find my calendar",
+  "Якщо він є в Google, але Mirra його не бачить": "If it is in Google but Mirra cannot see it",
+  "Mirra не знайшла жодного свого календаря у вашому Google Календарі.":
+    "Mirra found none of its own calendars in your Google Calendar.",
+  "Інших календарів Mirra у вашому Google Календарі немає.":
+    "There are no other Mirra calendars in your Google Calendar.",
+  "Який із них ваш робочий?": "Which one is your working calendar?",
+  "Mirra створила ці календарі. Той, що ви оберете, стане робочим — записи з нього з'являться в календарі Mirra.":
+    "Mirra created these calendars. The one you choose becomes the working one — its appointments will show in Mirra's calendar.",
+  "Календар знайдено. Розклад повернувся такий, як був.":
+    "Calendar found. Your schedule came back as it was.",
+  "Календар знайдено й підключено. Перевірте розклад і збережіть зміни.":
+    "Calendar found and connected. Check the schedule and save your changes.",
   "Цей календар видалили в Google Календарі поза Mirra. Можна створити новий.":
     "This calendar was deleted in Google Calendar, outside Mirra. You can make a new one.",
   "Виберіть хоча б один робочий день.": "Choose at least one working day.",
@@ -389,22 +401,70 @@ export const dictionary = {
   "записати раніше": "book earlier",
   "записати пізніше": "book later",
   "зараз": "now",
-  "Записати": "Book someone",
+  "Записати клієнта": "Book a client",
   "Цей день не робочий": "This day is not a working day",
   "Додати перерву на {} хв": "Add a {}-minute break",
   "хв": "min",
   "{} хв": "{} min",
   "{} год": "{} h",
   "{} год {} хв": "{} h {} min",
-  "проміжок {} · до {}": "gap of {} · until {}",
+  "{} + проміжок {}": "{} + {} gap",
   "{} · замало для звичайного візиту": "{} · shorter than a usual visit",
   "менше звичайного": "shorter than usual",
   "Перерва": "Break",
   "Без імені": "No name",
   "Два записи на один час": "Two appointments at the same time",
+  "більше, ніж за розкладом": "more than the schedule allows",
   "Вихідний": "Day off",
-  "Форма запису — наступний крок. Поки що календар тільки показує день.":
-    "The booking form is the next step. For now the calendar only shows the day.",
+
+  /* ---------------- booking ---------------- */
+  "Початок": "Starts",
+  "Кінець": "Ends",
+  "Чи входить проміжок у цей час": "Whether the gap is included in this time",
+  "з проміжком": "gap included",
+  "без проміжку": "visit only",
+  "Обрати цей час": "Take this time",
+  "або виберіть картку нижче": "or pick a card below",
+  "Обираємо час для: {}": "Choosing a time for {}",
+  "Обираємо дату для: {}": "Choosing a day for {}",
+  "Обираємо дату": "Choosing a day",
+  "Вибір години": "Choose a time",
+  "Обираємо час": "Choosing a time",
+  "Вкажіть початок і кінець.": "Give a start and an end.",
+  "Кінець має бути пізніше за початок.": "The end has to come after the start.",
+  "візит {}–{} · наступний клієнт о {}": "visit {}–{} · next client at {}",
+  "Новий запис": "New appointment",
+  "Запис": "Appointment",
+  "змінити дату": "change the day",
+  "змінити час": "change the time",
+  "Обрати клієнта": "Choose a client",
+  "Створити клієнта": "Add a client",
+  "Обрати іншого клієнта": "Choose a different client",
+  "Коментар": "Comment",
+  "коротко про візит": "briefly, what it is for",
+  "Хештеги можна писати просто в тексті: #тег": "You can write hashtags right in the text: #tag",
+  "Записати": "Book",
+  "У ваш календар і на телефон": "Into your calendar, and onto your phone",
+  "Оновити цей запис у календарі": "Update this appointment in the calendar",
+  "Скасувати запис": "Cancel the appointment",
+  "Прибрати його з календаря": "Remove it from the calendar",
+  "Часу може бути замало: {} замість звичних {}.":
+    "This may not be enough time: {} instead of the usual {}.",
+  "Часу дуже мало: {} замість звичних {}.":
+    "That is very little time: {} instead of the usual {}.",
+  "Цей день не робочий за вашим розкладом.": "This day is not a working day on your schedule.",
+  "Це поза вашими робочими годинами.": "This is outside your working hours.",
+  "У цього клієнта вже є запис цього дня о {}.":
+    "This client already has an appointment that day at {}.",
+  "Оберіть клієнта або створіть нового.": "Choose a client, or add a new one.",
+  "Спершу підключіть таблицю клієнтів — у хабі.":
+    "Connect your client sheet first — from the hub.",
+  "Таблиця клієнтів у кошику Google Диска.": "The client sheet is in Google Drive's bin.",
+  "{} — Запис": "{} — Appointment",
+  "Поки ви заповнювали, цей час зайняли. Виберіть інший.":
+    "While you were filling this in, that time was taken. Choose another.",
+  "Записано.": "Booked.",
+  "Запис скасовано.": "The appointment has been cancelled.",
 
   /* ---------------- installing ---------------- */
   "Додати на головний екран": "Add to home screen",

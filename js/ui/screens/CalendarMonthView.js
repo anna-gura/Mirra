@@ -103,6 +103,10 @@ export class CalendarMonthView {
     if (cell.today) button.dataset.now = "";
     if (cell.past) button.dataset.past = "";
 
+    /* Alongside the state rather than instead of it: the square still
+       answers "is there room", and this adds "and it runs long". */
+    if (cell.counts?.beyond) button.dataset.beyond = "";
+
     button.setAttribute("aria-label", CalendarMonthView.#spoken(cell, language));
 
     const number = document.createElement("span");
@@ -158,8 +162,13 @@ export class CalendarMonthView {
       return `${date}, ${t("{} {}", counts.booked, plural(counts.booked, ["клієнт", "клієнти", "клієнтів"]))}`;
     }
 
-    if (counts.fraction) return `${date}, ${t("{} з {}", counts.booked, counts.capacity)}`;
+    /* Read aloud, because an outline is not. */
+    const beyond = counts.beyond ? `, ${t("більше, ніж за розкладом")}` : "";
 
-    return `${date}, ${t("{} з {}", counts.booked, counts.booked)}`;
+    if (counts.fraction) {
+      return `${date}, ${t("{} з {}", counts.booked, counts.capacity)}${beyond}`;
+    }
+
+    return `${date}, ${t("{} з {}", counts.booked, counts.booked)}${beyond}`;
   }
 }

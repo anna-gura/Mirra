@@ -81,10 +81,17 @@ export class Zone {
     const ms = instant instanceof Date ? instant.getTime() : new Date(instant).getTime();
     if (!Number.isFinite(ms)) return null;
 
-    const start = Zone.midnight(date, zone);
-    const minutes = Math.round((ms - start) / 60000);
+    /* Read off the clock rather than counted from midnight. On the
+       morning the clocks go forward, three o'clock is two hours after
+       midnight and still three o'clock — and the day is drawn against
+       the hours people see, not against elapsed time. */
+    const parts = Zone.#parts(ms, zone);
+    const falls = `${parts.year}-${parts.month}-${parts.day}`;
 
-    return Math.max(0, Math.min(Zone.DAY, minutes));
+    if (falls < date) return 0;
+    if (falls > date) return Zone.DAY;
+
+    return (Number(parts.hour) % 24) * 60 + Number(parts.minute);
   }
 
   /**
@@ -107,6 +114,32 @@ export class Zone {
 
     const first = wall - Zone.#offset(wall, zone) * 60000;
     return wall - Zone.#offset(first, zone) * 60000;
+  }
+
+   /**
+   * The instant at which a given minute of a given day happens.
+   *
+   * The inverse of minutesOn, and the thing that turns "eleven
+   * o'clock on Saturday" into something Google will accept. Two
+   * passes for the same reason midnight needs them: on the morning
+   * the clocks move, the offset at midnight and the offset at eleven
+   * are not the same number.
+   *
+   * @param {string} date "YYYY-MM-DD"
+   * @param {number} minutes from midnight
+   * @param {string} zone
+   * @returns {string} RFC3339 instant
+   */
+  static instant(date, minutes, zone) {
+    const [year, month, day] = Zone.#split(date);
+    const safe = Math.max(0, Math.round(minutes));
+
+    const wall = Date.UTC(year, month - 1, day, Math.floor(safe / 60), safe % 60);
+
+    const first = wall - Zone.#offset(wall, zone) * 60000;
+    const exact = wall - Zone.#offset(first, zone) * 60000;
+
+    return new Date(exact).toISOString();
   }
 
   /**

@@ -142,9 +142,6 @@
      visibly not an ordinary one. */
   --accent:      #7D5E2E;
 
-  /* Destructive actions. Muted on purpose: red here has to say "this
-     one is different" without turning the corner of a card into a
-     warning sign. */
   /* The month grid. Its own tokens rather than the notice colours it
      started with: a notice sits alone on a white screen and can be a
      whisper, while forty squares in a grid have to be told apart at a
@@ -175,6 +172,12 @@
   --cell-past-full-line: #C4B597;
   --cell-past-full-ink:  #5E564A;
 
+  /* Destructive actions, and the one thing in a day that is actually
+     wrong. Muted on purpose: red here has to say "this one is
+     different" without turning the corner of a card into a warning
+     sign. The booking form does not use it — a warning there is a
+     message, and messages everywhere in Mirra are --warn and
+     --alert. */
   --danger:      #A85A5A;
   --danger-line: #DEC4C4;
   --danger-bg:   #F5EAEA;
@@ -223,9 +226,15 @@
   --ok-bg:      #1E2E27;
   --ok-line:    #4A7E62;
 
-  --alert:      #E8A8A8;
-  --alert-bg:   #2D2020;
-  --alert-line: #6E4545;
+  /* Red had to be made redder here. The background was 17% saturated
+     at the same lightness as an ordinary card, so a red message read
+     as a grey card with pinkish text — the colour said nothing, and
+     on a dark screen the colour is most of what a warning has. Now
+     the same saturation the amber carries (63%), which is what makes
+     the amber one legible as amber. */
+  --alert:      #EA9D9A;
+  --alert-bg:   #371B1A;
+  --alert-line: #A14845;
 
   /* 8.7:1 on its own background, as light tones need to be in a dark
      theme to read as text rather than as a glow. */
@@ -252,7 +261,10 @@
   --cell-past-full-line: #5E5441;
   --cell-past-full-ink:  #D4C7A8;
 
-  --danger:      #E09B9B;
-  --danger-line: #8A5757;
-  --danger-bg:   #2D2020;
+  /* The same correction, a shade quieter: destructive actions and a
+     clash are red, but not the red of a message that has to be read
+     before anything else happens. */
+  --danger:      #E29F9C;
+  --danger-line: #8D4B49;
+  --danger-bg:   #341E1D;
 }

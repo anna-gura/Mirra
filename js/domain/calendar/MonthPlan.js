@@ -184,6 +184,8 @@ export class MonthPlan {
         title: event.title,
         kind: event.kind,
         allowOverlap: event.allowOverlap,
+        clients: event.clients,
+        gap: event.gap,
         from: Zone.minutesOn(event.start, date, zone),
         to: Zone.minutesOn(event.end, date, zone),
       });

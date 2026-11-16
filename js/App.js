@@ -25,6 +25,7 @@ import { ClientFormView }       from "./ui/screens/ClientFormView.js";
 import { CalendarSettingsView } from "./ui/screens/CalendarSettingsView.js";
 import { CalendarDayView }      from "./ui/screens/CalendarDayView.js";
 import { CalendarMonthView }    from "./ui/screens/CalendarMonthView.js";
+import { VisitFormView }        from "./ui/screens/VisitFormView.js";
 import { ClientDraft }          from "./domain/client/ClientDraft.js";
 import { ClientSchema }         from "./domain/client/ClientSchema.js";
 import { ClientList }           from "./domain/client/ClientList.js";
@@ -35,6 +36,8 @@ import { SchemaUpgrade }        from "./services/SchemaUpgrade.js";
 import { AiGuide }              from "./services/AiGuide.js";
 import { SheetCheck }           from "./domain/client/SheetCheck.js";
 import { SheetLook }            from "./services/SheetLook.js";
+import { NoteTags }             from "./domain/values/NoteTags.js";
+import { Duration }             from "./domain/values/Duration.js";
 import { ClientId }             from "./domain/client/ClientId.js";
 import { Notice }               from "./ui/shell/Notice.js";
 import { ConfirmDialog }        from "./ui/dialogs/ConfirmDialog.js";
@@ -74,8 +77,44 @@ class MirraApp {
    * reported again afterwards.
    */
   static QUIET_DAYS = 7;
+
+  /** How many screens back Назад can walk. */
+  static TRAIL_DEPTH = 20;
+
+  /**
+   * How many stretches of calendar are held at once.
+   *
+   * Three: the two months on screen, and the pair somebody walked
+   * back to. Nothing here expires on a clock — a read stays good
+   * until a month is entered that it does not cover, or until Mirra
+   * itself writes something.
+   */
+  static RANGES_KEPT = 3;
+
+  /**
+   * How deep each screen sits, counting the hub as the root.
+   *
+   * Назад climbs this tree and never descends it. Without that rule a
+   * trail alone produces loops anybody can walk into: book, change
+   * the hour, come back to the booking, press Назад — and land on
+   * choosing the hour again, which is forward dressed as back.
+   */
+  static DEPTH = Object.freeze({
+    hub: 0,
+    chooser: 1,
+    clients: 1,
+    "calendar-month": 1,
+    client: 2,
+    "calendar-day": 2,
+    form: 3,
+    "visit-form": 3,
+    "calendar-settings": 3,
+    "visit-date": 4,
+    "visit-slot": 4,
+  });
   static VIEWS = ["loading", "hub", "chooser", "clients", "client", "client-form",
-                  "calendar-settings", "calendar-day", "calendar-month"];
+                  "calendar-settings", "calendar-day", "calendar-month", "visit-form",
+                  "visit-date", "visit-slot"];
 
   #theme;
   #translator;
@@ -91,13 +130,23 @@ class MirraApp {
   #calendarSettings;
   #calendarDay;
   #calendarMonth;
+  #visitForm;
+  #visitDate;
+  #visitSlot;
   #day = "";
   #month = "";
   #weekStart = null;
   #calendarOrigin = "hub";
   #dayDrawn = null;
   #monthDrawn = null;
+  #dateDrawn = null;
+  #slotDrawn = null;
   #presenceSeen = "unknown";
+  #booking = null;
+  #visitTags = [];
+  #trail = [];
+  #pickedMonth = "";
+  #ranges = [];
   #settings;
   #guide;
   #picker;
@@ -168,6 +217,14 @@ class MirraApp {
     this.#calendarSettings = new CalendarSettingsView().init();
     this.#calendarDay = new CalendarDayView().init();
     this.#calendarMonth = new CalendarMonthView().init();
+    this.#visitForm = new VisitFormView().init();
+
+    /* The same two screens, bound to markup of their own. Picking a
+       day for a booking and looking at a month are different jobs on
+       the same drawing, and one screen doing both is what made Назад
+       ambiguous. */
+    this.#visitDate = new CalendarMonthView({ selector: '[data-view="visit-date"]' }).init();
+    this.#visitSlot = new CalendarDayView({ selector: '[data-view="visit-slot"]' }).init();
     this.#theme.refresh();
 
     this.#auth     = AuthServiceFactory.create();
@@ -321,6 +378,34 @@ class MirraApp {
       return;
     }
 
+    if (screen === "visit-date" && this.#dateDrawn) {
+      /* The month it is showing is a month like any other, and the
+         line above it names a client, so neither survives the
+         translator on its own. */
+      this.#labelPickedMonth();
+      this.#visitDate.show(this.#dateDrawn);
+      return;
+    }
+
+    if (screen === "visit-slot" && this.#slotDrawn) {
+      this.#visitSlot.show({ ...this.#slotDrawn, picking: this.#pickedNow() });
+      return;
+    }
+
+    if (screen === "visit-form" && this.#booking) {
+      /* The day and the slot on it are written by Intl, same as
+         everywhere else in the calendar — and the draft is right
+         here, so nothing needs asking again.
+
+         Not remembered: pressing the language button is not a step
+         through the app, and a trail that grew an entry every time
+         somebody changed their mind about the language would send
+         "назад" to the screen it is already on. */
+      this.#booking.comment = this.#visitForm.values.comment;
+      this.#showVisitForm({ remember: false });
+      return;
+    }
+
     if (screen === "calendar-settings") {
       /* The weekday chips are built by Intl once, when the screen is
          created, so they need building again rather than redrawing. */
@@ -396,20 +481,31 @@ class MirraApp {
       .set("data-save-calendar", button => this.#saveCalendar(button))
       .set("data-create-calendar", button => this.#createCalendar(button))
       .set("data-check-calendar", button => this.#checkCalendar(button))
+      .set("data-find-calendar", button => this.#findLostCalendar(button))
       .set("data-calendar-settings", button => this.#openCalendarSettings(button))
-      .set("data-calendar-back", () => this.#leaveCalendarSettings())
+      .set("data-back",          () => this.#goBack())
       .set("data-month-prev",    () => this.#stepMonth(-1))
       .set("data-month-next",    () => this.#stepMonth(1))
       .set("data-month-today",   () => this.#stepMonth(0))
-      .set("data-open-month",    () => this.#backToMonth())
-      .set("data-date",          button => this.#openDay(button.dataset.date))
+      .set("data-date",          button => this.#onDateCell(button))
+      .set("data-vd-prev",       () => this.#stepPickedMonth(-1))
+      .set("data-vd-next",       () => this.#stepPickedMonth(1))
       .set("data-day-prev",      () => this.#stepDay(-1))
       .set("data-day-next",      () => this.#stepDay(1))
       .set("data-day-today",     () => this.#stepDay(0))
-      .set("data-book",          () => this.#bookingSoon())
-      .set("data-book-edge",     () => this.#bookingSoon())
-      .set("data-align",         () => this.#bookingSoon())
-      .set("data-event",         () => this.#bookingSoon())
+      .set("data-calendar-reload", button => this.#reloadCalendar(button))
+      .set("data-book",          button => this.#onSlotCard(button))
+      .set("data-book-edge",     button => this.#onSlotCard(button))
+      .set("data-pick-apply",    () => this.#applyPickedTime())
+      .set("data-pick-gap",      button => this.#visitSlot.setGapMode(button.dataset.pickGap))
+      .set("data-visit-date",    () => this.#chooseVisitDate())
+      .set("data-visit-slot",    () => this.#chooseVisitSlot())
+      .set("data-visit-pick",    button => this.#pickVisitClient(button))
+      .set("data-visit-new",     button => this.#newClientForVisit(button))
+      .set("data-visit-clear",   () => this.#dropVisitClient())
+      .set("data-visit-tag",     button => this.#addVisitTag(button))
+      .set("data-visit-save",    button => this.#saveVisit(button))
+      .set("data-visit-delete",  button => this.#deleteVisit(button))
       .set("data-open-existing", button => this.#openExisting(button))
       .set("data-create-sheet",  button => this.#createNew(button))
       .set("data-reload",        button => this.#reload(button))
@@ -598,28 +694,6 @@ class MirraApp {
   }
 
   /**
-   * Out of the settings, back to whatever was on screen before them.
-   *
-   * And redrawn rather than restored: the hours, the working days or
-   * the length of a visit may have just changed, and a day rebuilt
-   * from the old numbers would be wrong in exactly the way somebody
-   * had just finished correcting.
-   */
-  #leaveCalendarSettings() {
-    if (this.#calendarOrigin === "calendar-day" && this.#day) {
-      this.#goToDay(this.#day).catch(error => this.#report(error));
-      return;
-    }
-
-    if (this.#calendarOrigin === "calendar-month" && this.#month) {
-      this.#goToMonth(this.#month).catch(error => this.#report(error));
-      return;
-    }
-
-    this.#toHub();
-  }
-
-  /**
    * The calendar's own time zone, or the device's when it has none.
    *
    * Everything about a day is measured in it: which date it is now,
@@ -637,11 +711,145 @@ class MirraApp {
   }
 
   /**
+   * Where the app is standing, in enough detail to come back to it.
+   *
+   * Pushed before every move forward and popped by Назад. Before
+   * this, each screen decided for itself where "back" led — and a day
+   * opened from a booking sent people to the month, which is not
+   * where they came from and not what the arrow says.
+   *
+   * @param {boolean} remember false while going back, so returning
+   *        does not push the screen being left onto the trail again
+   */
+  #mark(remember) {
+    if (!remember) return;
+
+    const screen = this.#screens?.current;
+    if (!screen || screen === "loading") return;
+
+    const last = this.#trail.at(-1);
+    if (last?.screen === screen && last?.day === this.#day && last?.month === this.#month) return;
+
+    this.#trail.push({
+      screen,
+      day: this.#day,
+      month: this.#month,
+      booking: this.#booking ? { ...this.#booking } : null,
+    });
+
+    /* A trail, not a diary: twenty steps is more than anybody
+       retraces, and it keeps a long afternoon from growing a stack of
+       every day they looked at. */
+    if (this.#trail.length > MirraApp.TRAIL_DEPTH) this.#trail.shift();
+  }
+
+  /**
+   * One screen back, wherever that was.
+   *
+   * The rule the whole app follows: Назад is the way somebody came,
+   * never a shortcut somebody chose for them. With nothing behind,
+   * the hub — which is where everything starts.
+   */
+  #goBack() {
+    const here = MirraApp.DEPTH[this.#screens?.current] ?? 0;
+
+    /* Anything at the same level or deeper is not behind us, however
+       recently it was on screen: the booking that led to this hour,
+       and the hour that led back to the booking, are the same step of
+       the same job. */
+    while (this.#trail.length) {
+      const step = this.#trail.at(-1);
+
+      if ((MirraApp.DEPTH[step.screen] ?? 0) < here) break;
+      this.#trail.pop();
+    }
+
+    const back = this.#trail.pop() ?? this.#parentOf();
+    if (!back) {
+      this.#booking = null;
+      this.#toHub();
+      return;
+    }
+
+    if (back.booking !== undefined) this.#booking = back.booking;
+
+    switch (back.screen) {
+      case "calendar-month":
+        this.#goToMonth(back.month, { remember: false }).catch(error => this.#report(error));
+        return;
+
+      case "calendar-day":
+        this.#goToDay(back.day, { remember: false }).catch(error => this.#report(error));
+        return;
+
+      case "client":
+        if (this.#card.client) {
+          this.#screens.show("client");
+          this.#dom.apply();
+          return;
+        }
+        this.#backToList();
+        return;
+
+      case "clients":
+        this.#backToList();
+        return;
+
+      case "visit-form":
+        this.#showVisitForm({ remember: false });
+        return;
+
+      default:
+        this.#booking = null;
+        this.#toHub();
+    }
+  }
+
+  /**
+   * One step towards the hub, for when nothing was remembered.
+   *
+   * Reaching a screen by reload, by a saved booking, or after the
+   * trail was trimmed leaves nothing behind it — and Назад still has
+   * to mean something. The tree answers that without guessing.
+   *
+   * @returns {object|null}
+   */
+  #parentOf() {
+    const screen = this.#screens?.current;
+
+    if (screen === "visit-date" || screen === "visit-slot") {
+      /* Both answer one question for a booking, so both lead back to
+         the booking — never to the calendar underneath it. */
+      return { screen: "visit-form" };
+    }
+
+    if (screen === "visit-form") {
+      return { screen: "calendar-day", day: this.#booking?.date ?? this.#day };
+    }
+
+    if (screen === "calendar-settings") {
+      return this.#calendarOrigin === "calendar-day" && this.#day
+        ? { screen: "calendar-day", day: this.#day }
+        : { screen: "calendar-month", month: this.#month || (this.#day || "").slice(0, 7) };
+    }
+
+    if (screen === "calendar-day") {
+      return { screen: "calendar-month", month: (this.#day || "").slice(0, 7) };
+    }
+
+    return null;
+  }
+
+  /**
    * Shows a month, and reads it from Google.
    *
    * @param {string} month "YYYY-MM"
+   * @param {object} [options]
+   * @param {boolean} [options.remember]
    */
-  async #goToMonth(month) {
+  async #goToMonth(month, { remember = true } = {}) {
+    this.#mark(remember);
+
     this.#month = month;
     this.#calendarOrigin = "calendar-month";
 
@@ -659,12 +867,6 @@ class MirraApp {
       ? Zone.today(zone).slice(0, 7)
       : MirraApp.#shiftMonth(this.#month, months);
 
-    this.#goToMonth(month).catch(error => this.#report(error));
-  }
-
-  /** Back from a day to the month it belongs to. */
-  #backToMonth() {
-    const month = (this.#day || Zone.today(this.#zone())).slice(0, 7);
     this.#goToMonth(month).catch(error => this.#report(error));
   }
 
@@ -693,13 +895,9 @@ class MirraApp {
 
     try {
       const weekStart = await this.#weekStartValue();
-      const { first, last } = MonthPlan.range(this.#month, weekStart);
+      const events = await this.#monthEvents(this.#month, weekStart);
 
-      const events = await this.#calendars.events({
-        calendarId: calendar.id,
-        from: Zone.bounds(first, zone).from,
-        to: Zone.bounds(last, zone).to,
-      });
+      this.#rememberTags(events);
 
       const plan = MonthPlan.of({
         month: this.#month,
@@ -719,6 +917,271 @@ class MirraApp {
     } finally {
       this.#calendarMonth.busy(false);
     }
+  }
+
+  /**
+   * Two months of calendar, read in one go.
+   *
+   * The month grid and the next month's grid together, because the
+   * question people ask at the end of a month is about the beginning
+   * of the next one, and nobody should have to page forward to find
+   * out. Two months of a full week is a few hundred appointments —
+   * tens of kilobytes, and arithmetic that runs in milliseconds.
+   *
+   * Nothing here is timed. A read is good until a month is opened
+   * that it does not cover, or until Mirra writes to the calendar.
+   * The one moment freshness really matters — the instant an
+   * appointment is confirmed — has a check of its own.
+   *
+   * @param {string} month "YYYY-MM"
+   * @param {number} weekStart
+   * @returns {Promise<object[]>}
+   */
+  async #monthEvents(month, weekStart) {
+    const calendar = this.#settings.calendar;
+    const zone = this.#zone();
+
+    const here = MonthPlan.range(month, weekStart);
+    const next = MonthPlan.range(MirraApp.#shiftMonth(month, 1), weekStart);
+
+    const from = Zone.bounds(here.first, zone).from;
+    const to = Zone.bounds(next.last, zone).to;
+
+    const known = this.#covering(from, to);
+    if (known) return known.list;
+
+    const list = await this.#calendars.events({ calendarId: calendar.id, from, to });
+    this.#keep({ from, to, list });
+
+    return list;
+  }
+
+  /**
+   * One day's events, from whatever is already held when possible.
+   *
+   * A day reached through its month — which is every day anybody
+   * opens — costs nothing. A day arrived at some other way reads
+   * itself, and only itself.
+   *
+   * @param {string} date
+   * @returns {Promise<object[]>}
+   */
+  async #dayEvents(date) {
+    const calendar = this.#settings.calendar;
+    const zone = this.#zone();
+    const { from, to } = Zone.bounds(date, zone);
+
+    const known = this.#covering(from, to);
+    if (known) return known.list;
+
+    const list = await this.#calendars.events({ calendarId: calendar.id, from, to });
+    this.#keep({ from, to, list });
+
+    return list;
+  }
+
+  /**
+   * "Оновити" — the one request nobody else would make.
+   *
+   * Everything else Mirra reads is read because a screen needs it:
+   * opening a month, confirming an appointment. Nothing is on a
+   * timer, which keeps the app quiet and keeps the quota for the
+   * moments that matter — and leaves exactly one case uncovered.
+   * Something changed in Google Calendar while Mirra was open, and
+   * the person looking at the screen knows it and Mirra does not.
+   *
+   * So: throw away what was read and read it again. One request, when
+   * somebody asks for it.
+   *
+   * @param {HTMLElement|null} button
+   */
+  async #reloadCalendar(button) {
+    const screen = this.#screens?.current;
+
+    await this.#run(button, async () => {
+      this.#forgetEvents();
+
+      if (screen === "calendar-day") {
+        await this.#drawDay();
+        return;
+      }
+
+      await this.#drawMonth();
+    });
+  }
+
+  /** @returns {object|null} a held stretch that contains this one */
+  #covering(from, to) {
+    return this.#ranges.find(range => range.from <= from && range.to >= to) ?? null;
+  }
+
+  /** @returns {boolean} whether a day can be drawn without asking */
+  #haveDay(date) {
+    const zone = this.#zone();
+    const { from, to } = Zone.bounds(date, zone);
+
+    return Boolean(this.#covering(from, to));
+  }
+
+  /** @param {object} range */
+  #keep(range) {
+    this.#ranges.unshift(range);
+    this.#ranges = this.#ranges.slice(0, MirraApp.RANGES_KEPT);
+  }
+
+  /** After Mirra writes: everything held is a step behind. */
+  #forgetEvents() {
+    this.#ranges = [];
+  }
+
+  /**
+   * Whether the calendar still looks the way it did when the slot was
+   * chosen.
+   *
+   * Asked once, at the moment of confirming — the only moment where
+   * being out of date costs somebody an appointment. Compared by what
+   * Google says it last changed rather than by reading every field:
+   * if no event on that day has been touched, nothing on that day has
+   * moved.
+   *
+   * @param {string} date
+   * @returns {Promise<{changed: boolean, events: object[]}>}
+   */
+  async #recheckDay(date) {
+    const zone = this.#zone();
+    const { from, to } = Zone.bounds(date, zone);
+    const calendar = this.#settings.calendar;
+
+    const before = MirraApp.#fingerprint(await this.#dayEvents(date), from, to, zone, date);
+    const fresh = await this.#calendars.events({ calendarId: calendar.id, from, to });
+
+    this.#keep({ from, to, list: fresh });
+
+    return {
+      changed: MirraApp.#fingerprint(fresh, from, to, zone, date) !== before,
+      events: fresh,
+    };
+  }
+
+  /**
+   * What a day looked like, in one short string.
+   *
+   * Ids and the times Google last touched them. Two days with the
+   * same fingerprint hold the same appointments; two with different
+   * ones do not, whatever changed.
+   */
+  static #fingerprint(events, from, to, zone, date) {
+    return events
+      .filter(event => !event.allDay)
+      .filter(event => Zone.minutesOn(event.end, date, zone) > 0
+                    && Zone.minutesOn(event.start, date, zone) < Zone.DAY)
+      .map(event => `${event.id}@${event.updated}`)
+      .sort()
+      .join("|");
+  }
+
+  /**
+   * The three tags people put on visits most often.
+   *
+   * Taken from the visits themselves, not from the notes in client
+   * cards: a note says what somebody is like — thick hair, comes with
+   * a friend — and a visit says what was done. Mixing the two would
+   * offer "#приходить-із-подругою" as a thing to write on an
+   * appointment.
+   *
+   * Counted over the month on screen, which is both a fair sample and
+   * free: those events were fetched to draw the grid anyway.
+   *
+   * @param {object[]} events
+   */
+  #rememberTags(events) {
+    const counts = new Map();
+
+    for (const event of events) {
+      for (const tag of NoteTags.parse(event.comment)) {
+        counts.set(tag, (counts.get(tag) ?? 0) + 1);
+      }
+    }
+
+    this.#visitTags = [...counts.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "uk"))
+      .slice(0, 3)
+      .map(([tag]) => tag);
+  }
+
+  /**
+   * The strip at the top of a day, when a booking is waiting for a
+   * time — and nothing at all when it is not.
+   *
+   * There is no separate "choosing" screen: the day already shows
+   * every free hour there is, and a second screen listing the same
+   * hours differently would be a second thing to learn.
+   *
+   * @returns {object|null}
+   */
+  #pickingFor() {
+    const draft = this.#booking;
+    if (!draft) return null;
+
+    const setup = this.#settings.calendar ?? {};
+
+    return {
+      name: draft.client?.name ?? "",
+      from: draft.from,
+      to: draft.block,
+      gap: Number.isFinite(Number(setup.gap)) ? Number(setup.gap) : 15,
+    };
+  }
+
+  /**
+   * The same strip, but keeping what is in the two fields.
+   *
+   * Redrawing puts the draft's hour back into them, which is right
+   * when the screen opens and wrong when somebody has since typed
+   * their own and only pressed the language button. An hour half
+   * typed is still worth more than the one it replaced.
+   *
+   * @returns {object|null}
+   */
+  #pickedNow() {
+    const picking = this.#pickingFor();
+    const typed = this.#visitSlot?.picked;
+
+    if (!picking || !typed) return picking;
+
+    return { ...picking, from: typed.from, to: typed.to };
+  }
+
+  /**
+   * The hour typed by hand, taken as given.
+   *
+   * The switch above the fields decides what the two numbers mean:
+   * the block somebody reads off a card, gap and all, or the visit
+   * itself. Both are what people say out loud, in different
+   * situations, so Mirra takes either and stores the one it needs.
+   */
+  #applyPickedTime() {
+    const draft = this.#booking;
+    const picked = this.#visitSlot.picked;
+    if (!draft || !picked) return;
+
+    const setup = this.#settings.calendar ?? {};
+    const gap = Number.isFinite(Number(setup.gap)) ? Number(setup.gap) : 15;
+
+    const visitEnd = picked.withGap ? picked.to - gap : picked.to;
+    const blockEnd = picked.withGap ? picked.to : picked.to + gap;
+
+    if (visitEnd <= picked.from) {
+      this.#notice.warn("Кінець має бути пізніше за початок.");
+      return;
+    }
+
+    draft.from = picked.from;
+    draft.to = visitEnd;
+    draft.block = blockEnd;
+
+    this.#trail.pop();
+    this.#showVisitForm({ remember: false });
   }
 
   /**
@@ -743,7 +1206,9 @@ class MirraApp {
    *
    * @param {string} date "YYYY-MM-DD"
    */
-  async #goToDay(date) {
+  async #goToDay(date, { remember = true } = {}) {
+    this.#mark(remember);
+
     this.#day = date;
     this.#calendarOrigin = "calendar-day";
 
@@ -784,12 +1249,11 @@ class MirraApp {
 
     const zone = this.#zone();
     const today = Zone.today(zone);
-    const { from, to } = Zone.bounds(this.#day, zone);
 
-    this.#calendarDay.busy(true);
+    this.#calendarDay.busy(!this.#haveDay(this.#day));
 
     try {
-      const events = await this.#calendars.events({ calendarId: calendar.id, from, to });
+      const events = await this.#dayEvents(this.#day);
 
       const plan = DayPlan.of({
         setup: calendar,
@@ -804,9 +1268,11 @@ class MirraApp {
           .filter(event => !event.allDay)
           .map(event => ({
             id: event.id,
-            title: event.title,
+            title: MirraApp.#visitName(event, this.#clients?.list),
             kind: event.kind,
             allowOverlap: event.allowOverlap,
+            clients: event.clients,
+            gap: event.gap,
             from: Zone.minutesOn(event.start, this.#day, zone),
             to: Zone.minutesOn(event.end, this.#day, zone),
           })),
@@ -829,13 +1295,652 @@ class MirraApp {
     }
   }
 
+  /* ---------------- booking ---------------- */
+
   /**
-   * Temporary, and honest about it: the plus works, the form behind
-   * it is the next step. Saying so is better than a button that
-   * appears broken.
+   * A plus, pressed.
+   *
+   * The draft survives everything that follows — choosing another
+   * day, creating a client, coming back — because the alternative is
+   * somebody typing a comment, going to fetch a date, and finding it
+   * gone.
+   *
+   * @param {HTMLElement|null} button
    */
-  #bookingSoon() {
-    this.#notice.warn("Форма запису — наступний крок. Поки що календар тільки показує день.");
+  #startBooking(button) {
+    if (!this.#day) return;
+
+    const kept = this.#booking;
+    const span = this.#spanFor(button);
+
+    this.#booking = {
+      date: this.#day,
+      from: span.from,
+      to: span.to,
+      block: span.block,
+      client: kept?.client ?? null,
+      comment: kept?.comment ?? "",
+      eventId: null,
+    };
+
+    this.#showVisitForm();
+  }
+
+  /**
+   * What stretch of the day a pressed control stands for.
+   *
+   * A slot carries its own minutes. The thin pluses above and below
+   * the day carry none: they mean "outside the hours", and the hour
+   * they offer is the one that touches the working day — early enough
+   * to end as it starts, or starting as it ends.
+   *
+   * @param {HTMLElement|null} button
+   */
+  #spanFor(button) {
+    const setup = this.#settings.calendar ?? {};
+    const duration = Number(setup.duration) || 60;
+    const gap = Number.isFinite(Number(setup.gap)) ? Number(setup.gap) : 15;
+
+    const from = Number(button?.dataset?.book);
+
+    if (Number.isFinite(from)) {
+      const to = Number(button.dataset.until);
+      const block = Number(button.dataset.block);
+
+      return {
+        from,
+        to: Number.isFinite(to) ? to : from + duration,
+        block: Number.isFinite(block) ? block : from + duration,
+      };
+    }
+
+    const edge = button?.dataset?.bookEdge ?? "after";
+    const open = MirraApp.#minutes(setup.from, 9 * 60);
+    const close = MirraApp.#minutes(setup.to, 18 * 60);
+
+    const start = edge === "before"
+      ? Math.max(0, open - duration - gap)
+      : Math.min(24 * 60 - duration, close + gap);
+
+    return { from: start, to: start + duration, block: start + duration + gap };
+  }
+
+  /**
+   * Puts the draft on screen, with whatever is worth warning about.
+   *
+   * @param {object} [options]
+   * @param {boolean} [options.remember]
+   */
+  #showVisitForm({ remember = true } = {}) {
+    this.#mark(remember);
+
+    const draft = this.#booking;
+    if (!draft) return;
+
+    const language = this.#translator?.code || document.documentElement.lang || "uk";
+
+    this.#visitForm.show({
+      day: Zone.label(draft.date, language),
+      time: `${Zone.clock(draft.from, language)}–${Zone.clock(draft.block, language)}`,
+      fit: this.#visitFit(draft),
+      client: draft.client,
+      comment: draft.comment,
+      warnings: this.#visitWarnings(draft),
+      tags: this.#visitTags,
+      editing: Boolean(draft.eventId),
+    });
+
+    this.#screens.show("visit-form");
+    this.#dom.apply();
+  }
+
+  /**
+   * Whose appointment this is, in the words a card should use.
+   *
+   * The calendar entry is titled "Марія Коваль — Запис", because that
+   * is what makes sense on a phone's calendar beside a dentist and a
+   * parents' evening. On a day in Mirra every line is an appointment,
+   * so the word is noise and only the name is wanted.
+   *
+   * Taken from the client's id where there is one, so the card says
+   * what the list says: somebody renamed in the spreadsheet is
+   * renamed here too, without touching a single calendar entry. The
+   * title is the fallback — for an appointment written before ids
+   * existed, for a client since deleted, and for anything put in this
+   * calendar by hand.
+   *
+   * @param {object} event
+   * @param {import("./domain/client/ClientList.js").ClientList} [list]
+   * @returns {string}
+   */
+  static #visitName(event, list) {
+    const id = (event.clients ?? [])[0];
+    const known = id && list ? list.findById(id) : null;
+
+    if (known?.name) return known.name;
+
+    const title = (event.title ?? "").trim();
+
+    /* The language it was written in as well as the one being read:
+       appointments outlive the language somebody happened to be using
+       the day they made them. */
+    for (const suffix of new Set([t("{} — Запис", "").trim(), "— Запис"])) {
+      if (suffix && title.endsWith(suffix)) return title.slice(0, -suffix.length).trim();
+    }
+
+    return title;
+  }
+
+  /**
+   * Whether the hour chosen is long enough for an ordinary visit.
+   *
+   * The same measure the day uses when it decides what colour a card
+   * is — the visit itself against the usual length, the gap left out
+   * of it, because the gap is what separates two clients and has
+   * nothing to say about whether one of them has enough time.
+   *
+   * Taken from DayPlan rather than written again here, so an hour
+   * picked off an amber card cannot arrive in the form looking green.
+   *
+   * Three answers rather than two. Amber is "this will be quick";
+   * red is "this is half a visit", which is nearly always a typo in
+   * the two fields on the previous screen — and the one place where
+   * saying nothing costs somebody a client sitting in the chair with
+   * the work half done.
+   *
+   * @param {object} draft
+   * @returns {"full"|"tight"|"short"}
+   */
+  #visitFit(draft) {
+    const share = (draft.to - draft.from) / this.#usualVisit();
+
+    if (share <= DayPlan.HALF) return "short";
+    return share >= DayPlan.FULL ? "full" : "tight";
+  }
+
+  /** How long a visit takes by default, in minutes. */
+  #usualVisit() {
+    const minutes = Number(this.#settings.calendar?.duration);
+    return minutes > 0 ? minutes : 60;
+  }
+
+  /**
+   * What the form says out loud before anything is saved.
+   *
+   * Both of these are things somebody might mean to do — working an
+   * early hour for one person, seeing the same client twice in a day
+   * — so neither stops the booking. They are said because being
+   * surprised afterwards is worse than being told now.
+   *
+   * @param {object} draft
+   * @returns {string[]}
+   */
+  #visitWarnings(draft) {
+    const setup = this.#settings.calendar ?? {};
+    const said = [];
+
+    /* First, because it is about the coloured window directly above
+       it, and a colour without a sentence under it is a riddle. */
+    const fit = this.#visitFit(draft);
+
+    if (fit !== "full") {
+      const length = Duration.words(draft.to - draft.from);
+      const usual = Duration.words(this.#usualVisit());
+
+      said.push(fit === "short"
+        ? t("Часу дуже мало: {} замість звичних {}.", length, usual)
+        : t("Часу може бути замало: {} замість звичних {}.", length, usual));
+    }
+
+    const working = (setup.days ?? []).includes(Zone.weekday(draft.date));
+    const open = MirraApp.#minutes(setup.from, 9 * 60);
+    const close = MirraApp.#minutes(setup.to, 18 * 60);
+
+    if (!working) {
+      said.push(t("Цей день не робочий за вашим розкладом."));
+    } else if (draft.from < open || draft.block > close) {
+      said.push(t("Це поза вашими робочими годинами."));
+    }
+
+    const already = this.#dayDrawn?.cards
+      ?.filter(card => card.kind === "visit" && card.id !== draft.eventId)
+      ?.find(card => (card.clients ?? []).includes(draft.client?.id));
+
+    if (already) {
+      said.push(t("У цього клієнта вже є запис цього дня о {}.",
+        Zone.clock(already.from, this.#translator?.code || "uk")));
+    }
+
+    return said;
+  }
+
+  /**
+   * "змінити дату" — a month of its own, which answers only that.
+   *
+   * The hour is left exactly as it was. Moving an appointment to
+   * Thursday is not a reason to choose eleven o'clock again, and a
+   * screen that insisted on it would make "змінити годину" pointless.
+   */
+  #chooseVisitDate() {
+    const draft = this.#booking;
+    if (!draft) return;
+
+    this.#mark(true);
+    this.#pickedMonth = draft.date.slice(0, 7);
+
+    /* Dropped before the screen opens: between here and the answer
+       from Google the snapshot belongs to whatever was chosen last
+       time, and redrawing it would show the wrong month. */
+    this.#dateDrawn = null;
+
+    this.#screens.show("visit-date");
+    this.#dom.apply();
+
+    this.#drawPickedMonth().catch(error => this.#report(error));
+  }
+
+  /** "змінити час" — the day's cards, and the two fields above them. */
+  #chooseVisitSlot() {
+    const draft = this.#booking;
+    if (!draft) return;
+
+    this.#mark(true);
+    this.#slotDrawn = null;
+
+    this.#screens.show("visit-slot");
+    this.#dom.apply();
+
+    this.#drawPickedDay().catch(error => this.#report(error));
+  }
+
+  /** @param {number} months */
+  #stepPickedMonth(months) {
+    this.#pickedMonth = MirraApp.#shiftMonth(this.#pickedMonth, months);
+    this.#drawPickedMonth().catch(error => this.#report(error));
+  }
+
+  /**
+   * A square on either month grid.
+   *
+   * The same cards, two meanings: on the calendar a day is a place to
+   * go, and while booking it is an answer. The screen says which.
+   *
+   * @param {HTMLElement|null} button
+   */
+  #onDateCell(button) {
+    const date = button?.dataset?.date;
+    if (!date) return;
+
+    if (this.#screens.current !== "visit-date" || !this.#booking) {
+      this.#openDay(date);
+      return;
+    }
+
+    this.#booking.date = date;
+
+    /* Straight back to the form rather than on to the hours: the
+       question asked here was which day, and it has been answered. */
+    this.#trail.pop();
+    this.#showVisitForm({ remember: false });
+  }
+
+  /**
+   * A card on either day screen: a plus that starts a booking, or the
+   * answer to which hour this one takes.
+   *
+   * @param {HTMLElement|null} button
+   */
+  #onSlotCard(button) {
+    if (this.#screens.current !== "visit-slot" || !this.#booking) {
+      this.#startBooking(button);
+      return;
+    }
+
+    const span = this.#spanFor(button);
+
+    this.#booking.from = span.from;
+    this.#booking.to = span.to;
+    this.#booking.block = span.block;
+
+    this.#trail.pop();
+    this.#showVisitForm({ remember: false });
+  }
+
+  /**
+   * "Обираємо дату для: Марія П." above the grid.
+   *
+   * Written here rather than in the template because the name is in
+   * it, and a sentence with a name in it is not something the markup
+   * can hold — which also means the translator walking the page
+   * cannot put it into the other language. It is written again
+   * whenever the language changes, from the draft that is still open.
+   */
+  #labelPickedMonth() {
+    const label = document.querySelector("[data-vd-for]");
+    if (!label) return;
+
+    label.textContent = this.#booking?.client?.name
+      ? t("Обираємо дату для: {}", this.#booking.client.name)
+      : t("Обираємо дату");
+  }
+
+  /** Draws the month somebody is choosing a date from. */
+  async #drawPickedMonth() {
+    const calendar = this.#settings.calendar;
+    if (!calendar?.id || !this.#pickedMonth) return;
+
+    const zone = this.#zone();
+    const today = Zone.today(zone);
+
+    this.#labelPickedMonth();
+
+    this.#visitDate.busy(true);
+
+    try {
+      const weekStart = await this.#weekStartValue();
+      const events = await this.#monthEvents(this.#pickedMonth, weekStart);
+
+      const plan = MonthPlan.of({
+        month: this.#pickedMonth,
+        zone,
+        setup: calendar,
+        events,
+        weekStart,
+        today,
+        now: Zone.nowMinutes(zone),
+      });
+
+      this.#dateDrawn = { ...plan, current: today.startsWith(`${this.#pickedMonth}-`) };
+      this.#visitDate.show(this.#dateDrawn);
+      this.#dom.apply();
+    } catch (error) {
+      this.#report(error);
+    } finally {
+      this.#visitDate.busy(false);
+    }
+  }
+
+  /** Draws the day somebody is choosing an hour from. */
+  async #drawPickedDay() {
+    const draft = this.#booking;
+    const calendar = this.#settings.calendar;
+    if (!draft || !calendar?.id) return;
+
+    const zone = this.#zone();
+    const today = Zone.today(zone);
+
+    this.#visitSlot.busy(!this.#haveDay(draft.date));
+
+    try {
+      const events = await this.#dayEvents(draft.date);
+
+      const plan = DayPlan.of({
+        setup: calendar,
+        working: (calendar.days ?? []).includes(Zone.weekday(draft.date)),
+        now: draft.date === today ? Zone.nowMinutes(zone) : null,
+        events: events
+          .filter(event => !event.allDay)
+          .map(event => ({
+            id: event.id,
+            title: MirraApp.#visitName(event, this.#clients?.list),
+            kind: event.kind,
+            allowOverlap: event.allowOverlap,
+            clients: event.clients,
+            gap: event.gap,
+            from: Zone.minutesOn(event.start, draft.date, zone),
+            to: Zone.minutesOn(event.end, draft.date, zone),
+          })),
+      });
+
+      this.#slotDrawn = {
+        date: draft.date,
+        today: draft.date === today,
+        cards: plan.cards,
+        counts: plan.counts,
+      };
+
+      this.#visitSlot.show({ ...this.#slotDrawn, picking: this.#pickingFor() });
+
+      this.#dom.apply();
+    } catch (error) {
+      this.#report(error);
+    } finally {
+      this.#visitSlot.busy(false);
+    }
+  }
+
+  /**
+   * The list of clients, read if this session has not read it yet.
+   *
+   * Booking used to assume somebody had walked through the client
+   * list on the way here, which was true only while the calendar was
+   * reached through it. Now the hub opens the month directly, and a
+   * person can be three taps into an appointment without Mirra ever
+   * having fetched a single name — at which point "Обрати клієнта"
+   * had nothing to open and quietly did nothing.
+   *
+   * @param {HTMLElement|null} button
+   * @returns {Promise<boolean>} whether there is a list to work with
+   */
+  async #ensureClients(button) {
+    if (this.#clients?.list && this.#snapshot) return true;
+
+    const saved = this.#settings.section(MirraApp.CLIENTS_SECTION);
+
+    if (!saved) {
+      this.#notice.warn("Спершу підключіть таблицю клієнтів — у хабі.");
+      return false;
+    }
+
+    let loaded = false;
+
+    await this.#run(button, async () => {
+      const { snapshot, file } = await this.#fetchClients(saved);
+
+      if (file.trashed) {
+        this.#notice.warn("Таблиця клієнтів у кошику Google Диска.");
+        return;
+      }
+
+      /* Rendered but not shown: the list has to exist for the picker
+         to search it, and the screen it belongs to is not where
+         anybody is standing. */
+      this.#snapshot = snapshot;
+      this.#clients.render(snapshot);
+
+      loaded = true;
+    });
+
+    return loaded;
+  }
+
+  /**
+   * The picker, over the list of clients.
+   *
+   * @param {HTMLElement|null} button
+   */
+  async #pickVisitClient(button) {
+    if (!this.#booking) return;
+    if (!await this.#ensureClients(button)) return;
+
+    const list = this.#clients.list;
+    if (!list) return;
+
+    /* Whatever was typed stays typed: fetching a list is not a reason
+       to lose a comment. */
+    this.#booking.comment = this.#visitForm.values.comment;
+
+    /* No relative to order by: for booking, the useful order is plain
+       search over everybody. */
+    const chosen = await this.#people.open({
+      list,
+      client: { id: "", lastName: "", links: [] },
+      taken: [],
+    });
+
+    if (!chosen) return;
+
+    this.#booking.client = { id: chosen.id, name: chosen.name };
+    this.#visitForm.setClient(this.#booking.client);
+    this.#showVisitForm({ remember: false });
+  }
+
+  /** The ordinary new-client form, which comes back here when saved. */
+  async #newClientForVisit(button) {
+    if (!this.#booking) return;
+
+    this.#booking.comment = this.#visitForm.values.comment;
+
+    if (!await this.#ensureClients(button)) return;
+    if (!this.#snapshot) return;
+
+    const draft = new ClientDraft({
+      schema: this.#clients.list.schema,
+      dateFormat: this.#settings.dateFormat,
+    });
+    draft.id = ClientId.create();
+
+    this.#openForm(draft, "visit");
+  }
+
+  #dropVisitClient() {
+    if (!this.#booking) return;
+
+    this.#booking.client = null;
+    this.#booking.comment = this.#visitForm.values.comment;
+
+    /* A redraw of the screen already on, not a step onto it. */
+    this.#showVisitForm({ remember: false });
+  }
+
+  /** @param {HTMLElement|null} button */
+  #addVisitTag(button) {
+    const tag = button?.dataset?.visitTag;
+    if (tag) this.#visitForm.addTag(tag);
+  }
+
+  /**
+   * Writes the appointment.
+   *
+   * The gap goes in with it, because settings change and an
+   * appointment made today should still be drawn next month the way
+   * it was made. So does the mark that says the day was not a working
+   * one — for the same reason.
+   *
+   * @param {HTMLElement|null} button
+   */
+  async #saveVisit(button) {
+    const draft = this.#booking;
+    const calendar = this.#settings.calendar;
+    if (!draft || !calendar?.id) return;
+
+    draft.comment = this.#visitForm.values.comment;
+
+    if (!draft.client) {
+      this.#notice.warn("Оберіть клієнта або створіть нового.");
+      return;
+    }
+
+    const zone = this.#zone();
+    const setup = this.#settings.calendar ?? {};
+    const working = (setup.days ?? []).includes(Zone.weekday(draft.date));
+
+    await this.#run(button, async () => {
+      /* The one moment where being out of date costs an appointment.
+         Google is asked about this day again, and only now. */
+      const { changed, events } = await this.#recheckDay(draft.date);
+
+      if (changed && this.#taken(draft, events, zone)) {
+        this.#notice.warn("Поки ви заповнювали, цей час зайняли. Виберіть інший.");
+        this.#showVisitForm({ remember: false });
+        return;
+      }
+
+      const created = await this.#calendars.addEvent({
+        calendarId: calendar.id,
+        title: t("{} — Запис", draft.client.name),
+        comment: draft.comment,
+        from: Zone.instant(draft.date, draft.from, zone),
+        to: Zone.instant(draft.date, draft.to, zone),
+        timeZone: zone,
+        clients: [draft.client.id].filter(Boolean),
+        sheetId: this.#settings.section(MirraApp.CLIENTS_SECTION)?.file ?? "",
+        gap: Math.max(0, draft.block - draft.to),
+        offSchedule: !working,
+      });
+
+      const date = draft.date;
+      this.#booking = null;
+      this.#forgetEvents();
+
+      /* The day is known exactly: what Google had a second ago, plus
+         the appointment just written into it. So the screen that
+         follows needs no request of its own. */
+      const bounds = Zone.bounds(date, zone);
+      this.#keep({ from: bounds.from, to: bounds.to, list: [...events, created] });
+
+      await this.#goToDay(date);
+      this.#notice.done("Записано.");
+    });
+  }
+
+  /**
+   * Whether somebody else has taken the stretch being booked.
+   *
+   * Measured by the same rule the day is drawn with: a few minutes
+   * of overlap is the previous visit running late, and a quarter of
+   * a visit is two people in one chair.
+   *
+   * @param {object} draft
+   * @param {object[]} events as Google returned them
+   * @param {string} zone
+   * @returns {boolean}
+   */
+  #taken(draft, events, zone) {
+    const mine = draft.to - draft.from;
+
+    for (const event of events) {
+      if (event.allDay || event.id === draft.eventId) continue;
+
+      const from = Zone.minutesOn(event.start, draft.date, zone);
+      const to = Zone.minutesOn(event.end, draft.date, zone);
+
+      const over = Math.min(to, draft.to) - Math.max(from, draft.from);
+      if (over <= 0) continue;
+
+      const shorter = Math.min(mine, to - from);
+      if (shorter > 0 && over / shorter > DayPlan.CLASH) return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * @param {HTMLElement|null} button
+   */
+  async #deleteVisit(button) {
+    const draft = this.#booking;
+    const calendar = this.#settings.calendar;
+    if (!draft?.eventId || !calendar?.id) return;
+
+    await this.#run(button, async () => {
+      await this.#calendars.removeEvent(calendar.id, draft.eventId);
+
+      const date = draft.date;
+      this.#booking = null;
+      this.#forgetEvents();
+
+      await this.#goToDay(date);
+      this.#notice.done("Запис скасовано.");
+    });
+  }
+
+  /** @param {string} value "09:00" @param {number} fallback */
+  static #minutes(value, fallback) {
+    const match = /^(\d{1,2}):(\d{2})$/.exec(String(value ?? ""));
+    if (!match) return fallback;
+
+    return Number(match[1]) * 60 + Number(match[2]);
   }
 
   /**
@@ -964,7 +2069,37 @@ class MirraApp {
       } else {
         this.#notice.done("Налаштування збережено.");
       }
+
+      /* Out to the calendar, where the change can actually be seen:
+         working days, hours and the length of a visit are settings
+         only on this screen — everywhere else they are the shape of
+         the day. Staying here to admire a saved form is the one
+         thing nobody came for. */
+      await this.#toCalendar();
     });
+  }
+
+  /**
+   * Out of the settings and into the calendar itself.
+   *
+   * Named for where it goes rather than for what it leaves, because
+   * it is a step forward: the settings screen is done with, and the
+   * calendar is what the settings were for. Назад is not involved
+   * and has one implementation for the whole app.
+   *
+   * The day when somebody pressed the gear while looking at Tuesday,
+   * the month otherwise. Nothing is remembered: changing a setting is
+   * not a step through the app, and Назад from the calendar should
+   * lead home rather than into a form already saved.
+   */
+  async #toCalendar() {
+    if (this.#calendarOrigin === "calendar-day" && this.#day) {
+      await this.#goToDay(this.#day, { remember: false });
+      return;
+    }
+
+    const month = this.#month || Zone.today(this.#zone()).slice(0, 7);
+    await this.#goToMonth(month, { remember: false });
   }
 
   /**
@@ -999,6 +2134,104 @@ class MirraApp {
     } finally {
       this.#setBusy(button, false);
     }
+  }
+
+  /**
+   * Finds a calendar Mirra made and then lost sight of.
+   *
+   * The difference between this and "Створити календар" is the whole
+   * point: a calendar that is still sitting in Google with a year of
+   * appointments in it does not need replacing, it needs finding.
+   * Mirra lost it rather than it being deleted — a wrong answer about
+   * it was once enough for that — and a new empty one would be the
+   * worst possible repair.
+   *
+   * Mirra can only open calendars it created, so the search is
+   * nothing clever: ask about each calendar on the account's list and
+   * keep the ones that answer.
+   *
+   * @param {HTMLElement|null} button
+   */
+  async #findLostCalendar(button) {
+    await this.#run(button, async () => {
+      const found = await this.#calendars.findOwn();
+      const current = this.#settings.calendar?.id ?? "";
+
+      const others = found.filter(calendar => calendar.id !== current);
+
+      if (others.length === 0) {
+        this.#notice.warn(found.length > 0
+          ? "Інших календарів Mirra у вашому Google Календарі немає."
+          : "Mirra не знайшла жодного свого календаря у вашому Google Календарі.");
+        return;
+      }
+
+      const chosen = others.length === 1
+        ? others[0]
+        : await this.#pickFoundCalendar(others);
+
+      if (!chosen) return;
+
+      await this.#connectCalendar(chosen);
+    });
+  }
+
+  /**
+   * Which of several, when Mirra made more than one over the years.
+   *
+   * @param {object[]} calendars
+   * @returns {Promise<object|null>}
+   */
+  async #pickFoundCalendar(calendars) {
+    const picked = await this.#confirm.choose({
+      title: "Який із них ваш робочий?",
+      note: "Mirra створила ці календарі. Той, що ви оберете, стане робочим — "
+          + "записи з нього з'являться в календарі Mirra.",
+      options: calendars.map(calendar => ({ id: calendar.id, label: calendar.summary || calendar.id })),
+    });
+
+    return calendars.find(calendar => calendar.id === picked) ?? null;
+  }
+
+  /**
+   * Takes a found calendar into use, schedule and all.
+   *
+   * The working week, the hours and the length of a visit are set
+   * aside when a calendar is forgotten, so reconnecting brings the
+   * setup back rather than an empty form.
+   *
+   * The kept schedule wins over the form, and deliberately: the form
+   * is never empty — it shows Mirra's own defaults when there is
+   * nothing to show — so taking it would quietly replace a real
+   * working week with nine-to-six. Changing it afterwards is what
+   * "Зберегти зміни" is for, and it is one tap away.
+   *
+   * @param {object} calendar
+   */
+  async #connectCalendar(calendar) {
+    const kept = this.#settings.lastCalendar;
+    const setup = kept?.days?.length ? kept : this.#calendarSettings.values;
+
+    await this.#settings.setCalendar({
+      days: setup.days,
+      from: setup.from,
+      to: setup.to,
+      duration: setup.duration,
+      gap: setup.gap,
+      id: calendar.id,
+      summary: calendar.summary,
+      timeZone: calendar.timeZone,
+    });
+
+    const presence = await this.#presenceOf(calendar.id);
+    this.#presenceSeen = presence;
+
+    this.#calendarSettings.show(this.#settings.calendar, presence);
+    this.#dom.apply();
+
+    this.#notice.done(kept?.days?.length
+      ? "Календар знайдено. Розклад повернувся такий, як був."
+      : "Календар знайдено й підключено. Перевірте розклад і збережіть зміни.");
   }
 
   /**
@@ -1118,14 +2351,28 @@ class MirraApp {
       const presence = await this.#presenceOf(created.id);
       console.info(`Mirra: calendar ${created.id} created (${presence})`);
 
+      this.#presenceSeen = presence;
+
+      /* The screen behind is brought up to date before leaving it, so
+         coming back through the gear shows the calendar that now
+         exists rather than the empty form it was filled from. */
       this.#calendarSettings.show(this.#settings.calendar, presence);
-      this.#dom.apply();
 
       if (presence === "unlisted") {
         this.#notice.warn("Календар створено, але Google не додав його до вашого переліку календарів — у Google Календарі його не видно.");
       } else {
         this.#notice.done("Календар створено.");
       }
+
+      /* Straight to the month. The form was a means to a calendar,
+         and once there is one it has nothing left to say: staying on
+         it reads as though nothing happened, however loudly the
+         banner says otherwise.
+
+         Not remembered, because this was not a step somebody would
+         want to retrace: Назад from the month leads home, not back
+         to a form offering to create the calendar that now exists. */
+      await this.#toCalendar();
     });
   }
 
@@ -2319,6 +3566,7 @@ class MirraApp {
    * which puts a renamed client in their new place without a reload.
    */
   #applyLocally(rowNumber, values) {
+    const origin = this.#formOrigin;
     this.#formOrigin = null;
 
     if (!rowNumber || !this.#snapshot) return this.#backToList();
@@ -2335,6 +3583,14 @@ class MirraApp {
     this.#clients.render(this.#snapshot);
     this.#clients.ensureVisible(rowNumber);
     const client = this.#clients.list.findByRow(rowNumber);
+
+    /* Created from a booking: back to it, with the person in place.
+       Anything else would mean typing the comment again. */
+    if (origin === "visit" && this.#booking && client) {
+      this.#booking.client = { id: client.id, name: client.name };
+      this.#showVisitForm();
+      return;
+    }
 
     if (client) {
       this.#card.render(client);
@@ -2353,6 +3609,11 @@ class MirraApp {
   #leaveForm() {
     const origin = this.#formOrigin;
     this.#formOrigin = null;
+
+    if (origin === "visit" && this.#booking) {
+      this.#showVisitForm();
+      return;
+    }
 
     if (origin === "client" && this.#card.client) {
       this.#screens.show("client");

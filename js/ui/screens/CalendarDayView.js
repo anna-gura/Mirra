@@ -1,5 +1,6 @@
 import { t, plural } from "../../locales/t.js";
 import { Zone } from "../../domain/calendar/Zone.js";
+import { Duration } from "../../domain/values/Duration.js";
 
 /**
  * CalendarDayView — one day, drawn from a plan it did not make.
@@ -23,6 +24,10 @@ export class CalendarDayView {
   #count;
   #host;
   #scroller;
+  #pick = {};
+  #gapMode = "on";
+  #gapMinutes = 0;
+  #onPickInput;
 
   /**
    * @param {object} [options]
@@ -40,6 +45,22 @@ export class CalendarDayView {
     this.#host = this.#root.querySelector("[data-day-cards]");
     this.#scroller = this.#root.querySelector("[data-scroll]");
 
+    const find = name => this.#root.querySelector(`[data-pick-${name}]`);
+
+    this.#pick = {
+      box:  this.#root.querySelector("[data-pick]"),
+      who:  find("for"),
+      from: find("from"),
+      to:   find("to"),
+      line: find("line"),
+    };
+
+    /* The line under the fields is the explanation. Typing with it in
+       view is what makes "з проміжком" mean anything. */
+    this.#onPickInput = () => this.#drawPickLine();
+    this.#pick.from?.addEventListener("input", this.#onPickInput);
+    this.#pick.to?.addEventListener("input", this.#onPickInput);
+
     return this;
   }
 
@@ -52,14 +73,16 @@ export class CalendarDayView {
    * @param {object} day.counts from DayPlan
    * @param {boolean} [day.today] whether this is the day it is now
    */
-  show({ date, cards, counts, today = false }) {
+  show({ date, cards, counts, today = false, picking = null }) {
     const language = document.documentElement.lang || "uk";
 
     if (this.#title) this.#title.textContent = Zone.label(date, language);
     if (this.#count) this.#count.textContent = CalendarDayView.#countText(counts);
     if (this.#count) this.#count.dataset.state = counts?.state ?? "";
+    this.#count?.toggleAttribute("data-beyond", Boolean(counts?.beyond));
 
     this.#root?.toggleAttribute("data-today", today);
+    this.#showPicking(picking);
 
     if (this.#host) {
       this.#host.replaceChildren(...cards.map(card => this.#card(card, language)));
@@ -73,10 +96,122 @@ export class CalendarDayView {
     return this;
   }
 
+  /**
+   * The hour being chosen, as typed.
+   *
+   * @returns {{from: number, to: number, withGap: boolean}|null}
+   */
+  get picked() {
+    const from = CalendarDayView.#minutes(this.#pick.from?.value);
+    const to = CalendarDayView.#minutes(this.#pick.to?.value);
+
+    if (from === null || to === null) return null;
+
+    return { from, to, withGap: this.#gapMode === "on" };
+  }
+
+  /**
+   * Switches what the two times mean.
+   *
+   * @param {"on"|"off"} mode
+   */
+  setGapMode(mode) {
+    this.#gapMode = mode === "off" ? "off" : "on";
+
+    for (const button of this.#root?.querySelectorAll("[data-pick-gap]") ?? []) {
+      button.setAttribute("aria-pressed", String(button.dataset.pickGap === this.#gapMode));
+    }
+
+    this.#drawPickLine();
+    return this;
+  }
+
   /** Says a request is in flight, without blanking what is on screen. */
   busy(flag) {
     this.#root?.toggleAttribute("data-busy", flag);
     return this;
+  }
+
+  /* ---------------- choosing an hour ---------------- */
+
+  /**
+   * @param {object|null} picking
+   * @param {string} [picking.name] who the time is being chosen for
+   * @param {number} [picking.from] minutes
+   * @param {number} [picking.to]   minutes, gap included
+   * @param {number} [picking.gap]  minutes held after a visit
+   */
+  #showPicking(picking) {
+    const box = this.#pick.box;
+    this.#root?.toggleAttribute("data-picking", Boolean(picking));
+
+    if (box) box.hidden = !picking;
+    if (!picking) return;
+
+    this.#gapMinutes = Number(picking.gap) || 0;
+
+    if (this.#pick.who) {
+      this.#pick.who.textContent = picking.name
+        ? t("Обираємо час для: {}", picking.name)
+        : t("Обираємо час");
+    }
+
+    if (this.#pick.from) this.#pick.from.value = CalendarDayView.#hhmm(picking.from);
+    if (this.#pick.to) this.#pick.to.value = CalendarDayView.#hhmm(picking.to);
+
+    this.setGapMode(this.#gapMode);
+  }
+
+  /**
+   * What the two numbers above actually mean, in words.
+   *
+   * Both halves are shown at once — when the client leaves and when
+   * the next one could arrive — because the difference between them
+   * is the whole of what the switch does, and a switch whose effect
+   * is invisible is a switch nobody dares touch.
+   */
+  #drawPickLine() {
+    const line = this.#pick.line;
+    if (!line) return;
+
+    const picked = this.picked;
+    const language = document.documentElement.lang || "uk";
+
+    if (!picked) {
+      line.textContent = t("Вкажіть початок і кінець.");
+      return;
+    }
+
+    const visitEnd = picked.withGap ? picked.to - this.#gapMinutes : picked.to;
+    const nextAt = picked.withGap ? picked.to : picked.to + this.#gapMinutes;
+
+    if (visitEnd <= picked.from) {
+      line.textContent = t("Кінець має бути пізніше за початок.");
+      return;
+    }
+
+    line.textContent = t("візит {}–{} · наступний клієнт о {}",
+      Zone.clock(picked.from, language),
+      Zone.clock(visitEnd, language),
+      Zone.clock(nextAt, language));
+  }
+
+  /** @param {number} minutes @returns {string} "09:05" for an input */
+  static #hhmm(minutes) {
+    const safe = Math.max(0, Math.min(24 * 60 - 1, Math.round(Number(minutes) || 0)));
+    return `${String(Math.floor(safe / 60)).padStart(2, "0")}:${String(safe % 60).padStart(2, "0")}`;
+  }
+
+  /** @param {string} value @returns {number|null} */
+  static #minutes(value) {
+    const match = /^(\d{1,2}):(\d{2})$/.exec(String(value ?? ""));
+    if (!match) return null;
+
+    const hours = Number(match[1]);
+    const minutes = Number(match[2]);
+    if (hours > 23 || minutes > 59) return null;
+
+    return hours * 60 + minutes;
   }
 
   /* ---------------- cards ---------------- */
@@ -105,11 +240,11 @@ export class CalendarDayView {
   static #edge(card) {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "cd-edge";
+    button.className = "cday-edge";
     button.dataset.bookEdge = card.at;
 
     const plus = document.createElement("span");
-    plus.className = "cd-plus";
+    plus.className = "cday-plus";
     plus.textContent = "+";
 
     const label = document.createElement("span");
@@ -121,7 +256,7 @@ export class CalendarDayView {
 
   static #now() {
     const line = document.createElement("div");
-    line.className = "cd-now";
+    line.className = "cday-now";
 
     const label = document.createElement("span");
     label.textContent = t("зараз");
@@ -134,15 +269,15 @@ export class CalendarDayView {
   static #open() {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "cd-card cd-open";
+    button.className = "cday-card cday-open";
     button.dataset.bookEdge = "open";
 
     const name = document.createElement("span");
-    name.className = "cd-name";
-    name.textContent = t("Записати");
+    name.className = "cday-name";
+    name.textContent = t("Записати клієнта");
 
     const sub = document.createElement("span");
-    sub.className = "cd-sub";
+    sub.className = "cday-sub";
     sub.textContent = t("Цей день не робочий");
 
     button.append(name, sub);
@@ -156,10 +291,11 @@ export class CalendarDayView {
   static #slot(card, language) {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "cd-card cd-slot";
+    button.className = "cday-card cday-slot";
     button.dataset.fit = card.fit;
     button.dataset.book = String(card.from);
     button.dataset.until = String(card.to);
+    button.dataset.block = String(card.block ?? card.to);
     if (card.past) button.dataset.past = "";
 
     /* Both lines measure the same stretch of the day. Showing the
@@ -173,7 +309,7 @@ export class CalendarDayView {
     );
 
     const plus = document.createElement("span");
-    plus.className = "cd-plus";
+    plus.className = "cday-plus";
     plus.textContent = "+";
     button.append(plus);
 
@@ -184,7 +320,7 @@ export class CalendarDayView {
     if (!card.align) return button;
 
     const row = document.createElement("div");
-    row.className = "cd-row";
+    row.className = "cday-row";
     row.append(button, CalendarDayView.#alignButton(card));
 
     return row;
@@ -197,17 +333,17 @@ export class CalendarDayView {
   static #alignButton(card) {
     const align = document.createElement("button");
     align.type = "button";
-    align.className = "cd-align";
+    align.className = "cday-align";
     align.dataset.align = String(card.align);
     align.dataset.alignAt = String(card.from);
     align.setAttribute("aria-label", t("Додати перерву на {} хв", card.align));
 
     const minutes = document.createElement("span");
-    minutes.className = "cd-align-n";
+    minutes.className = "cday-align-n";
     minutes.textContent = `${card.align}`;
 
     const unit = document.createElement("span");
-    unit.className = "cd-align-u";
+    unit.className = "cday-align-u";
     unit.textContent = t("хв");
 
     align.append(minutes, unit);
@@ -225,13 +361,14 @@ export class CalendarDayView {
   static #gap(card, language) {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "cd-card cd-gap";
+    button.className = "cday-card cday-gap";
     button.dataset.book = String(card.from);
     button.dataset.until = String(card.to);
+    button.dataset.block = String(card.block ?? card.to);
     if (card.past) button.dataset.past = "";
 
     const plus = document.createElement("span");
-    plus.className = "cd-plus";
+    plus.className = "cday-plus";
     plus.textContent = "+";
 
     button.append(
@@ -248,7 +385,7 @@ export class CalendarDayView {
   static #brk(card, language) {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "cd-card cd-break";
+    button.className = "cday-card cday-break";
     button.dataset.event = card.id;
     if (card.past) button.dataset.past = "";
 
@@ -263,47 +400,43 @@ export class CalendarDayView {
   static #visit(card, language) {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "cd-card cd-visit";
+    button.className = "cday-card cday-visit";
     button.dataset.event = card.id;
     if (card.notch) button.dataset.notch = card.notch;
     if (card.past) button.dataset.past = "";
 
     const name = document.createElement("span");
-    name.className = "cd-name";
+    name.className = "cday-name";
     name.textContent = card.title || t("Без імені");
 
     button.append(
       CalendarDayView.#time(card.from, card.to, language),
-      CalendarDayView.#sub(CalendarDayView.#length(card.to - card.from)),
+      CalendarDayView.#sub(CalendarDayView.#visitLength(card)),
       name,
     );
 
-    if (!card.after) return button;
-
-    /* The card and its tail travel together, so the strip cannot end
-       up beside the wrong appointment when the list is rebuilt. */
-    const both = document.createDocumentFragment();
-    both.append(button, CalendarDayView.#after(card, language));
-    return both;
+    return button;
   }
 
   /**
-   * The strip of time that belongs to the visit above it.
+   * How long an appointment holds the day: the visit, and the gap
+   * after it when there is one.
    *
-   * Not a card of its own: nothing happens in it that anybody books,
-   * and giving it the weight of a card would make a day of six
-   * clients look like a day of twelve things.
+   * Both on one line rather than the visit here and the gap on a
+   * strip of its own below the card. The strip said "проміжок 10
+   * хв · до 16:00" — and the card underneath it already began at
+   * 16:00, so half of it was repeating the next line of the screen
+   * and the other half fitted on this one. A day of six clients was
+   * drawn as twelve things.
+   *
+   * The range above still ends when the client leaves, because that
+   * is the time anybody says out loud.
    */
-  static #after(card, language) {
-    const strip = document.createElement("div");
-    strip.className = "cd-after";
-    if (card.past) strip.dataset.past = "";
+  static #visitLength(card) {
+    const length = CalendarDayView.#length(card.to - card.from);
+    if (!card.after) return length;
 
-    strip.textContent = t("проміжок {} · до {}",
-      CalendarDayView.#length(card.after),
-      Zone.clock(card.to + card.after, language));
-
-    return strip;
+    return t("{} + проміжок {}", length, Duration.words(card.after));
   }
 
   /**
@@ -315,16 +448,16 @@ export class CalendarDayView {
    */
   static #clash(card, language) {
     const box = document.createElement("div");
-    box.className = "cd-card cd-clash";
+    box.className = "cday-card cday-clash";
 
     const head = document.createElement("span");
-    head.className = "cd-name";
+    head.className = "cday-name";
     head.textContent = t("Два записи на один час");
     box.append(head);
 
     for (const event of card.events ?? []) {
       const line = document.createElement("span");
-      line.className = "cd-clash-line";
+      line.className = "cday-clash-line";
       line.textContent = `${Zone.clock(event.from, language)}–${Zone.clock(event.to, language)} · `
         + (event.title || t("Без імені"));
       box.append(line);
@@ -337,32 +470,27 @@ export class CalendarDayView {
 
   static #time(from, to, language) {
     const span = document.createElement("span");
-    span.className = "cd-time";
+    span.className = "cday-time";
     span.textContent = `${Zone.clock(from, language)}–${Zone.clock(to, language)}`;
     return span;
   }
 
   static #sub(text) {
     const span = document.createElement("span");
-    span.className = "cd-sub";
+    span.className = "cday-sub";
     span.textContent = text;
     return span;
   }
 
   /**
-   * "1 год 50 хв" rather than "110 хв".
+   * The length of a card, and what is worth saying about it.
    *
-   * Minutes are what the arithmetic runs on and hours are what people
-   * keep in their heads; past an hour or so, a number of minutes has
-   * to be divided before it means anything.
+   * The words themselves come from Duration, which the booking form
+   * uses as well: the same visit is written the same way wherever it
+   * is shown.
    */
   static #length(minutes, fit = "full") {
-    const hours = Math.floor(minutes / 60);
-    const rest = minutes % 60;
-
-    const length = hours === 0
-      ? t("{} хв", rest)
-      : rest === 0 ? t("{} год", hours) : t("{} год {} хв", hours, rest);
+    const length = Duration.words(minutes);
 
     return fit === "tight" ? `${length} · ${t("менше звичайного")}` : length;
   }

@@ -55,6 +55,17 @@ export class GoogleApiClient {
   }
 
   /**
+   * @param {string} url
+   *
+   * Google answers a successful delete with 204 and no body, which
+   * request() already turns into null rather than choking on empty
+   * JSON.
+   */
+  delete(url) {
+    return this.request("DELETE", url);
+  }
+
+  /**
    * @param {string} method
    * @param {string} url
    * @param {object}  [options]

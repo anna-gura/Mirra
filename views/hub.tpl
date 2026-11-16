@@ -71,7 +71,7 @@
         </button>
 
         <button class="tile" type="button" disabled>
-          <span class="tile-name">Аналітика</span>
+          <span class="tile-name">Фінанси</span>
           <span class="tile-soon">Скоро</span>
         </button>
       </div>
