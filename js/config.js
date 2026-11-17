@@ -74,9 +74,13 @@ const SCOPES = Object.freeze({
    * cannot tell those apart, and reports "saved" about a calendar
    * nobody can find.
    *
-   * Non-sensitive, like the rest. It reads names, not events, and
-   * Mirra never calls the list method — only asks after the one id it
-   * wrote itself.
+   * Non-sensitive, like the rest: it reads names, not events.
+   *
+   * Asked after one id at a time, except in one place. "Знайти мій
+   * календар" reads the whole list, because the id it is looking
+   * for is the one that went missing — and then asks about each
+   * candidate in turn, since Mirra can only open a calendar it made
+   * itself and a refusal is the answer.
    */
   CALENDAR_LIST: "https://www.googleapis.com/auth/calendar.calendarlist.readonly",
 
