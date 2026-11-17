@@ -447,6 +447,9 @@ export const dictionary = {
   "У ваш календар і на телефон": "Into your calendar, and onto your phone",
   "Оновити цей запис у календарі": "Update this appointment in the calendar",
   "Скасувати запис": "Cancel the appointment",
+  "Змінено.": "Changed.",
+  "Цієї клієнтки вже немає у вашій таблиці.":
+    "This client is no longer in your sheet.",
   "Прибрати його з календаря": "Remove it from the calendar",
   "Часу може бути замало: {} замість звичних {}.":
     "This may not be enough time: {} instead of the usual {}.",

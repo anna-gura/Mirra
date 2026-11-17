@@ -139,12 +139,15 @@
 }
 
 /* ---------------- the trigger on the card ---------------- */
+/* The one button on the screen that cannot be undone was also the
+   faintest thing on it: --danger at .75 measures 2.9:1 against the
+   page. The alert tone at full strength reads at 7.3:1 and is the red
+   Mirra already uses to mean "careful" — the muted one is for a
+   corner of a card, not for a word somebody has to find. */
 .quiet-danger{
-  color:var(--danger);
-  opacity:.75;
+  color:var(--alert);
+  opacity:1;
 }
-.quiet-danger:hover,
-.quiet-danger:focus-visible{ opacity:1; }
 
 /* ---------------- a question with several answers ---------------- */
 

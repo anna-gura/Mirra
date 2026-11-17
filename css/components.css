@@ -93,19 +93,25 @@
    Moved here, beside .more, which is the same idea with different
    measurements. Nothing but these two should be able to go missing with
    the next screen that gets replaced. */
+/* Quiet, not invisible. It was 12.5px at .45, which measures 2.9:1
+   against the page — under the mark for text this small, and people
+   said so: the pair at the foot of a client's card was the part
+   nobody could find. At .70 it reads at 6.4:1 and is still plainly
+   the second thing on the screen, because it is small, spaced out,
+   and has neither a fill nor an edge. */
 .quiet{
   font-family:Karla,sans-serif;
-  font-size:12.5px;
+  font-size:13.5px;
   letter-spacing:.09em;
   color:var(--ink);
-  opacity:.45;
-  padding:14px 18px;
-  min-height:46px;
+  opacity:.7;
+  padding:15px 20px;
+  min-height:50px;
   border-radius:99px;
   transition:opacity .25s;
 }
 .quiet:hover,
-.quiet:focus-visible{ opacity:.85; }
+.quiet:focus-visible{ opacity:1; }
 
 .more{
   font-family:Karla,sans-serif;

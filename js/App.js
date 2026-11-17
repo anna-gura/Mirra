@@ -26,6 +26,7 @@ import { CalendarSettingsView } from "./ui/screens/CalendarSettingsView.js";
 import { CalendarDayView }      from "./ui/screens/CalendarDayView.js";
 import { CalendarMonthView }    from "./ui/screens/CalendarMonthView.js";
 import { VisitFormView }        from "./ui/screens/VisitFormView.js";
+import { VisitCardView }        from "./ui/screens/VisitCardView.js";
 import { ClientDraft }          from "./domain/client/ClientDraft.js";
 import { ClientSchema }         from "./domain/client/ClientSchema.js";
 import { ClientList }           from "./domain/client/ClientList.js";
@@ -107,14 +108,20 @@ class MirraApp {
     client: 2,
     "calendar-day": 2,
     form: 3,
-    "visit-form": 3,
     "calendar-settings": 3,
-    "visit-date": 4,
-    "visit-slot": 4,
+    /* An appointment is read before it is changed, and changed before
+       an hour is chosen for it, so each of the three sits a level
+       below the last. Without that the card and the form shared a
+       level, and Назад out of the form walked past the card it
+       had just been opened from. */
+    "visit-card": 3,
+    "visit-form": 4,
+    "visit-date": 5,
+    "visit-slot": 5,
   });
   static VIEWS = ["loading", "hub", "chooser", "clients", "client", "client-form",
-                  "calendar-settings", "calendar-day", "calendar-month", "visit-form",
-                  "visit-date", "visit-slot"];
+                  "calendar-settings", "calendar-day", "calendar-month", "visit-card",
+                  "visit-form", "visit-date", "visit-slot"];
 
   #theme;
   #translator;
@@ -131,12 +138,14 @@ class MirraApp {
   #calendarDay;
   #calendarMonth;
   #visitForm;
+  #visitCard;
   #visitDate;
   #visitSlot;
   #day = "";
   #month = "";
   #weekStart = null;
   #calendarOrigin = "hub";
+  #cardOrigin = "clients";
   #dayDrawn = null;
   #monthDrawn = null;
   #dateDrawn = null;
@@ -218,6 +227,7 @@ class MirraApp {
     this.#calendarDay = new CalendarDayView().init();
     this.#calendarMonth = new CalendarMonthView().init();
     this.#visitForm = new VisitFormView().init();
+    this.#visitCard = new VisitCardView().init();
 
     /* The same two screens, bound to markup of their own. Picking a
        day for a booking and looking at a month are different jobs on
@@ -392,6 +402,13 @@ class MirraApp {
       return;
     }
 
+    if (screen === "visit-card" && this.#booking) {
+      /* The hour and the day on it are Intl's work, same as
+         everywhere else in the calendar. */
+      this.#showVisitCard({ remember: false });
+      return;
+    }
+
     if (screen === "visit-form" && this.#booking) {
       /* The day and the slot on it are written by Intl, same as
          everywhere else in the calendar — and the draft is right
@@ -496,8 +513,11 @@ class MirraApp {
       .set("data-calendar-reload", button => this.#reloadCalendar(button))
       .set("data-book",          button => this.#onSlotCard(button))
       .set("data-book-edge",     button => this.#onSlotCard(button))
+      .set("data-event",         button => this.#openVisit(button).catch(error => this.#report(error)))
       .set("data-pick-apply",    () => this.#applyPickedTime())
       .set("data-pick-gap",      button => this.#visitSlot.setGapMode(button.dataset.pickGap))
+      .set("data-visit-edit",    () => this.#editVisit())
+      .set("data-visit-client",  () => this.#openVisitClient())
       .set("data-visit-date",    () => this.#chooseVisitDate())
       .set("data-visit-slot",    () => this.#chooseVisitSlot())
       .set("data-visit-pick",    button => this.#pickVisitClient(button))
@@ -795,6 +815,10 @@ class MirraApp {
         this.#backToList();
         return;
 
+      case "visit-card":
+        this.#showVisitCard({ remember: false });
+        return;
+
       case "visit-form":
         this.#showVisitForm({ remember: false });
         return;
@@ -824,6 +848,15 @@ class MirraApp {
     }
 
     if (screen === "visit-form") {
+      /* An appointment that already exists was read before it was
+         opened for changing, so that is where leaving it goes. A new
+         one came straight off a plus in the day. */
+      return this.#booking?.eventId
+        ? { screen: "visit-card" }
+        : { screen: "calendar-day", day: this.#booking?.date ?? this.#day };
+    }
+
+    if (screen === "visit-card") {
       return { screen: "calendar-day", day: this.#booking?.date ?? this.#day };
     }
 
@@ -1515,6 +1548,130 @@ class MirraApp {
   }
 
   /**
+   * One appointment, opened from the day.
+   *
+   * The draft is built here rather than on the card, because every
+   * screen that follows works on a draft: editing it, moving it,
+   * cancelling it. The card is only the first of them, and the one
+   * that shows it without touching it.
+   *
+   * @param {HTMLElement|null} button
+   */
+  async #openVisit(button) {
+    const id = button?.dataset?.event;
+    if (!id || !this.#day) return;
+
+    const events = await this.#dayEvents(this.#day);
+    const event = events.find(one => one.id === id);
+    if (!event) return;
+
+    const zone = this.#zone();
+    const clientId = (event.clients ?? [])[0];
+
+    /* The list is what turns an id into a person — her name, her
+       number, the card this screen leads to. Read now rather than
+       shown as an unlinked entry: it is linked, and saying otherwise
+       because the list has not been fetched yet would be a lie about
+       the data. */
+    if (clientId && !this.#clients?.list && !await this.#ensureClients(button)) return;
+
+    const gap = Number.isFinite(event.gap)
+      ? event.gap
+      : Number(this.#settings.calendar?.gap) || 0;
+
+    const to = Zone.minutesOn(event.end, this.#day, zone);
+
+    this.#booking = {
+      date: this.#day,
+      from: Zone.minutesOn(event.start, this.#day, zone),
+      to,
+      block: to + Math.max(0, gap),
+      client: this.#clientOf(clientId),
+      comment: event.comment ?? "",
+      eventId: event.id,
+      title: event.title ?? "",
+    };
+
+    this.#showVisitCard();
+  }
+
+  /**
+   * The person an appointment belongs to, as the screens want her.
+   *
+   * @param {string} id
+   * @returns {object|null}
+   */
+  #clientOf(id) {
+    const found = id ? this.#clients?.list?.findById(id) : null;
+    if (!found) return null;
+
+    const phone = found.phoneNumber;
+
+    return {
+      id: found.id,
+      name: found.displayName,
+      sms: phone.isValid ? phone.smsUri : "",
+    };
+  }
+
+  /**
+   * @param {object} [options]
+   * @param {boolean} [options.remember]
+   */
+  #showVisitCard({ remember = true } = {}) {
+    const draft = this.#booking;
+    if (!draft) return;
+
+    this.#mark(remember);
+
+    const language = this.#translator?.code || document.documentElement.lang || "uk";
+
+    this.#visitCard.show({
+      time: `${Zone.clock(draft.from, language)}–${Zone.clock(draft.to, language)}`,
+      day: Zone.label(draft.date, language),
+      client: draft.client,
+      title: draft.title,
+      comment: draft.comment,
+    });
+
+    this.#screens.show("visit-card");
+    this.#dom.apply();
+  }
+
+  /** "Редагувати" — the same appointment, in the form. */
+  #editVisit() {
+    if (!this.#booking) return;
+    this.#showVisitForm();
+  }
+
+  /**
+   * Out to the client whose appointment this is.
+   *
+   * Her card lives under the client list in the tree, and this is a
+   * step sideways into it rather than down. Назад has to come back
+   * here, so where it was opened from is written down — the trail
+   * alone cannot say it, because the trail only knows depth and this
+   * leads from a deeper screen to a shallower one.
+   */
+  async #openVisitClient() {
+    const id = this.#booking?.client?.id;
+    if (!id) return;
+
+    if (!this.#clients?.list && !await this.#ensureClients(null)) return;
+
+    const client = this.#clients.list.findById(id);
+    if (!client) {
+      this.#notice.warn("Цієї клієнтки вже немає у вашій таблиці.");
+      return;
+    }
+
+    this.#cardOrigin = "visit";
+    this.#card.render(client);
+    this.#screens.show("client");
+    this.#dom.apply();
+  }
+
+  /**
    * "змінити дату" — a month of its own, which answers only that.
    *
    * The hour is left exactly as it was. Moving an appointment to
@@ -1856,7 +2013,7 @@ class MirraApp {
         return;
       }
 
-      const created = await this.#calendars.addEvent({
+      const visit = {
         calendarId: calendar.id,
         title: t("{} — Запис", draft.client.name),
         comment: draft.comment,
@@ -1867,17 +2024,45 @@ class MirraApp {
         sheetId: this.#settings.section(MirraApp.CLIENTS_SECTION)?.file ?? "",
         gap: Math.max(0, draft.block - draft.to),
         offSchedule: !working,
-      });
+      };
+
+      /* The same appointment moved, or a new one. Without the first
+         branch, saving a visit somebody had opened wrote a second
+         one beside it and left the first where it was. */
+      const created = draft.eventId
+        ? await this.#calendars.updateEvent({ ...visit, eventId: draft.eventId })
+        : await this.#calendars.addEvent(visit);
 
       const date = draft.date;
-      this.#booking = null;
+      const changing = Boolean(draft.eventId);
+
       this.#forgetEvents();
 
       /* The day is known exactly: what Google had a second ago, plus
          the appointment just written into it. So the screen that
          follows needs no request of its own. */
       const bounds = Zone.bounds(date, zone);
-      this.#keep({ from: bounds.from, to: bounds.to, list: [...events, created] });
+      const rest = events.filter(event => event.id !== created.id);
+      this.#keep({ from: bounds.from, to: bounds.to, list: [...rest, created] });
+
+      /* A new appointment belongs to the day — that is where it was
+         started from, and seeing it land among the others is the
+         confirmation. One that was only changed belongs to itself:
+         somebody came to this appointment, altered it, and wants to
+         see the appointment, not the afternoon around it. */
+      if (changing) {
+        this.#booking = {
+          ...draft,
+          eventId: created.id,
+          title: created.title ?? draft.title,
+        };
+
+        this.#showVisitCard({ remember: false });
+        this.#notice.done("Змінено.");
+        return;
+      }
+
+      this.#booking = null;
 
       await this.#goToDay(date);
       this.#notice.done("Записано.");
@@ -1922,6 +2107,34 @@ class MirraApp {
     const draft = this.#booking;
     const calendar = this.#settings.calendar;
     if (!draft?.eventId || !calendar?.id) return;
+
+    const language = this.#translator?.code || document.documentElement.lang || "uk";
+
+    /* Asked before anything happens, because this is the one button
+       in Mirra whose mistake costs somebody else their afternoon: the
+       client arrives to a chair that was given away, and there is no
+       undo to reach for. The question names who and when rather than
+       asking "are you sure" — a thumb that pressed by accident stops
+       at a name it did not expect, and a thumb that meant it reads
+       the same line as confirmation. */
+    const when = `${Zone.label(draft.date, language)}, `
+      + `${Zone.clock(draft.from, language)}–${Zone.clock(draft.to, language)}`;
+
+    const agreed = await this.#confirm.ask({
+      title: "Скасувати запис?",
+      message: draft.client?.name || draft.title || t("Без імені"),
+      /* Composed already translated: the dialog translates a note as
+         one whole string, and a sentence glued to a date would match
+         nothing in the dictionary and stay Ukrainian for good. */
+      note: `${when} · ${t("Запис зникне з вашого Google Календаря. Повернути його не вийде.")}`,
+      confirmLabel: "Скасувати запис",
+      /* Not the dialog's usual "Скасувати": two buttons reading
+         "Скасувати запис" and "Скасувати" are a coin toss. */
+      cancelLabel: "Залишити",
+      danger: true,
+    });
+
+    if (!agreed) return;
 
     await this.#run(button, async () => {
       await this.#calendars.removeEvent(calendar.id, draft.eventId);
@@ -3000,6 +3213,9 @@ class MirraApp {
     const client = this.#clients.list?.findByRow(rowNumber);
     if (!client) return;
 
+    /* Reached from the list, so Назад belongs to the list again
+       even if the last card came from an appointment. */
+    this.#cardOrigin = "clients";
     this.#clients.saveScroll();
     this.#card.render(client);
     this.#screens.show("client");
@@ -3593,6 +3809,7 @@ class MirraApp {
     }
 
     if (client) {
+      this.#cardOrigin = "clients";
       this.#card.render(client);
       this.#screens.show("client");
     } else {
@@ -3678,6 +3895,16 @@ class MirraApp {
   }
 
   #backToList() {
+    /* A card opened from an appointment goes back to the appointment.
+       The list is where clients are usually reached from, but it is
+       not where this one was, and Назад means the way somebody
+       came. */
+    if (this.#cardOrigin === "visit" && this.#booking) {
+      this.#cardOrigin = "clients";
+      this.#showVisitCard({ remember: false });
+      return;
+    }
+
     this.#screens.show("clients");
     this.#clients.restoreScroll();
   }

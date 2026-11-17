@@ -76,10 +76,18 @@ export class CalendarRepository {
       );
       return CalendarRepository.#record(found);
     } catch (error) {
-      /* Gone, or never ours to see. Both mean the same thing to the
-         caller: there is no calendar behind that id any more. Anything
-         else — no network, an expired token, a rate limit — is a real
-         failure and is passed on. */
+      /* Only an answer about the calendar counts as one. 404 and 410
+         are Google saying there is nothing behind that id; everything
+         else — no network, an expired token, a rate limit, a refused
+         permission — is a failure of the question, not of the thing
+         asked about, and is passed on.
+
+         403 used to be in this list, and it cost somebody their
+         calendar. Google answers 403 for a rate limit and for a
+         quota as readily as for a permission, and the caller reacts
+         to null by forgetting the calendar for good. One busy minute
+         was enough to erase a calendar that was sitting there the
+         whole time. */
       if (error instanceof ApiError && CalendarRepository.GONE.includes(error.status)) {
         /* Said out loud, because this is the one place where a missing
            calendar becomes a new one, and whoever is looking at the
@@ -212,6 +220,47 @@ export class CalendarRepository {
   }
 
   /**
+   * Changes an appointment that already exists.
+   *
+   * PATCH rather than PUT: what is sent is what changes, and an
+   * appointment carries things Mirra never set — a colour somebody
+   * picked in Google Calendar, a reminder, a guest. A full replace
+   * would quietly take all of them away.
+   *
+   * The hidden properties are the exception. Google merges them key
+   * by key, so a key left out stays as it was; to clear one it has to
+   * be sent as null. That is how unlinking a client will work when
+   * there is a place to ask for it.
+   *
+   * @param {object} visit the same shape addEvent takes, plus eventId
+   * @returns {Promise<object>} the appointment as it now stands
+   */
+  async updateEvent(visit) {
+    const mine = {
+      clients: visit.clients?.length ? visit.clients.join(",") : null,
+      sheet: visit.sheetId || null,
+      gap: Number.isFinite(visit.gap) ? String(Math.max(0, Math.round(visit.gap))) : null,
+      workday: visit.offSchedule ? "once" : null,
+    };
+
+    const changed = await this.#api.patch(
+      `${config.CALENDAR_API}/calendars/${encodeURIComponent(visit.calendarId)}`
+      + `/events/${encodeURIComponent(visit.eventId)}`,
+      {
+        summary: visit.title,
+        /* Empty rather than missing: a comment somebody deleted has
+           to leave the event, and a missing key would keep it. */
+        description: visit.comment ?? "",
+        start: { dateTime: visit.from, timeZone: visit.timeZone },
+        end: { dateTime: visit.to, timeZone: visit.timeZone },
+        extendedProperties: { private: mine },
+      }
+    );
+
+    return CalendarRepository.#event(changed);
+  }
+
+  /**
    * Removes an appointment. Cancelling a visit is deleting it: a
    * calendar full of struck-through entries is a calendar nobody can
    * read at a glance.
@@ -250,6 +299,85 @@ export class CalendarRepository {
    * @returns {Promise<{id: string, summary: string, hidden: boolean}|null>}
    *          null when the calendar is not on the list at all
    */
+  /**
+   * Every calendar on the account's list.
+   *
+   * Read with the same read-only scope the presence check uses, and
+   * for one job only: finding a calendar Mirra made and then lost
+   * track of. Mirra cannot open a calendar it did not create, so the
+   * list on its own proves nothing — each candidate still has to be
+   * asked for directly. What the list gives is the ids to ask about,
+   * which is exactly what goes missing when the settings file loses
+   * its calendar.
+   *
+   * @returns {Promise<object[]>} id, summary, owner and hidden
+   */
+  async listEntries() {
+    const found = [];
+    let token = "";
+
+    for (let page = 0; page < 10; page += 1) {
+      const url = `${config.CALENDAR_API}/users/me/calendarList?maxResults=250`
+        + (token ? `&pageToken=${encodeURIComponent(token)}` : "");
+
+      const answer = await this.#api.get(url);
+
+      for (const entry of answer?.items ?? []) {
+        found.push({
+          id: entry?.id ?? "",
+          summary: entry?.summary ?? "",
+          timeZone: entry?.timeZone ?? "",
+          owner: entry?.accessRole === "owner",
+          hidden: entry?.hidden === true,
+        });
+      }
+
+      token = answer?.nextPageToken ?? "";
+      if (!token) break;
+    }
+
+    return found;
+  }
+
+  /**
+   * Which of those calendars Mirra is actually allowed to open.
+   *
+   * The scope Mirra holds reaches only the calendars it created
+   * itself, so asking is the test: the ones that answer are its own,
+   * and the ones that refuse belong to somebody else's life — work,
+   * a shared family calendar, the holidays Google adds.
+   *
+   * Refusals are expected here and are not errors, so they are
+   * swallowed rather than reported. A refusal is the answer.
+   *
+   * @returns {Promise<object[]>}
+   */
+  async findOwn() {
+    const entries = await this.listEntries();
+
+    /* Secondary calendars only. The primary one is the account
+       itself, named for the address, and Mirra never made it. */
+    const candidates = entries.filter(entry =>
+      entry.owner && entry.id && entry.id !== "primary" && !entry.id.includes("@gmail.")
+      && entry.id.endsWith("@group.calendar.google.com"));
+
+    const mine = [];
+
+    for (const entry of candidates) {
+      try {
+        const live = await this.#api.get(
+          `${config.CALENDAR_API}/calendars/${encodeURIComponent(entry.id)}`
+        );
+
+        mine.push({ ...CalendarRepository.#record(live), hidden: entry.hidden });
+      } catch {
+        /* Not ours. That is what we came to find out. */
+      }
+    }
+
+    return mine;
+  }
+
   async listEntry(calendarId) {
     try {
       const entry = await this.#api.get(
@@ -314,7 +442,11 @@ export class CalendarRepository {
    * "too fast, ask again", and treating that as a deletion would have
    * Mirra building a second calendar because the first was busy.
    */
-  static GONE = Object.freeze([403, 404, 410]);
+  /**
+   * Statuses that are an answer about the calendar rather than about
+   * the request. Deliberately without 403: see get().
+   */
+  static GONE = Object.freeze([404, 410]);
 
   /**
    * One event, reduced to what the calendar screens use.
